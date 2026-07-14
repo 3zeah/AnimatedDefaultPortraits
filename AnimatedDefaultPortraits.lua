@@ -96,6 +96,7 @@ local function positionModelFrame(model, portraitTexture)
    end
 end
 
+local UPDATE_PERIOD = 1 / 30
 -- create the animated model frame
 local function createModel(portraitTexture)
    local textureFrame = portraitTexture:GetParent()
@@ -115,6 +116,17 @@ local function createModel(portraitTexture)
    model:HookScript("OnSizeChanged", function(self)
       self:RefreshCamera()
       self:SetPortraitZoom(1)
+   end)
+   local secondsSinceUpdate = 0
+   model:HookScript("OnUpdate", function(self, elapsed)
+      secondsSinceUpdate = secondsSinceUpdate + elapsed
+      if secondsSinceUpdate < UPDATE_PERIOD then
+         return
+      end
+      secondsSinceUpdate = 0
+      if self.unit then
+         self:SetPaused(UnitIsDead(self.unit))
+      end
    end)
    createModelTextures(model)
    return model
@@ -171,6 +183,7 @@ local function setAnimatedPortraitTexture(portraitTexture, unit)
    else
       local model = state.model
       portraitTexture:Hide()
+      model.unit = unit
       model:Show()
       model:SetUnit(unit)
       model:RefreshCamera()
