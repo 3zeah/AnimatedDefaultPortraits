@@ -1,0 +1,10 @@
+<Ui xmlns="http://www.blizzard.com/wow/ui/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.blizzard.com/wow/ui/
+..\FrameXML\UI.xsd">
+    <Script file="AnimatedDefaultPortraits.lua"/>
+	<Frame name="AnimatedDefaultPortraits" hidden="true">
+		<Scripts>
+            <OnLoad function="AnimatedDefaultPortraits_OnLoad"/>
+			<OnEvent function="AnimatedDefaultPortraits_OnEvent"/>
+		</Scripts>
+	</Frame>
+</Ui>
