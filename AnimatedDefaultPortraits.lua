@@ -33,12 +33,12 @@ local models = {}
 local potentiallyBlockingModelFrames = {}
 
 -- create the solid-color background texture and color overlay of the model
-local function createModelTextures(model)
+local function createModelTextures(model, portraitTexture)
    local bg = model:CreateTexture(nil, "BACKGROUND")
    bg:SetColorTexture(0, 0, 0)
-   bg:SetAllPoints()
+   bg:SetAllPoints(portraitTexture)
    local mask = model:CreateMaskTexture()
-   mask:SetAllPoints()
+   mask:SetAllPoints(portraitTexture)
    mask:SetTexture(
       [[Interface\CharacterFrame\TempPortraitAlphaMask]],
       "CLAMPTOBLACKADDITIVE",
@@ -152,7 +152,7 @@ local function createModel(portraitTexture, config)
          self:SetPaused(UnitIsDead(self.unit))
       end
    end)
-   createModelTextures(model)
+   createModelTextures(model, portraitTexture)
    createCircularModelMask(model)
    return model
 end
