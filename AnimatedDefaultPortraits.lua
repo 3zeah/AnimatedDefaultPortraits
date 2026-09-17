@@ -53,6 +53,10 @@ local function createModelTextures(model)
    model.colorOverlay = colorOverlay
 end
 
+local function setModelMaskCamera(mask)
+   mask:SetCameraPosition(0, 8.7 * mask:GetEffectiveScale(), 0)
+end
+
 -- World/KhazModan/Ironforge/PassiveDoodads/GNOMEAREA/GnomeKingGear.M2
 -- any model would do that has a sufficiently round hole: this one is available
 -- even on vanilla clients
@@ -74,11 +78,13 @@ local function createCircularModelMask(model)
    mask:SetAllPoints()
    mask:SetModel(GNOME_KING_GEAR_MODEL)
    mask:SetPaused(true)
-   -- experimentally tweaked to ensure only the corners are masked
    mask:MakeCurrentCameraCustom()
    mask:SetCameraFacing(math.pi / 2)
-   mask:SetCameraDistance(7.8)
+   -- camera/insets experimentally tweaked to ensure only the corners are masked
    mask:SetViewInsets(-11, -11, -11, -11)
+   setModelMaskCamera(mask)
+   -- unfortunately, camera position is not scale-aware: keep updating it
+   mask:HookScript("OnSizeChanged", setModelMaskCamera)
    -- culling behavior is optimized away if mask model is actually hidden:
    -- make it pseudo-invisible
    mask:SetAlpha(0.01)      -- anything lower than 1% gets rounded to 0 = hide
