@@ -37,6 +37,14 @@ local function createModelTextures(model)
    local bg = model:CreateTexture(nil, "BACKGROUND")
    bg:SetColorTexture(0, 0, 0)
    bg:SetAllPoints()
+   local mask = model:CreateMaskTexture()
+   mask:SetAllPoints()
+   mask:SetTexture(
+      [[Interface\CharacterFrame\TempPortraitAlphaMask]],
+      "CLAMPTOBLACKADDITIVE",
+      "CLAMPTOBLACKADDITIVE"
+   )
+   bg:AddMaskTexture(mask)
 
    local colorOverlay = model:CreateTexture(nil, "OVERLAY")
    colorOverlay:SetAllPoints()
