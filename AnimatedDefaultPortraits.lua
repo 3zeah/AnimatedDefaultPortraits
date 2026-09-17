@@ -53,6 +53,37 @@ local function createModelTextures(model)
    model.colorOverlay = colorOverlay
 end
 
+-- World/KhazModan/Ironforge/PassiveDoodads/GNOMEAREA/GnomeKingGear.M2
+-- any model would do that has a sufficiently round hole: this one is available
+-- even on vanilla clients
+local GNOME_KING_GEAR_MODEL = 203164
+local function createCircularModelMask(model)
+   -- this is a crazy idea... it is not possible to apply texture masks to
+   -- models, but if a model BG is rendered below a model FG, but model BG is
+   -- above model FG in 3D space, then model BG will obscure model FG,
+   -- effectively culling part of the foreground model without rendering
+   -- anything above it. here, we leverage this by putting a zoomed-in circular
+   -- gear below the portait model to cull its corners, and thus fit the
+   -- portrait neatly inside the circular unit frame
+   --
+   -- this hack is subject to lose to random blizz updates. the previous
+   -- solution is robust: modify the unit frame texture asset to be thicker
+   local mask = CreateFrame("Model", nil, model)
+   mask:SetFrameStrata("BACKGROUND") -- below any portraits
+   mask:SetAllPoints()
+   mask:SetModel(GNOME_KING_GEAR_MODEL)
+   mask:SetPaused(true)
+   -- experimentally tweaked to ensure only the corners are masked
+   mask:MakeCurrentCameraCustom()
+   mask:SetCameraFacing(math.pi / 2)
+   mask:SetCameraDistance(7.8)
+   mask:SetViewInsets(-11, -11, -11, -11)
+   -- culling behavior is optimized away if mask model is actually hidden:
+   -- make it pseudo-invisible
+   mask:SetAlpha(0.01) -- anything lower than 1% gets rounded to 0 = hide
+   mask:SetModelAlpha(0.01) -- compounds with frame alpha
+end
+
 -- set the position and dimensions of the model frame to match the portrait
 local function positionModelFrame(model, portraitTexture, config)
    local margins = config.margins
@@ -115,6 +146,7 @@ local function createModel(portraitTexture, config)
       end
    end)
    createModelTextures(model)
+   createCircularModelMask(model)
    return model
 end
 
