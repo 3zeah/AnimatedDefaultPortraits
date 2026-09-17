@@ -1,29 +1,3 @@
-local ADDON_PATH = [[Interface\AddOns\AnimatedDefaultPortraits]]
--- filepath of the custom targeting frame texture, which hides animated
--- portrait corners
-local UNIT_FRAME_TEXTURE_PATH = ADDON_PATH .. [[\UI-TargetingFrame]]
--- model frames are necessarily rectangular, unlike the circular portraits that
--- they replace, and the default unit frames are too thin to hide the model
--- corners: the unit frames must be thickened. for each portrait, then, map the
--- corresponding frame texture and the margins of the model frame relative to
--- the portrait frame
-local PORTRAIT_FRAMES = {
-   [PlayerPortrait] = {
-      -- corresponding frame texture that needs to be replaced
-      texture = PlayerFrameTexture,
-      -- margins of the model frame wrt the default portrait texture (to hide
-      -- corners behind frames)
-      margins = { right = 3, left = 4, top = 4, bottom = 3 },
-   },
-   [TargetFramePortrait] = {
-      texture = TargetFrameTextureFrameTexture,
-      margins = { right = 4, left = 3, top = 4, bottom = 3 },
-   },
-   [FocusFramePortrait] = {
-      texture = FocusFrameTextureFrameTexture,
-      margins = { right = 4, left = 3, top = 4, bottom = 3 },
-   }
-}
 -- experimentally evaluated and tweaked to make the models match the portraits
 local MODEL_LIGHT = {
    omnidirectional = false,
@@ -34,10 +8,21 @@ local MODEL_LIGHT = {
    diffuseIntensity = 10 / 6,
    diffuseColor = CreateColor(1, 1, 1),
 }
+-- set of portraits to animate along with associated configuration
 local PORTRAITS_TO_ANIMATE = {
-   [PlayerPortrait] = true,
-   [TargetFramePortrait] = true,
-   [FocusFramePortrait] = true,
+   [PlayerPortrait] = {
+      -- margins of the model frame wrt the default portrait texture
+      -- (these are tweaked top make the model frame as small as possible
+      -- without leaving gaps under the unit frame, which makes it easier to
+      -- circle-mask the corners of the model frame)
+      margins = { right = 3, left = 4, top = 4, bottom = 3 }
+   },
+   [TargetFramePortrait] = {
+      margins = { right = 4, left = 3, top = 4, bottom = 3 },
+   },
+   [FocusFramePortrait] = {
+      margins = { right = 4, left = 3, top = 4, bottom = 3 }
+   },
 }
 
 -- state table of all animated model frames, indexed by each corresponding
@@ -61,12 +46,11 @@ local function createModelTextures(model)
 end
 
 -- set the position and dimensions of the model frame to match the portrait
-local function positionModelFrame(model, portraitTexture)
-   local portraitFrame = PORTRAIT_FRAMES[portraitTexture]
-   if not portraitFrame or not portraitFrame.margins then
+local function positionModelFrame(model, portraitTexture, config)
+   local margins = config.margins
+   if not margins then
       model:SetAllPoints(portraitTexture)
    else
-      local margins = portraitFrame.margins
       model:SetPoint(
          "TOPRIGHT",
          portraitTexture,
@@ -92,10 +76,10 @@ end
 
 local UPDATE_PERIOD = 1 / 30
 -- create the animated model frame
-local function createModel(portraitTexture)
+local function createModel(portraitTexture, config)
    local textureFrame = portraitTexture:GetParent()
    local model = CreateFrame("PlayerModel", nil, textureFrame)
-   positionModelFrame(model, portraitTexture)
+   positionModelFrame(model, portraitTexture, config)
    model:SetFrameLevel(textureFrame:GetFrameLevel())
    model:SetLight(true, MODEL_LIGHT)
    -- because models may be hidden briefly by other model frames
@@ -144,12 +128,12 @@ local function setModelVertexColor(model, r, g, b, a)
    setModelAlpha(model, a)
 end
 
-local function getOrCreateModelState(portraitTexture)
+local function getOrCreateModelState(portraitTexture, config)
    local extant = models[portraitTexture]
    if extant then
       return extant
    else
-      local model = createModel(portraitTexture)
+      local model = createModel(portraitTexture, config)
       local result = { animated = true, model = model, blockingModels = {} }
       models[portraitTexture] = result
       return result
@@ -161,10 +145,11 @@ end
 -- "visible" to the client) or the default portrait is missing, then the model
 -- will have no texture, so in that case we fall back to default portraits
 local function setAnimatedPortraitTexture(portraitTexture, unit)
-   if not PORTRAITS_TO_ANIMATE[portraitTexture] then
+   local config = PORTRAITS_TO_ANIMATE[portraitTexture]
+   if not config then
       return
    end
-   local state = getOrCreateModelState(portraitTexture)
+   local state = getOrCreateModelState(portraitTexture, config)
    -- either show regular static portrait or replace it with animated model
    if not state.animated
        -- units not "visible" to the client cannot have their model loaded
@@ -205,64 +190,6 @@ local function enableAnimatedPortraits()
    hooksecurefunc("SetPortraitTexture", setAnimatedPortraitTexture)
    for portrait, _ in pairs(PORTRAITS_TO_ANIMATE) do
       maintainModelColorOverlay(portrait)
-   end
-end
-
-local UNADORNED_TEXTURE_FILE_PATH =
-[[Interface\TargetingFrame\UI-TargetingFrame]]
-local UNADORNED_TEXTURE_FILE_ID = 137026
--- set the asset of the texture to the custom one that hides the animated
--- portrait corners if the target frame is unadorned (ie. is neither elite nor
--- rare)
-local function setCustomTextureIfUnadorned(self, textureAsset)
-   if textureAsset == UNADORNED_TEXTURE_FILE_ID
-       or textureAsset == UNADORNED_TEXTURE_FILE_PATH then
-      self:SetTexture(UNIT_FRAME_TEXTURE_PATH)
-   end
-end
-
--- post-hook the given texture to maintain the custom asset
-local function maintainRetexture(texture)
-   hooksecurefunc(texture, "SetTexture", setCustomTextureIfUnadorned)
-   if texture:GetTexture() == UNADORNED_TEXTURE_FILE_ID then
-      texture:SetTexture(UNIT_FRAME_TEXTURE_PATH)
-   end
-end
-
--- set the texture of the animated unit frames to the custom one that hides
--- the animated portrait corners
-local function retextureUnitFrames()
-   for _, portraitFrame in pairs(PORTRAIT_FRAMES) do
-      local frameTexture = portraitFrame.texture
-      if frameTexture then
-         maintainRetexture(frameTexture)
-      end
-   end
-end
-
--- in this new version of "classic", the player-frame texture is cropped,
--- because it has a lot of dead space given that the player-frame texture is
--- never adorned by the elite/rare dragon. the crop visually cuts off our
--- thicker custom texture, though. fortunately, we can simply copy the texture
--- coordinates from the target frame
-local function unCropPlayerFrame()
-   -- copy size, texture coordinates, and anchor points from target frame to
-   -- player frame, but horizontally mirrored
-   PlayerFrameTexture:SetSize(TargetFrameTextureFrameTexture:GetSize())
-   local left, top, _, bottom, right =
-       TargetFrameTextureFrameTexture:GetTexCoord()
-   PlayerFrameTexture:SetTexCoord(right, left, top, bottom) -- x-mirrored
-   PlayerFrameTexture:ClearAllPoints()
-   for i = 1, TargetFrameTextureFrameTexture:GetNumPoints() do
-      local point, _, relativePoint, offsetX, offsetY =
-          TargetFrameTextureFrameTexture:GetPoint(i)
-      PlayerFrameTexture:SetPoint(
-         point,
-         PlayerFrame,
-         relativePoint,
-         -offsetX, -- x-mirrored
-         offsetY
-      )
    end
 end
 
@@ -336,8 +263,6 @@ end
 -- retexture the frames and enable the animated portraits
 function AnimatedDefaultPortraits_OnEvent(_, event)
    if event == "PLAYER_LOGIN" then
-      unCropPlayerFrame()
-      retextureUnitFrames()
       enableAnimatedPortraits()
       registerPotentiallyBlockingModelFrame(CharacterModelFrame)
       registerPotentiallyBlockingModelFrame(DressUpModelFrame)
