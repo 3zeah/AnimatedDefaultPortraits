@@ -68,6 +68,7 @@ local function createCircularModelMask(model)
    --
    -- this hack is subject to lose to random blizz updates. the previous
    -- solution is robust: modify the unit frame texture asset to be thicker
+   -- (from version 1.0.0)
    local mask = CreateFrame("Model", nil, model)
    mask:SetFrameStrata("BACKGROUND") -- below any portraits
    mask:SetAllPoints()
