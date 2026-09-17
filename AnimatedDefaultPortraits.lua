@@ -235,8 +235,10 @@ local function enableAnimatedPortraits()
 end
 
 local function regionsIntersect(a, b)
-   return a:GetLeft() <= b:GetRight() and b:GetLeft() <= a:GetRight()
-       and a:GetBottom() <= b:GetTop() and b:GetBottom() <= a:GetTop()
+   local aLeft, aBottom, aWidth, aHeight = a:GetScaledRect()
+   local bLeft, bBottom, bWidth, bHeight = b:GetScaledRect()
+   return aLeft <= bLeft + bWidth and bLeft <= aLeft + aWidth
+       and aBottom <= bBottom + bHeight and bBottom <= aBottom + aHeight
 end
 
 local function blockAnimatedPortrait(portraitTexture, state, blockingModel)
