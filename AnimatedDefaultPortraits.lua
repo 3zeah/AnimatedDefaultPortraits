@@ -289,6 +289,25 @@ local function getOrCreateModelState(portraitTexture)
    end
 end
 
+-- either to a new unit, or to refresh the extant unit (eg, gear change)
+local function updateModelFromUnit(portraitTexture, unit, state)
+   local model = state.model
+   model.unit = unit
+   model:SetUnit(unit)
+   model:RefreshCamera()
+   model:SetPortraitZoom(1)
+   local animationPlaylist = ANIMATION_OVERRIDES[model:GetModelFileID()]
+   if animationPlaylist then
+      state.idlePlaylist = animationPlaylist
+      state.nextIdleVariation = rollIdleAnimationVariation(animationPlaylist)
+   else
+      state.idlePlaylist = nil
+   end
+   model:SetPaused(UnitIsDead(unit))
+   setModelVertexColor(model, portraitTexture:GetVertexColor())
+   setModelAlpha(model, portraitTexture:GetAlpha())
+end
+
 -- update the portrait to the animated model if possible and desired, or to
 -- the default portrait otherwise. note that if the unit is not loaded (not
 -- "visible" to the client) or the default portrait is missing, then the model
@@ -318,30 +337,18 @@ local function setAnimatedPortraitTexture(portraitTexture, unit)
       portraitTexture:Show()
       state.model:Hide()
    else
-      -- resetting unit and refreshing camera will visibly reset the portrait
+      -- resetting unit and refreshing camera will visibly reset the portrait:
+      -- only do it when absolutely necessary, and let UNIT_PORTRAIT_UPDATE
+      -- handle when the same unit requires a portrait-model update
       local prevGuid = state.guid
       local guid = UnitGUID(unit)
       if prevGuid and prevGuid == guid then
          return
       end
       state.guid = guid
-      local model = state.model
+      updateModelFromUnit(portraitTexture, unit, state)
       portraitTexture:Hide()
-      model.unit = unit
-      model:Show()
-      model:SetUnit(unit)
-      model:RefreshCamera()
-      model:SetPortraitZoom(1)
-      local animationPlaylist = ANIMATION_OVERRIDES[model:GetModelFileID()]
-      if animationPlaylist then
-         state.idlePlaylist = animationPlaylist
-         state.nextIdleVariation = rollIdleAnimationVariation(animationPlaylist)
-      else
-         state.idlePlaylist = nil
-      end
-      model:SetPaused(UnitIsDead(unit))
-      setModelVertexColor(model, portraitTexture:GetVertexColor())
-      setModelAlpha(model, portraitTexture:GetAlpha())
+      state.model:Show()
    end
 end
 
@@ -420,10 +427,11 @@ end
 function AnimatedDefaultPortraits_OnLoad(self)
    self:RegisterEvent("PLAYER_LOGIN")
    self:RegisterEvent("INSPECT_READY")
+   self:RegisterEvent("UNIT_PORTRAIT_UPDATE")
 end
 
 -- retexture the frames and enable the animated portraits
-function AnimatedDefaultPortraits_OnEvent(_, event)
+function AnimatedDefaultPortraits_OnEvent(_, event, ...)
    if event == "PLAYER_LOGIN" then
       enableAnimatedPortraits()
       registerPotentiallyBlockingModelFrame(CharacterModelFrame)
@@ -432,5 +440,12 @@ function AnimatedDefaultPortraits_OnEvent(_, event)
    elseif event == "INSPECT_READY" then
       -- inspect model frame is not available before an inspect
       registerPotentiallyBlockingModelFrame(InspectModelFrame)
+   elseif event == "UNIT_PORTRAIT_UPDATE" then
+      local unit = ...
+      for portraitTexture, state in pairs(models) do
+         if state.model.unit and state.model.unit == unit then
+            updateModelFromUnit(portraitTexture, unit, state)
+         end
+      end
    end
 end
