@@ -54,13 +54,16 @@ local function createModelTextures(model, portraitTexture)
 end
 
 local function setModelMaskCamera(mask)
-   mask:SetCameraPosition(0, 8.7 * mask:GetEffectiveScale(), 0)
+   -- at around camera distance 8, model 587744 stops rendering properly
+   -- at around camera distance 30, the model stops covering portrait models
+   -- that lean in (eg blood elf female sigh)
+   -- the lowest natural ui scale is 65% => 9 / 65% < 14 should be fine
+   mask:SetCameraPosition(0, 14 * mask:GetEffectiveScale(), 0)
 end
 
--- World/KhazModan/Ironforge/PassiveDoodads/GNOMEAREA/GnomeKingGear.M2
 -- any model would do that has a sufficiently round hole: this one is available
 -- even on vanilla clients
-local GNOME_KING_GEAR_MODEL = 203164
+local CIRCLE_MASK_MODEL = 587744 -- Interface/Buttons/TalkToMe_Gears.M2
 local function createCircularModelMask(model)
    -- this is a crazy idea... it is not possible to apply texture masks to
    -- models, but if a model BG is rendered below a model FG, but model BG is
@@ -76,12 +79,15 @@ local function createCircularModelMask(model)
    local mask = CreateFrame("Model", nil, model)
    mask:SetFrameStrata("BACKGROUND") -- below any portraits
    mask:SetAllPoints()
-   mask:SetModel(GNOME_KING_GEAR_MODEL)
+   mask:SetModel(CIRCLE_MASK_MODEL)
    mask:SetPaused(true)
    mask:MakeCurrentCameraCustom()
    mask:SetCameraFacing(math.pi / 2)
+   mask:SetPosition(0.1114, 0, -0.2839) -- center one of the gears
    -- camera/insets experimentally tweaked to ensure only the corners are masked
-   mask:SetViewInsets(-11, -11, -11, -11)
+   -- (insets allow zooming in on the model without camera-distance culling)
+   local digitalZoom = 132.813 * mask:GetSize() -- expect square size
+   mask:SetViewInsets(-digitalZoom, -digitalZoom, -digitalZoom, -digitalZoom)
    setModelMaskCamera(mask)
    -- unfortunately, camera position is not scale-aware: keep updating it
    mask:HookScript("OnSizeChanged", setModelMaskCamera)
