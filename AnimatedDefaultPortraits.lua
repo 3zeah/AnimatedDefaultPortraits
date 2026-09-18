@@ -300,6 +300,7 @@ local function updateModelFromUnit(portraitTexture, unit, state)
    if animationPlaylist then
       state.idlePlaylist = animationPlaylist
       state.nextIdleVariation = rollIdleAnimationVariation(animationPlaylist)
+      model:SetAnimation(0, rollIdleAnimationVariation(animationPlaylist))
    else
       state.idlePlaylist = nil
    end
