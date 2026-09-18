@@ -219,6 +219,13 @@ local function setAnimatedPortraitTexture(portraitTexture, unit)
       portraitTexture:Show()
       state.model:Hide()
    else
+      -- resetting unit and refreshing camera will visibly reset the portrait
+      local prevGuid = state.guid
+      local guid = UnitGUID(unit)
+      if prevGuid and prevGuid == guid then
+         return
+      end
+      state.guid = guid
       local model = state.model
       portraitTexture:Hide()
       model.unit = unit
