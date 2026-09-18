@@ -17,6 +17,30 @@ local CIRCLE_MASK_TEXTURES = {
    [130924] = true,  -- interface/characterframe/tempportraitalphamask.blp
    [3528314] = true, -- interface/masks/circlemask.blp
 }
+local UD_MALE_ANIMATION_PLAYLIST = {
+   -- 5% each observed with small experiment, but boosted here to account for
+   -- lack of secondary idle stance (character feels stiff)
+   [2] = 0.075,
+   [3] = 0.075,
+}
+-- the set of known model id:s where an idle variation is awkwardly off-camera,
+-- mapped to a table of whitelisted idle variations with probability of playing
+local ANIMATION_OVERRIDES = {
+   -- character/scourge/male/scourgemale.m2: leans away
+   [121768] = UD_MALE_ANIMATION_PLAYLIST,
+   -- character/skeleton/male/skeletonmale.m2: ^
+   [121942] = UD_MALE_ANIMATION_PLAYLIST,
+   -- creature/crackelf/crackelfmale.m2 ^
+   [123299] = UD_MALE_ANIMATION_PLAYLIST,
+   -- creature/carrionbird/carrionbird.m2: flies up
+   [123137] = {},
+   -- creature/carrionbirdoutland/carrionbirdoutland.m2: ^
+   [123148] = {},
+   -- creature/vulture/vulture.m2: ^
+   [1661349] = {},
+   -- creature/vulturemount/vulturemount.m2 ^
+   [1926505] = {},
+}
 
 -- state table of all animated model frames, indexed by each corresponding
 -- portrait texture that was replaced by that model
@@ -219,15 +243,49 @@ local function createModel(portraitTexture)
    return model
 end
 
+local function rollIdleAnimationVariation(playlist)
+   if next(playlist) == nil then
+      return 0
+   end
+   local rng = fastrandom()
+   local total_p = 0
+   for variation, p in pairs(playlist) do
+      total_p = total_p + p
+      if rng < total_p then
+         return variation
+      end
+   end
+   return 0
+end
+
 local function getOrCreateModelState(portraitTexture)
    local extant = models[portraitTexture]
    if extant then
       return extant
    else
       local model = createModel(portraitTexture)
-      local result = { animated = true, model = model, blockingModels = {} }
-      models[portraitTexture] = result
-      return result
+      local state = {
+         animated = true,
+         model = model,
+         blockingModels = {},
+         idlePlaylist = nil,
+         nextIdleVariation = nil,
+      }
+      model:SetScript("OnAnimFinished", function(self)
+         local playlist = state.idlePlaylist
+         if not playlist then
+            return
+         end
+         local nextVariation = state.nextIdleVariation
+         if not nextVariation then
+            return
+         end
+         local variation = nextVariation
+         state.nextIdleVariation = rollIdleAnimationVariation(playlist)
+         self:SetAnimation(0, variation)
+      end)
+      models[portraitTexture] = state
+      return state
    end
 end
 
@@ -274,6 +332,13 @@ local function setAnimatedPortraitTexture(portraitTexture, unit)
       model:SetUnit(unit)
       model:RefreshCamera()
       model:SetPortraitZoom(1)
+      local animationPlaylist = ANIMATION_OVERRIDES[model:GetModelFileID()]
+      if animationPlaylist then
+         state.idlePlaylist = animationPlaylist
+         state.nextIdleVariation = rollIdleAnimationVariation(animationPlaylist)
+      else
+         state.idlePlaylist = nil
+      end
       model:SetPaused(UnitIsDead(unit))
       setModelVertexColor(model, portraitTexture:GetVertexColor())
       setModelAlpha(model, portraitTexture:GetAlpha())
