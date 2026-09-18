@@ -8,21 +8,10 @@ local MODEL_LIGHT = {
    diffuseIntensity = 10 / 6,
    diffuseColor = CreateColor(1, 1, 1),
 }
--- set of portraits to animate along with associated configuration
-local PORTRAITS_TO_ANIMATE = {
-   [PlayerPortrait] = {
-      -- margins of the model frame wrt the default portrait texture
-      -- (these are tweaked top make the model frame as small as possible
-      -- without leaving gaps under the unit frame, which makes it easier to
-      -- circle-mask the corners of the model frame)
-      margins = { right = 3, left = 4, top = 4, bottom = 3 }
-   },
-   [TargetFramePortrait] = {
-      margins = { right = 4, left = 3, top = 4, bottom = 3 },
-   },
-   [FocusFramePortrait] = {
-      margins = { right = 4, left = 3, top = 4, bottom = 3 }
-   },
+local PORTRAITS_NOT_TO_ANIMATE = {
+   [MicroButtonPortrait] = true,
+   [TargetFrameToTPortrait] = true,
+   [FocusFrameToTPortrait] = true,
 }
 local CIRCLE_MASK_TEXTURES = {
    [130924] = true,  -- interface/characterframe/tempportraitalphamask.blp
@@ -164,41 +153,40 @@ local function createCircularModelMask(model)
    mask:SetModelAlpha(0.01) -- compounds with frame alpha
 end
 
--- set the position and dimensions of the model frame to match the portrait
-local function positionModelFrame(model, portraitTexture, config)
-   local margins = config.margins
-   if not margins then
-      model:SetAllPoints(portraitTexture)
-   else
-      model:SetPoint(
-         "TOPRIGHT",
-         portraitTexture,
-         "TOPRIGHT",
-         -margins.right,
-         -margins.top
-      )
-      model:SetPoint(
-         "BOTTOMLEFT",
-         portraitTexture,
-         "BOTTOMLEFT",
-         margins.left,
-         margins.bottom
-      )
-      model:SetViewInsets(
-         -margins.left,
-         -margins.right,
-         -margins.top,
-         -margins.bottom
-      )
+local function setModelAlpha(model, a)
+   -- normally translucent models like ghost wolf have 1 alpha in portraits,
+   -- and thus we want "model alpha" to be equal to the new overall "alpha",
+   -- but additionally, because the alpha of the background texture is combined
+   -- with the model alpha, each alpha component is set lower
+   local alphaComponent = 1 - sqrt(1 - a)
+   model:SetAlpha(alphaComponent)
+   model:SetModelAlpha(alphaComponent)
+end
+
+local function setModelVertexColor(model, r, g, b, a)
+   model.colorOverlay:SetColorTexture(r, g, b)
+   if not a then
+      return
    end
+   setModelAlpha(model, a)
+end
+
+-- post-hook the portrait coloring to also color the model
+local function maintainModelColorOverlay(portraitTexture, model)
+   hooksecurefunc(portraitTexture, "SetVertexColor", function(_, ...)
+      setModelVertexColor(model, ...)
+   end)
+   hooksecurefunc(portraitTexture, "SetAlpha", function(_, ...)
+      setModelAlpha(model, ...)
+   end)
 end
 
 local UPDATE_PERIOD = 1 / 30
 -- create the animated model frame
-local function createModel(portraitTexture, config)
+local function createModel(portraitTexture)
    local textureFrame = portraitTexture:GetParent()
    local model = CreateFrame("PlayerModel", nil, textureFrame)
-   positionModelFrame(model, portraitTexture, config)
+   model:SetAllPoints(portraitTexture)
    model:SetFrameLevel(textureFrame:GetFrameLevel())
    model:SetLight(true, MODEL_LIGHT)
    -- because models may be hidden briefly by other model frames
@@ -227,33 +215,16 @@ local function createModel(portraitTexture, config)
    end)
    createModelTextures(model, portraitTexture)
    createCircularModelMask(model)
+   maintainModelColorOverlay(portraitTexture, model)
    return model
 end
 
-local function setModelAlpha(model, a)
-   -- normally translucent models like ghost wolf have 1 alpha in portraits,
-   -- and thus we want "model alpha" to be equal to the new overall "alpha",
-   -- but additionally, because the alpha of the background texture is combined
-   -- with the model alpha, each alpha component is set lower
-   local alphaComponent = 1 - sqrt(1 - a)
-   model:SetAlpha(alphaComponent)
-   model:SetModelAlpha(alphaComponent)
-end
-
-local function setModelVertexColor(model, r, g, b, a)
-   model.colorOverlay:SetColorTexture(r, g, b)
-   if not a then
-      return
-   end
-   setModelAlpha(model, a)
-end
-
-local function getOrCreateModelState(portraitTexture, config)
+local function getOrCreateModelState(portraitTexture)
    local extant = models[portraitTexture]
    if extant then
       return extant
    else
-      local model = createModel(portraitTexture, config)
+      local model = createModel(portraitTexture)
       local result = { animated = true, model = model, blockingModels = {} }
       models[portraitTexture] = result
       return result
@@ -265,11 +236,20 @@ end
 -- "visible" to the client) or the default portrait is missing, then the model
 -- will have no texture, so in that case we fall back to default portraits
 local function setAnimatedPortraitTexture(portraitTexture, unit)
-   local config = PORTRAITS_TO_ANIMATE[portraitTexture]
-   if not config then
+   if PORTRAITS_NOT_TO_ANIMATE[portraitTexture] then
       return
    end
-   local state = getOrCreateModelState(portraitTexture, config)
+   local w, h = portraitTexture:GetSize()
+   -- non-square portraits simply do not work with the model-masking hack, and
+   -- small portraits are not detailed enough to bother animating
+   -- (the specific value here, 35, comes from target-of-target being 35 but
+   -- party and pet frames being 37: the former should be disabled
+   -- stylistically, imo, but the latter not, and thus this is a decent guide)
+   -- (the only non-square portrait i am aware of is the micro button)
+   if w - h > 0.5 or w < 35.5 then
+      return
+   end
+   local state = getOrCreateModelState(portraitTexture)
    -- either show regular static portrait or replace it with animated model
    if not state.animated
        -- units not "visible" to the client cannot have their model loaded
@@ -300,29 +280,17 @@ local function setAnimatedPortraitTexture(portraitTexture, unit)
    end
 end
 
--- post-hook the portrait coloring to also color the model
-local function maintainModelColorOverlay(portraitTexture)
-   hooksecurefunc(portraitTexture, "SetVertexColor", function(self, ...)
-      local model = getOrCreateModelState(self).model
-      setModelVertexColor(model, ...)
-   end)
-   hooksecurefunc(portraitTexture, "SetAlpha", function(self, ...)
-      local model = getOrCreateModelState(self).model
-      setModelAlpha(model, ...)
-   end)
-end
-
 -- post-hook the global portrait texturing function with our animated variant
 local function enableAnimatedPortraits()
    hooksecurefunc("SetPortraitTexture", setAnimatedPortraitTexture)
-   for portrait, _ in pairs(PORTRAITS_TO_ANIMATE) do
-      maintainModelColorOverlay(portrait)
-   end
 end
 
 local function regionsIntersect(a, b)
    local aLeft, aBottom, aWidth, aHeight = a:GetScaledRect()
    local bLeft, bBottom, bWidth, bHeight = b:GetScaledRect()
+   if not aLeft or not bLeft then
+      return false
+   end
    return aLeft <= bLeft + bWidth and bLeft <= aLeft + aWidth
        and aBottom <= bBottom + bHeight and bBottom <= aBottom + aHeight
 end
