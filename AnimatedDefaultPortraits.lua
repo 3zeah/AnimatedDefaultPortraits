@@ -24,6 +24,10 @@ local PORTRAITS_TO_ANIMATE = {
       margins = { right = 4, left = 3, top = 4, bottom = 3 }
    },
 }
+local CIRCLE_MASK_TEXTURES = {
+   [130924] = true,  -- interface/characterframe/tempportraitalphamask.blp
+   [3528314] = true, -- interface/masks/circlemask.blp
+}
 
 -- state table of all animated model frames, indexed by each corresponding
 -- portrait texture that was replaced by that model
@@ -32,6 +36,22 @@ local models = {}
 -- are only hooked once (see function `registerPotentiallyBlockingModelFrame`)
 local potentiallyBlockingModelFrames = {}
 
+local function findCircleMaskTexture(texture)
+   local maskCount = texture:GetNumMaskTextures()
+   if maskCount == 0 then
+      return nil
+   end
+   for i = 1, maskCount do
+      local mask = texture:GetMaskTexture(i)
+      if CIRCLE_MASK_TEXTURES[mask:GetTexture()] then
+         return mask
+      end
+   end
+   return texture:GetMaskTexture(1)
+end
+
+-- interface/characterframe/tempportraitalphamask.blp
+local CIRCLE_MASK_TEXTURE = 130924
 -- sampled from actual blizzard portraits
 local PORTRAIT_BACKGROUND_COLOR = CreateColorFromBytes(0, 14, 33, 255)
 -- create the solid-color background texture and color overlay of the model
@@ -43,20 +63,58 @@ local function createModelTextures(model, portraitTexture)
       PORTRAIT_BACKGROUND_COLOR.b
    )
    bg:SetAllPoints(portraitTexture)
+
+   local portraitMask = findCircleMaskTexture(portraitTexture)
    local mask = model:CreateMaskTexture()
-   mask:SetAllPoints(portraitTexture)
-   mask:SetTexture(
-      [[Interface\CharacterFrame\TempPortraitAlphaMask]],
-      "CLAMPTOBLACKADDITIVE",
-      "CLAMPTOBLACKADDITIVE"
-   )
+   if portraitMask then
+      mask:SetAllPoints(portraitMask)
+      mask:SetTexture(portraitMask:GetTexture())
+   else
+      mask:SetAllPoints(portraitTexture)
+      mask:SetTexture(
+         CIRCLE_MASK_TEXTURE,
+         "CLAMPTOBLACKADDITIVE",
+         "CLAMPTOBLACKADDITIVE"
+      )
+   end
    bg:AddMaskTexture(mask)
 
    local colorOverlay = model:CreateTexture(nil, "OVERLAY")
    colorOverlay:SetAllPoints()
    colorOverlay:SetBlendMode("MOD")
    colorOverlay:SetColorTexture(1, 1, 1)
+
+   model.bg = bg
+   model.mask = mask
    model.colorOverlay = colorOverlay
+end
+
+-- insets allow zooming in on the model without culling the mask from camera
+-- distance being too low. additionally, insets are used to align the model
+-- mask with the original portrait-texture mask that it is replacing, since, in
+-- the blizzard ui, even portraits that are pre-masked may be cropped extra
+local function setModelMaskInsets(model, mask)
+   local digitalZoomFactor = 132.813
+   local size_this, _ = mask:GetSize() -- expect square size
+   -- also, set insets to align the model mask with the texture mask
+   local left_this, bottom_this = mask:GetLeft(), mask:GetBottom()
+   local left_that, bottom_that, width_that, height_that = model.mask:GetRect()
+   if not left_this or not left_that then
+      local inset = digitalZoomFactor * -size_this
+      mask:SetViewInsets(inset, inset, inset, inset)
+   else
+      -- assume everything is square, else view insets will not work anyway
+      local sizeInset = size_this - min(width_that, height_that)
+      local leftInset = left_that - left_this - sizeInset / 2
+      local bottomInset = bottom_that - bottom_this - sizeInset / 2
+      local baseInset = digitalZoomFactor * (sizeInset - size_this)
+      mask:SetViewInsets(
+         baseInset + leftInset,
+         baseInset,
+         baseInset,
+         baseInset + bottomInset
+      )
+   end
 end
 
 local function setModelMaskCamera(mask)
@@ -91,10 +149,13 @@ local function createCircularModelMask(model)
    mask:SetCameraFacing(math.pi / 2)
    mask:SetPosition(0.1114, 0, -0.2839) -- center one of the gears
    -- camera/insets experimentally tweaked to ensure only the corners are masked
-   -- (insets allow zooming in on the model without camera-distance culling)
-   local digitalZoom = 132.813 * mask:GetSize() -- expect square size
-   mask:SetViewInsets(-digitalZoom, -digitalZoom, -digitalZoom, -digitalZoom)
+   setModelMaskInsets(model, mask)
    setModelMaskCamera(mask)
+   -- at load time, not all portraits have masks available, but this depends on
+   -- those masks for alignment
+   mask:HookScript("OnShow", function(self)
+      setModelMaskInsets(model, self)
+   end)
    -- unfortunately, camera position is not scale-aware: keep updating it
    mask:HookScript("OnSizeChanged", setModelMaskCamera)
    -- culling behavior is optimized away if mask model is actually hidden:
