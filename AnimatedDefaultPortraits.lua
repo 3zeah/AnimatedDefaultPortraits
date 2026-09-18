@@ -32,10 +32,16 @@ local models = {}
 -- are only hooked once (see function `registerPotentiallyBlockingModelFrame`)
 local potentiallyBlockingModelFrames = {}
 
+-- sampled from actual blizzard portraits
+local PORTRAIT_BACKGROUND_COLOR = CreateColorFromBytes(0, 14, 33, 255)
 -- create the solid-color background texture and color overlay of the model
 local function createModelTextures(model, portraitTexture)
    local bg = model:CreateTexture(nil, "BACKGROUND")
-   bg:SetColorTexture(0, 0, 0)
+   bg:SetColorTexture(
+      PORTRAIT_BACKGROUND_COLOR.r,
+      PORTRAIT_BACKGROUND_COLOR.g,
+      PORTRAIT_BACKGROUND_COLOR.b
+   )
    bg:SetAllPoints(portraitTexture)
    local mask = model:CreateMaskTexture()
    mask:SetAllPoints(portraitTexture)
