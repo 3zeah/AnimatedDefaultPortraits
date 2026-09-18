@@ -68,7 +68,7 @@ local function setModelMaskCamera(mask)
 end
 
 -- any model would do that has a sufficiently round hole: this one is available
--- even on vanilla clients
+-- even on classic clients
 local CIRCLE_MASK_MODEL = 587744 -- Interface/Buttons/TalkToMe_Gears.M2
 local function createCircularModelMask(model)
    -- this is a crazy idea... it is not possible to apply texture masks to
