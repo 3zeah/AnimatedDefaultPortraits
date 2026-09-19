@@ -328,22 +328,25 @@ local function setAnimatedPortraitTexture(portraitTexture, unit)
       return
    end
    local state = getOrCreateModelState(portraitTexture)
+   -- (if the model is invisible, then the frame itself is dead, and we can no
+   -- longer rely on UNIT_PORTRAIT_UPDATE: it is imperative that we do not skip
+   -- any model updates, then, and hence `isVisible` is part of the skip eval)
+   local isVisible = state.model:IsVisible()
    -- either show regular static portrait or replace it with animated model
    if not state.animated
        -- units not "visible" to the client cannot have their model loaded
-       or not UnitIsVisible(unit)
+       or (isVisible and not UnitIsVisible(unit))
        -- back in original classic, at least, i observed missing portraits in
        -- some cases: preserve this behavior
-       or not portraitTexture:GetTexture() then
+       or (isVisible and not portraitTexture:GetTexture()) then
       portraitTexture:Show()
       state.model:Hide()
    else
       -- resetting unit and refreshing camera will visibly reset the portrait:
       -- only do it when absolutely necessary, and let UNIT_PORTRAIT_UPDATE
       -- handle when the same unit requires a portrait-model update
-      local prevGuid = state.guid
       local guid = UnitGUID(unit)
-      if prevGuid and prevGuid == guid then
+      if isVisible and state.guid and state.guid == guid then
          return
       end
       state.guid = guid
