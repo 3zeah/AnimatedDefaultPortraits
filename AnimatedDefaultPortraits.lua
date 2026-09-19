@@ -431,6 +431,7 @@ end
 function AnimatedDefaultPortraits_OnLoad(self)
    self:RegisterEvent("PLAYER_LOGIN")
    self:RegisterEvent("INSPECT_READY")
+   self:RegisterEvent("PORTRAITS_UPDATED")
    self:RegisterEvent("UNIT_PORTRAIT_UPDATE")
 end
 
@@ -444,6 +445,13 @@ function AnimatedDefaultPortraits_OnEvent(_, event, ...)
    elseif event == "INSPECT_READY" then
       -- inspect model frame is not available before an inspect
       registerPotentiallyBlockingModelFrame(InspectModelFrame)
+   elseif event == "PORTRAITS_UPDATED" then
+      for portraitTexture, state in pairs(models) do
+         local unit = state.model.unit
+         if unit then
+            updateModelFromUnit(portraitTexture, unit, state)
+         end
+      end
    elseif event == "UNIT_PORTRAIT_UPDATE" then
       local unit = ...
       for portraitTexture, state in pairs(models) do
