@@ -324,7 +324,7 @@ local function setAnimatedPortraitTexture(portraitTexture, unit)
    -- party and pet frames being 37: the former should be disabled
    -- stylistically, imo, but the latter not, and thus this is a decent guide)
    -- (the only non-square portrait i am aware of is the micro button)
-   if w - h > 0.5 or w < 35.5 then
+   if abs(w - h) > 0.5 or w < 35.5 then
       return
    end
    local state = getOrCreateModelState(portraitTexture)
