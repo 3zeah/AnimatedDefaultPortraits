@@ -97,8 +97,7 @@ local function createModelTextures(model, portraitTexture)
    colorOverlay:SetBlendMode("MOD")
    colorOverlay:SetColorTexture(1, 1, 1)
 
-   model.bg = bg
-   model.mask = mask
+   model.bgMask = mask
    model.colorOverlay = colorOverlay
 end
 
@@ -110,8 +109,8 @@ local function setModelMaskInsets(model, mask)
    local digitalZoomFactor = 132.813
    local size_this, _ = mask:GetSize() -- expect square size
    -- also, set insets to align the model mask with the texture mask
-   local left_this, bottom_this = mask:GetLeft(), mask:GetBottom()
-   local left_that, bottom_that, width_that, height_that = model.mask:GetRect()
+   local left_this, btm_this = mask:GetLeft(), mask:GetBottom()
+   local left_that, btm_that, width_that, height_that = model.bgMask:GetRect()
    if not left_this or not left_that then
       local inset = digitalZoomFactor * -size_this
       mask:SetViewInsets(inset, inset, inset, inset)
@@ -119,7 +118,7 @@ local function setModelMaskInsets(model, mask)
       -- assume everything is square, else view insets will not work anyway
       local sizeInset = size_this - min(width_that, height_that)
       local leftInset = left_that - left_this - sizeInset / 2
-      local bottomInset = bottom_that - bottom_this - sizeInset / 2
+      local bottomInset = btm_that - btm_this - sizeInset / 2
       local baseInset = digitalZoomFactor * (sizeInset - size_this)
       mask:SetViewInsets(
          baseInset + leftInset,
