@@ -83,7 +83,11 @@ local function createModelTextures(model, portraitTexture)
    local mask = model:CreateMaskTexture()
    if portraitMask then
       mask:SetAllPoints(portraitMask)
-      mask:SetTexture(portraitMask:GetTexture())
+      mask:SetTexture(
+         portraitMask:GetTexture(),
+         "CLAMPTOBLACKADDITIVE",
+         "CLAMPTOBLACKADDITIVE"
+      )
    else
       mask:SetAllPoints(portraitTexture)
       mask:SetTexture(
