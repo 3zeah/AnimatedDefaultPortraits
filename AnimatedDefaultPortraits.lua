@@ -68,9 +68,9 @@ local ANIMATION_OVERRIDES = {
    [123299] = UD_MALE_ANIMATION_PLAYLIST,
    -- creature/carrionbird/carrionbird.m2: flies up
    [123137] = {},
-   -- creature/carrionbirdoutland/carrionbirdoutland.m2: ^
+   -- creature/carrionbirdoutland/carrionbirdoutland.m2 ^
    [123148] = {},
-   -- creature/vulture/vulture.m2: ^
+   -- creature/vulture/vulture.m2 ^
    [1661349] = {},
    -- creature/vulturemount/vulturemount.m2 ^
    [1926505] = {},
