@@ -1,13 +1,15 @@
 -- experimentally evaluated and tweaked to make the models match the portraits
-local MODEL_LIGHT = {
-   omnidirectional = false,
-   -- (x+ is the back of the model, y+ the right-hand side, z+ the bottom)
-   point = CreateVector3D(-0.6, 0, -0.6),
-   ambientIntensity = 1 / 3,
-   ambientColor = CreateColor(1, 1, 1),
-   diffuseIntensity = 10 / 6,
-   diffuseColor = CreateColor(1, 1, 1),
-}
+local function createModelLight()
+   return {
+      omnidirectional = false,
+      -- (x+ is the back of the model, y+ the right-hand side, z+ the bottom)
+      point = CreateVector3D(-0.6, 0, -0.6),
+      ambientIntensity = 1 / 3,
+      ambientColor = CreateColor(1, 1, 1),
+      diffuseIntensity = 10 / 6,
+      diffuseColor = CreateColor(1, 1, 1),
+   }
+end
 local PORTRAITS_NOT_TO_ANIMATE = {
    [MicroButtonPortrait] = true,
    [TargetFrameToTPortrait] = true,
@@ -92,13 +94,8 @@ local function createModelTextures(model, portraitTexture)
    end
    bg:AddMaskTexture(mask)
 
-   local colorOverlay = model:CreateTexture(nil, "OVERLAY")
-   colorOverlay:SetAllPoints()
-   colorOverlay:SetBlendMode("MOD")
-   colorOverlay:SetColorTexture(1, 1, 1)
-
+   model.bg = bg
    model.bgMask = mask
-   model.colorOverlay = colorOverlay
 end
 
 -- insets allow zooming in on the model without culling the mask from camera
@@ -187,7 +184,11 @@ local function setModelAlpha(model, a)
 end
 
 local function setModelVertexColor(model, r, g, b, a)
-   model.colorOverlay:SetColorTexture(r, g, b)
+   local light = model.light
+   light.ambientColor = CreateColor(r, g, b)
+   light.diffuseColor = CreateColor(r, g, b)
+   model:SetLight(true, light)
+   model.bg:SetVertexColor(r, g, b)
    if not a then
       return
    end
@@ -211,7 +212,9 @@ local function createModel(portraitTexture)
    local model = CreateFrame("PlayerModel", nil, textureFrame)
    model:SetAllPoints(portraitTexture)
    model:SetFrameLevel(textureFrame:GetFrameLevel())
-   model:SetLight(true, MODEL_LIGHT)
+   local light = createModelLight()
+   model:SetLight(true, light)
+   model.light = light
    -- because models may be hidden briefly by other model frames
    model:SetKeepModelOnHide(true)
    -- this used to be required in old client, but maybe not anymore, but does
