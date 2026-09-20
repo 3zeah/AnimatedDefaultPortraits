@@ -307,8 +307,8 @@ local function getOrCreateModelState(portraitTexture)
    local w, h = portraitTexture:GetSize()
    -- non-square portraits simply do not work with the model-masking hack, and
    -- small portraits are not detailed enough to bother animating
-   -- (the specific value here, 35, comes from target-of-target being 35 but
-   -- party and pet frames being 37: the former should be disabled
+   -- (the specific value here, 35, comes from target-of-target being 35 in
+   -- classic, but party and pet frames being 37: the former should be disabled
    -- stylistically, imo, but the latter not, and thus this is a decent guide)
    -- (the only non-square portrait i am aware of is the micro button)
    if abs(w - h) > 0.5 or w < 35.5 then
