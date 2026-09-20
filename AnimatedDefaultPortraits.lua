@@ -32,19 +32,20 @@ local function createModelLight()
       }
    end
 end
-local PORTRAITS_NOT_TO_ANIMATE
-if IS_CLASSIC_UI then
-   PORTRAITS_NOT_TO_ANIMATE = {
-      [MicroButtonPortrait] = true,
-      [TargetFrameToTPortrait] = true,
-      [FocusFrameToTPortrait] = true,
-   }
-else
-   PORTRAITS_NOT_TO_ANIMATE = {
-      [CharacterMicroButton.Portrait] = true,
-      [TargetFrameToT.Portrait] = true,
-      [FocusFrameToT.Portrait] = true,
-   }
+local function getPortraitsNotToAnimate()
+   if IS_CLASSIC_UI then
+      return {
+         [MicroButtonPortrait] = true,
+         [TargetFrameToTPortrait] = true,
+         [FocusFrameToTPortrait] = true,
+      }
+   else
+      return {
+         [CharacterMicroButton.Portrait] = true,
+         [TargetFrameToT.Portrait] = true,
+         [FocusFrameToT.Portrait] = true,
+      }
+   end
 end
 local CIRCLE_MASK_TEXTURES = {
    [130924] = true,  -- interface/characterframe/tempportraitalphamask.blp
@@ -78,6 +79,8 @@ local ANIMATION_OVERRIDES = {
 -- state table of all animated model frames, indexed by each corresponding
 -- portrait texture that was replaced by that model
 local models = {}
+-- blacklist
+local portraitsNotToAnimate = getPortraitsNotToAnimate()
 -- state set of all registered potentially-blocking model frames, such that they
 -- are only hooked once (see function `registerPotentiallyBlockingModelFrame`)
 local potentiallyBlockingModelFrames = {}
@@ -299,31 +302,42 @@ local function getOrCreateModelState(portraitTexture)
    local extant = models[portraitTexture]
    if extant then
       return extant
-   else
-      local model = createModel(portraitTexture)
-      local state = {
-         animated = true,
-         model = model,
-         blockingModels = {},
-         idlePlaylist = nil,
-         nextIdleVariation = nil,
-      }
-      model:SetScript("OnAnimFinished", function(self)
-         local playlist = state.idlePlaylist
-         if not playlist then
-            return
-         end
-         local nextVariation = state.nextIdleVariation
-         if not nextVariation then
-            return
-         end
-         local variation = nextVariation
-         state.nextIdleVariation = rollIdleAnimationVariation(playlist)
-         self:SetAnimation(0, variation)
-      end)
-      models[portraitTexture] = state
-      return state
    end
+
+   local w, h = portraitTexture:GetSize()
+   -- non-square portraits simply do not work with the model-masking hack, and
+   -- small portraits are not detailed enough to bother animating
+   -- (the specific value here, 35, comes from target-of-target being 35 but
+   -- party and pet frames being 37: the former should be disabled
+   -- stylistically, imo, but the latter not, and thus this is a decent guide)
+   -- (the only non-square portrait i am aware of is the micro button)
+   if abs(w - h) > 0.5 or w < 35.5 then
+      return nil
+   end
+
+   local model = createModel(portraitTexture)
+   local state = {
+      animated = true,
+      model = model,
+      blockingModels = {},
+      idlePlaylist = nil,
+      nextIdleVariation = nil,
+   }
+   model:SetScript("OnAnimFinished", function(self)
+      local playlist = state.idlePlaylist
+      if not playlist then
+         return
+      end
+      local nextVariation = state.nextIdleVariation
+      if not nextVariation then
+         return
+      end
+      local variation = nextVariation
+      state.nextIdleVariation = rollIdleAnimationVariation(playlist)
+      self:SetAnimation(0, variation)
+   end)
+   models[portraitTexture] = state
+   return state
 end
 
 -- either to a new unit, or to refresh the extant unit (eg, gear change)
@@ -351,20 +365,14 @@ end
 -- "visible" to the client) or the default portrait is missing, then the model
 -- will have no texture, so in that case we fall back to default portraits
 local function setAnimatedPortraitTexture(portraitTexture, unit)
-   if PORTRAITS_NOT_TO_ANIMATE[portraitTexture] then
-      return
-   end
-   local w, h = portraitTexture:GetSize()
-   -- non-square portraits simply do not work with the model-masking hack, and
-   -- small portraits are not detailed enough to bother animating
-   -- (the specific value here, 35, comes from target-of-target being 35 but
-   -- party and pet frames being 37: the former should be disabled
-   -- stylistically, imo, but the latter not, and thus this is a decent guide)
-   -- (the only non-square portrait i am aware of is the micro button)
-   if abs(w - h) > 0.5 or w < 35.5 then
+   if portraitsNotToAnimate[portraitTexture] then
       return
    end
    local state = getOrCreateModelState(portraitTexture)
+   if not state then
+      portraitsNotToAnimate[portraitTexture] = true
+      return
+   end
    -- resetting unit and refreshing camera will visibly reset the portrait:
    -- only do it when absolutely necessary, and let UNIT_PORTRAIT_UPDATE
    -- handle when the same unit requires a portrait-model update
