@@ -179,7 +179,7 @@ local function setModelAlpha(model, a)
    -- but additionally, because the alpha of the background texture is combined
    -- with the model alpha, each alpha component is set lower
    local alphaComponent = 1 - sqrt(1 - a)
-   model:SetAlpha(alphaComponent)
+   model.bg:SetAlpha(alphaComponent)
    model:SetModelAlpha(alphaComponent)
 end
 
