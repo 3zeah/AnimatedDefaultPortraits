@@ -41,6 +41,9 @@ if IS_CLASSIC_UI then
    }
 else
    PORTRAITS_NOT_TO_ANIMATE = {
+      [CharacterMicroButton.Portrait] = true,
+      [TargetFrameToT.Portrait] = true,
+      [FocusFrameToT.Portrait] = true,
    }
 end
 local CIRCLE_MASK_TEXTURES = {
