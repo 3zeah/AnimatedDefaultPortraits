@@ -10,11 +10,18 @@ local function createModelLight()
       diffuseColor = CreateColor(1, 1, 1),
    }
 end
-local PORTRAITS_NOT_TO_ANIMATE = {
-   [MicroButtonPortrait] = true,
-   [TargetFrameToTPortrait] = true,
-   [FocusFrameToTPortrait] = true,
-}
+local IS_CLASSIC_UI = PlayerFrameTexture
+local PORTRAITS_NOT_TO_ANIMATE
+if IS_CLASSIC_UI then
+   PORTRAITS_NOT_TO_ANIMATE = {
+      [MicroButtonPortrait] = true,
+      [TargetFrameToTPortrait] = true,
+      [FocusFrameToTPortrait] = true,
+   }
+else
+   PORTRAITS_NOT_TO_ANIMATE = {
+   }
+end
 local CIRCLE_MASK_TEXTURES = {
    [130924] = true,  -- interface/characterframe/tempportraitalphamask.blp
    [3528314] = true, -- interface/masks/circlemask.blp
@@ -445,12 +452,16 @@ end
 function AnimatedDefaultPortraits_OnEvent(_, event, ...)
    if event == "PLAYER_LOGIN" then
       enableAnimatedPortraits()
-      registerPotentiallyBlockingModelFrame(CharacterModelFrame)
-      registerPotentiallyBlockingModelFrame(DressUpModelFrame)
-      registerPotentiallyBlockingModelFrame(SideDressUpModel)
+      if IS_CLASSIC_UI then
+         registerPotentiallyBlockingModelFrame(CharacterModelFrame)
+         registerPotentiallyBlockingModelFrame(DressUpModelFrame)
+         registerPotentiallyBlockingModelFrame(SideDressUpModel)
+      end
    elseif event == "INSPECT_READY" then
-      -- inspect model frame is not available before an inspect
-      registerPotentiallyBlockingModelFrame(InspectModelFrame)
+      if IS_CLASSIC_UI then
+         -- inspect model frame is not available before an inspect
+         registerPotentiallyBlockingModelFrame(InspectModelFrame)
+      end
    elseif event == "PORTRAITS_UPDATED" then
       for portraitTexture, state in pairs(models) do
          local unit = state.model.unit

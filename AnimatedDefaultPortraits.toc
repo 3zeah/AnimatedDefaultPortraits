@@ -1,4 +1,4 @@
-## Interface: 20506
+## Interface: 20506 120100
 ## Title: Animated Default Portraits
 ## Notes: Animate the default unit-frame portraits with minimal side effects
 ## Version: 1.1.0
