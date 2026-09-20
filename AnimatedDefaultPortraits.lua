@@ -1,16 +1,37 @@
+local function isClassicClient()
+   return WOW_PROJECT_ID == WOW_PROJECT_CLASSIC
+       or WOW_PROJECT_ID == WOW_PROJECT_BURNING_CRUSADE_CLASSIC
+       or WOW_PROJECT_ID == WOW_PROJECT_WRATH_CLASSIC
+       or WOW_PROJECT_ID == WOW_PROJECT_CATACLYSM_CLASSIC
+       or WOW_PROJECT_ID == WOW_PROJECT_MISTS_CLASSIC
+end
+local IS_CLASSIC_CLIENT = isClassicClient()
+local IS_CLASSIC_UI = PlayerFrameTexture
+
 -- experimentally evaluated and tweaked to make the models match the portraits
 local function createModelLight()
-   return {
-      omnidirectional = false,
-      -- (x+ is the back of the model, y+ the right-hand side, z+ the bottom)
-      point = CreateVector3D(-0.6, 0, -0.6),
-      ambientIntensity = 1 / 3,
-      ambientColor = CreateColor(1, 1, 1),
-      diffuseIntensity = 10 / 6,
-      diffuseColor = CreateColor(1, 1, 1),
-   }
+   if IS_CLASSIC_CLIENT then
+      return {
+         omnidirectional = false,
+         -- (x+ is the back of the model, y+ the right-hand side, z+ the bottom)
+         point = CreateVector3D(-0.6, 0, -0.6),
+         ambientIntensity = 1 / 3,
+         ambientColor = CreateColor(1, 1, 1),
+         diffuseIntensity = 10 / 6,
+         diffuseColor = CreateColor(1, 1, 1),
+      }
+   else
+      return {
+         omnidirectional = false,
+         -- (x+ is the back of the model, y+ the right-hand side, z+ the bottom)
+         point = CreateVector3D(-0.6, 0, -0.6),
+         ambientIntensity = 0.45,
+         ambientColor = CreateColor(1, 1, 1),
+         diffuseIntensity = 1,
+         diffuseColor = CreateColor(1, 1, 1),
+      }
+   end
 end
-local IS_CLASSIC_UI = PlayerFrameTexture
 local PORTRAITS_NOT_TO_ANIMATE
 if IS_CLASSIC_UI then
    PORTRAITS_NOT_TO_ANIMATE = {
