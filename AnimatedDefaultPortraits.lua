@@ -57,6 +57,7 @@ local UD_MALE_ANIMATION_PLAYLIST = {
    [2] = 0.075,
    [3] = 0.075,
 }
+local ZOMBIE_ANIMATION_PLAYLIST = { [2] = 1 / 3 }
 -- the set of known model id:s where an idle variation is awkwardly off-camera,
 -- mapped to a table of whitelisted idle variations with probability of playing
 local ANIMATION_OVERRIDES = {
@@ -66,6 +67,8 @@ local ANIMATION_OVERRIDES = {
    [121942] = UD_MALE_ANIMATION_PLAYLIST,
    -- creature/crackelf/crackelfmale.m2 ^
    [123299] = UD_MALE_ANIMATION_PLAYLIST,
+   -- character/scourge/female/scourgefemale.m2: crouches
+   [121608] = { [2] = 0.1 }, -- 5% of 1 + 5% of 2 -> 10% of 2 (see ud male)
    -- creature/carrionbird/carrionbird.m2: flies up
    [123137] = {},
    -- creature/carrionbirdoutland/carrionbirdoutland.m2 ^
@@ -74,6 +77,12 @@ local ANIMATION_OVERRIDES = {
    [1661349] = {},
    -- creature/vulturemount/vulturemount.m2 ^
    [1926505] = {},
+   -- creature/zombie/zombie.m2: looks away
+   [126570] = ZOMBIE_ANIMATION_PLAYLIST,
+   -- creature/zombie/zombiearm.m2 ^
+   [126571] = ZOMBIE_ANIMATION_PLAYLIST,
+   -- creature/zombie2/zombie2.m2 ^
+   [1888300] = ZOMBIE_ANIMATION_PLAYLIST,
 }
 
 -- state table of all animated model frames, indexed by each corresponding
