@@ -222,7 +222,7 @@ local function createModel(portraitTexture)
    local textureFrame = portraitTexture:GetParent()
    local model = CreateFrame("PlayerModel", nil, textureFrame)
    model:SetAllPoints(portraitTexture)
-   model:SetFrameLevel(textureFrame:GetFrameLevel())
+   model:SetFrameLevel(max(0, textureFrame:GetFrameLevel() - 1))
    local light = createModelLight()
    model:SetLight(true, light)
    model.light = light
