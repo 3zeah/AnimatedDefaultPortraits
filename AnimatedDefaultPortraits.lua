@@ -307,6 +307,12 @@ local function setModelLayer(model, portraitTexture)
    elseif IS_CLASSIC_UI and portraitTexture == TradeFrameRecipientPortrait then
       model:SetFrameLevel(max(0, model:GetParent():GetFrameLevel() + 1))
       mirrorHigherTextureRegion(model, TradeRecipientPortraitFrame)
+   elseif IS_CLASSIC_UI and portraitTexture == MerchantFramePortrait then
+      model:SetFrameLevel(max(0, model:GetParent():GetFrameLevel() - 1))
+      mirrorHigherTextureRegion(model, MerchantFramePortraitFrame)
+   elseif IS_CLASSIC_UI and portraitTexture == GossipFramePortrait then
+      model:SetFrameLevel(max(0, model:GetParent():GetFrameLevel() - 1))
+      mirrorHigherTextureRegion(model, GossipFramePortraitFrame)
    else
       model:SetFrameLevel(max(0, model:GetParent():GetFrameLevel() - 1))
    end
