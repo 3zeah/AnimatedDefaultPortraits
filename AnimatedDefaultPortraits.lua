@@ -120,7 +120,12 @@ else
 end
 -- create the solid-color background texture and color overlay of the model
 local function createModelTextures(model, portraitTexture, disableMasking)
-   local bg = model:CreateTexture(nil, "BACKGROUND")
+   local layer, subLayer = model:GetModelDrawLayer()
+   -- it APPEARS the model is always drawn above the background at same level,
+   -- but if we ever cannot rely on that, note that the classic trade frame will
+   -- break: TradeFrameRecipientPortrait is at (OVERLAY, 1), but
+   -- TradeFrame.TopBorder is at (OVERLAY,0)
+   local bg = model:CreateTexture(nil, layer, nil, subLayer)
    bg:SetColorTexture(
       PORTRAIT_BACKGROUND_COLOR.r,
       PORTRAIT_BACKGROUND_COLOR.g,
@@ -331,35 +336,17 @@ local function maintainModelColorOverlay(portraitTexture, model)
    end)
 end
 
--- if the blizz portrait is sandwiched between other textures in the same frame,
--- then there is no way to sandwich the portrait model inbetween those textures,
--- because models are frames: just copy the overlay texture to the model frame
-local function mirrorHigherTextureRegion(model, texture)
-   local drawLayer, drawSubLevel = model:GetModelDrawLayer()
-   local textureCopy = model:CreateTexture(nil, drawLayer, nil, drawSubLevel + 1)
-   -- there are a million little settings to copy, but for now, these are needed
-   -- in the cases where this is actually necessary
-   textureCopy:SetAllPoints(texture)
-   textureCopy:SetTexture(texture:GetTexture())
-   textureCopy:SetTexCoord(texture:GetTexCoord())
-   model.alsoHide = texture
-end
-
-local function setModelLayer(model, portraitTexture)
-   if IS_CLASSIC_UI and portraitTexture == TradeFramePlayerPortrait then
-      model:SetFrameLevel(max(0, model:GetParent():GetFrameLevel() + 1))
-      mirrorHigherTextureRegion(model, TradeFramePortraitFrame)
-   elseif IS_CLASSIC_UI and portraitTexture == TradeFrameRecipientPortrait then
-      model:SetFrameLevel(max(0, model:GetParent():GetFrameLevel() + 1))
-      mirrorHigherTextureRegion(model, TradeRecipientPortraitFrame)
-   elseif IS_CLASSIC_UI and portraitTexture == MerchantFramePortrait then
-      model:SetFrameLevel(max(0, model:GetParent():GetFrameLevel() - 1))
-      mirrorHigherTextureRegion(model, MerchantFramePortraitFrame)
-   elseif IS_CLASSIC_UI and portraitTexture == GossipFramePortrait then
-      model:SetFrameLevel(max(0, model:GetParent():GetFrameLevel() - 1))
-      mirrorHigherTextureRegion(model, GossipFramePortraitFrame)
+local function lowerDrawLayer(level)
+   if level == "HIGHLIGHT" then
+      return "OVERLAY"
+   elseif level == "OVERLAY" then
+      return "ARTWORK"
+   elseif level == "ARTWORK" then
+      return "BORDER"
+   elseif level == "BORDER" then
+      return "BACKGROUND"
    else
-      model:SetFrameLevel(max(0, model:GetParent():GetFrameLevel() - 1))
+      return "BACKGROUND"
    end
 end
 
@@ -369,7 +356,17 @@ local function createModel(portraitTexture, disableMasking)
    local textureFrame = portraitTexture:GetParent()
    local model = CreateFrame("PlayerModel", nil, textureFrame)
    model:SetAllPoints(portraitTexture)
-   setModelLayer(model, portraitTexture)
+   model:SetUsingParentLevel(true)
+   -- there is no way to set draw sub-layer on models? (haha!!!!!): since the
+   -- model draw layer defaults to 0, it is only safe to place the model on the
+   -- same draw layer as the portrait if the portrait is on sub-level 0 or above
+   -- (the risk is greater that the model covers something than vice versa)
+   local drawLayer, subLevel = portraitTexture:GetDrawLayer()
+   if subLevel >= 0 then
+      model:SetModelDrawLayer(drawLayer)
+   else
+      model:SetModelDrawLayer(lowerDrawLayer(drawLayer))
+   end
 
    local light = createModelLight()
    model:SetLight(true, light)
@@ -430,15 +427,9 @@ local function setPortraitAnimated(portraitTexture, state, shouldAnimate)
    if shouldAnimate and not state.notAPortrait then
       portraitTexture:Hide()
       model:Show()
-      if model.alsoHide then
-         model.alsoHide:Hide()
-      end
    else
       portraitTexture:Show()
       model:Hide()
-      if model.alsoHide then
-         model.alsoHide:Show()
-      end
    end
 end
 
