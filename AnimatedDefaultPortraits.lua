@@ -160,13 +160,25 @@ local function setModelMaskInsets(model, mask)
    -- also, set insets to align the model mask with the texture mask
    local leftSrc, bottomSrc = mask:GetLeft(), mask:GetBottom()
    local leftDst, bottomDst, widthDst, heightDst = model.bgMask:GetRect()
-   -- NOTO BENE ON ALL THIS RANDOM FUCKING MATH (maybe correct..)
-   -- symmetrical insets (zooming in or out) generally must be defined
-   -- proportional to the frame size for the model to render identically at
-   -- different sizes (zoomed-in model = larger model wrt frame space).
-   -- the asymmetrical (margin) insets, however, are merely for shifting the
-   -- model according to coordinate differences in frame space, and are thus
-   -- not proportional either to the zoom factor or frame size
+   -- # NOTO BENE ON ALL THIS RANDOM FUCKING MATH
+   -- ## MODEL SIZE MANIPULATION
+   -- symmetrical insets are used to zoom in and out. in particular,
+   -- `SetViewInsets(x,x,x,x)` will for negative `x` zoom in by some margin.
+   -- the intuition for how much `x` will zoom is that `SetViewInsets(x,x,x,x)`,
+   -- given a frame of size `s`, is equivalent in zoom to a model frame of size
+   -- `s - 2 * x`. that is, negative view insets are effectively adding a margin
+   -- size to the model frame, in frame space units, but cropping the render to
+   -- the actual frame size, which remains smaller. a corollary of this is that,
+   -- because the effective render size of the model frame needs to be
+   -- proportional to the size of the visible model frame, `s - 2 * x` must be a
+   -- linear function on `s` => `x` must be a linear function on `s`. here,
+   -- `x = DIGITAL_ZOOM_FACTOR * s`
+   -- ## MODEL POSITION MANIPULATION
+   -- the asymmetrical (margin) insets are merely for shifting the model by
+   -- coordinate differences in frame space: `SetViewInsets(x,-x,0,0)` will
+   -- simply shift the model to the right by `x` frame-space units, equivalent
+   -- to adding `x` to the x of the model frame, wrt to the position of the
+   -- rasterized model
    if not leftSrc or not leftDst then
       local digitalZoomInset = DIGITAL_ZOOM_FACTOR * sizeSrc
       mask:SetViewInsets(
@@ -177,14 +189,13 @@ local function setModelMaskInsets(model, mask)
       )
    else
       -- the model mask must be square, because i do not know of a way to
-      -- stretch the model: target the minimum destination size when resizing,
-      -- since having a portrait be too big is worse than too small (bleeds
-      -- outside frames)
+      -- stretch the model only on one axis: target the minimum destination size
+      -- when resizing, since having a portrait be too big is worse than too
+      -- small (bleeds outside frames)
       local minSizeDst = min(widthDst, heightDst)
       local sizeInset = (sizeSrc - minSizeDst) / 2
       -- zoom in as if the frame were the size of the destination region, but
       -- leave margin accounting for the size of the actual source region
-      -- (this is the part that is probably not correct, by the way.. tired..)
       local digitalZoomInset = DIGITAL_ZOOM_FACTOR * minSizeDst + sizeInset
       -- a lot of terms here... given that the zoom inset effectively resizes
       -- the mask with respect to the center, the size inset must be subtracted
