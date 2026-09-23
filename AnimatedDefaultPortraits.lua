@@ -524,6 +524,10 @@ local function setAnimatedPortraitTexture(portraitTexture, unit, disableMasking)
    if portraitsNotToAnimate[portraitTexture] then
       return
    end
+   if portraitTexture == AchievementFrameComparisonHeaderPortrait then
+      portraitsNotToAnimate[AchievementFrameComparisonHeaderPortrait] = true
+      return
+   end
    local state = getOrCreateModelState(portraitTexture, disableMasking)
    if not state then
       portraitsNotToAnimate[portraitTexture] = true
