@@ -150,7 +150,7 @@ end
 -- mask with the original portrait-texture mask that it is replacing, since, in
 -- the blizzard ui, even portraits that are pre-masked may be cropped extra
 local function setModelMaskInsets(model, mask)
-   local digitalZoomFactor = 132.813
+   local digitalZoomFactor = 136.5
    local size_this, _ = mask:GetSize() -- expect square size
    -- also, set insets to align the model mask with the texture mask
    local left_this, btm_this = mask:GetLeft(), mask:GetBottom()
@@ -203,7 +203,7 @@ local function createCircularModelMask(model)
    mask:SetPaused(true)
    mask:MakeCurrentCameraCustom()
    mask:SetCameraFacing(math.pi / 2)
-   mask:SetPosition(0.1114, 0, -0.2839) -- center one of the gears
+   mask:SetPosition(0.1114, 0, -0.2837) -- center one of the gears
    -- camera/insets experimentally tweaked to ensure only the corners are masked
    setModelMaskInsets(model, mask)
    setModelMaskCamera(mask)
@@ -212,12 +212,15 @@ local function createCircularModelMask(model)
    mask:HookScript("OnShow", function(self)
       setModelMaskInsets(model, self)
    end)
-   -- unfortunately, camera position is not scale-aware: keep updating it
-   mask:HookScript("OnSizeChanged", setModelMaskCamera)
+   mask:HookScript("OnSizeChanged", function(self)
+      setModelMaskInsets(model, self)
+      setModelMaskCamera(self)
+   end)
    -- culling behavior is optimized away if mask model is actually hidden:
    -- make it pseudo-invisible
    mask:SetAlpha(0.01)      -- anything lower than 1% gets rounded to 0 = hide
    mask:SetModelAlpha(0.01) -- compounds with frame alpha
+   return mask
 end
 
 local function setModelAlpha(model, a)
@@ -313,7 +316,11 @@ local function createModel(portraitTexture)
       end
    end)
    createModelTextures(model, portraitTexture)
-   createCircularModelMask(model)
+   local mask1 = createCircularModelMask(model)
+   local mask2 = createCircularModelMask(model)
+   local baseRoll = -0.17
+   mask1:SetCameraRoll(baseRoll)
+   mask2:SetCameraRoll(baseRoll + math.pi / 12)
    maintainModelColorOverlay(portraitTexture, model)
    return model
 end
