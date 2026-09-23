@@ -252,13 +252,39 @@ local function maintainModelColorOverlay(portraitTexture, model)
    end)
 end
 
+-- if the blizz portrait is sandwiched between other textures in the same frame,
+-- then there is no way to sandwich the portrait model inbetween those textures,
+-- because models are frames: just copy the overlay texture to the model frame
+local function mirrorHigherTextureRegion(model, texture)
+   local drawLayer, drawSubLevel = model:GetModelDrawLayer()
+   local textureCopy = model:CreateTexture(nil, drawLayer, nil, drawSubLevel + 1)
+   -- there are a million little settings to copy, but for now, these are needed
+   -- in the cases where this is actually necessary
+   textureCopy:SetAllPoints(texture)
+   textureCopy:SetTexture(texture:GetTexture())
+   textureCopy:SetTexCoord(texture:GetTexCoord())
+end
+
+local function setModelLayer(model, portraitTexture)
+   if IS_CLASSIC_UI and portraitTexture == TradeFramePlayerPortrait then
+      model:SetFrameLevel(max(0, model:GetParent():GetFrameLevel() + 1))
+      mirrorHigherTextureRegion(model, TradeFramePortraitFrame)
+   elseif IS_CLASSIC_UI and portraitTexture == TradeFrameRecipientPortrait then
+      model:SetFrameLevel(max(0, model:GetParent():GetFrameLevel() + 1))
+      mirrorHigherTextureRegion(model, TradeRecipientPortraitFrame)
+   else
+      model:SetFrameLevel(max(0, model:GetParent():GetFrameLevel() - 1))
+   end
+end
+
 local UPDATE_PERIOD = 1 / 30
 -- create the animated model frame
 local function createModel(portraitTexture)
    local textureFrame = portraitTexture:GetParent()
    local model = CreateFrame("PlayerModel", nil, textureFrame)
    model:SetAllPoints(portraitTexture)
-   model:SetFrameLevel(max(0, textureFrame:GetFrameLevel() - 1))
+   setModelLayer(model, portraitTexture)
+
    local light = createModelLight()
    model:SetLight(true, light)
    model.light = light
