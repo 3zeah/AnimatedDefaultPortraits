@@ -154,7 +154,15 @@ end
 -- distance being too low. additionally, insets are used to align the model
 -- mask with the original portrait-texture mask that it is replacing, since, in
 -- the blizzard ui, even portraits that are pre-masked may be cropped extra
-local DIGITAL_ZOOM_FACTOR = -136.5
+local DIGITAL_ZOOM_FACTOR
+if IS_CLASSIC_CLIENT then
+   -- do not ask me why even this apparently differs between classic and
+   -- mainline, but with the portrait background color subtly differing and the
+   -- model-frame lighting values being different as well, i am not surprised
+   DIGITAL_ZOOM_FACTOR = -136.5
+else
+   DIGITAL_ZOOM_FACTOR = -130
+end
 local function setModelMaskInsets(model, mask)
    local sizeSrc, _ = mask:GetSize() -- expect square size
    -- also, set insets to align the model mask with the texture mask
