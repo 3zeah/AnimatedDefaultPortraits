@@ -154,26 +154,53 @@ end
 -- distance being too low. additionally, insets are used to align the model
 -- mask with the original portrait-texture mask that it is replacing, since, in
 -- the blizzard ui, even portraits that are pre-masked may be cropped extra
+local DIGITAL_ZOOM_FACTOR = -136.5
 local function setModelMaskInsets(model, mask)
-   local digitalZoomFactor = 136.5
-   local size_this, _ = mask:GetSize() -- expect square size
+   local sizeSrc, _ = mask:GetSize() -- expect square size
    -- also, set insets to align the model mask with the texture mask
-   local left_this, btm_this = mask:GetLeft(), mask:GetBottom()
-   local left_that, btm_that, width_that, height_that = model.bgMask:GetRect()
-   if not left_this or not left_that then
-      local inset = digitalZoomFactor * -size_this
-      mask:SetViewInsets(inset, inset, inset, inset)
-   else
-      -- assume everything is square, else view insets will not work anyway
-      local sizeInset = size_this - min(width_that, height_that)
-      local leftInset = left_that - left_this - sizeInset / 2
-      local bottomInset = btm_that - btm_this - sizeInset / 2
-      local baseInset = digitalZoomFactor * (sizeInset - size_this)
+   local leftSrc, bottomSrc = mask:GetLeft(), mask:GetBottom()
+   local leftDst, bottomDst, widthDst, heightDst = model.bgMask:GetRect()
+   -- NOTO BENE ON ALL THIS RANDOM FUCKING MATH (maybe correct..)
+   -- symmetrical insets (zooming in or out) generally must be defined
+   -- proportional to the frame size for the model to render identically at
+   -- different sizes (zoomed-in model = larger model wrt frame space).
+   -- the asymmetrical (margin) insets, however, are merely for shifting the
+   -- model according to coordinate differences in frame space, and are thus
+   -- not proportional either to the zoom factor or frame size
+   if not leftSrc or not leftDst then
+      local digitalZoomInset = DIGITAL_ZOOM_FACTOR * sizeSrc
       mask:SetViewInsets(
-         baseInset + leftInset,
-         baseInset,
-         baseInset,
-         baseInset + bottomInset
+         digitalZoomInset,
+         digitalZoomInset,
+         digitalZoomInset,
+         digitalZoomInset
+      )
+   else
+      -- the model mask must be square, because i do not know of a way to
+      -- stretch the model: target the minimum destination size when resizing,
+      -- since having a portrait be too big is worse than too small (bleeds
+      -- outside frames)
+      local minSizeDst = min(widthDst, heightDst)
+      local sizeInset = (sizeSrc - minSizeDst) / 2
+      -- zoom in as if the frame were the size of the destination region, but
+      -- leave margin accounting for the size of the actual source region
+      -- (this is the part that is probably not correct, by the way.. tired..)
+      local digitalZoomInset = DIGITAL_ZOOM_FACTOR * minSizeDst + sizeInset
+      -- a lot of terms here... given that the zoom inset effectively resizes
+      -- the mask with respect to the center, the size inset must be subtracted
+      -- from the effective margin, lest the size inset effectively be applied
+      -- twice. additionally, because the destination region is treated as
+      -- square, half the real-to-square size difference must be added to center
+      -- the destination square within its potentially larger real region
+      local leftMargin = (leftDst - leftSrc) - sizeInset
+          + (widthDst - minSizeDst) / 2
+      local bottomMargin = (bottomDst - bottomSrc) - sizeInset
+          + (heightDst - minSizeDst) / 2
+      mask:SetViewInsets(
+         digitalZoomInset + leftMargin,
+         digitalZoomInset - leftMargin,
+         digitalZoomInset - bottomMargin,
+         digitalZoomInset + bottomMargin
       )
    end
 end
