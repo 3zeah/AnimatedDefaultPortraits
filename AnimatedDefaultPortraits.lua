@@ -118,7 +118,7 @@ else
    PORTRAIT_BACKGROUND_COLOR = CreateColorFromBytes(4, 12, 31, 255)
 end
 -- create the solid-color background texture and color overlay of the model
-local function createModelTextures(model, portraitTexture)
+local function createModelTextures(model, portraitTexture, disableMasking)
    local bg = model:CreateTexture(nil, "BACKGROUND")
    bg:SetColorTexture(
       PORTRAIT_BACKGROUND_COLOR.r,
@@ -127,27 +127,32 @@ local function createModelTextures(model, portraitTexture)
    )
    bg:SetAllPoints(portraitTexture)
 
-   local portraitMask = findCircleMaskTexture(portraitTexture)
-   local mask = model:CreateMaskTexture()
-   if portraitMask then
-      mask:SetAllPoints(portraitMask)
-      mask:SetTexture(
-         portraitMask:GetTexture(),
-         "CLAMPTOBLACKADDITIVE",
-         "CLAMPTOBLACKADDITIVE"
-      )
-   else
+   if not disableMasking then
+      local mask = model:CreateMaskTexture()
       mask:SetAllPoints(portraitTexture)
       mask:SetTexture(
          CIRCLE_MASK_TEXTURE,
          "CLAMPTOBLACKADDITIVE",
          "CLAMPTOBLACKADDITIVE"
       )
+      bg:AddMaskTexture(mask)
    end
-   bg:AddMaskTexture(mask)
+   -- there may also be a mask texture, even if portrait masking is disabled.
+   -- in retail, both masks are typically applied, eg for the target frame
+   local externalPortraitMask = findCircleMaskTexture(portraitTexture)
+   if externalPortraitMask then
+      local mask = model:CreateMaskTexture()
+      mask:SetAllPoints(externalPortraitMask)
+      mask:SetTexture(
+         externalPortraitMask:GetTexture(),
+         "CLAMPTOBLACKADDITIVE",
+         "CLAMPTOBLACKADDITIVE"
+      )
+      bg:AddMaskTexture(mask)
+      model.externalPortraitMask = mask
+   end
 
    model.bg = bg
-   model.bgMask = mask
 end
 
 -- insets allow zooming in on the model without culling the mask from camera
@@ -163,63 +168,82 @@ if IS_CLASSIC_CLIENT then
 else
    DIGITAL_ZOOM_FACTOR = -130
 end
+
+-- # NOTO BENE ON ALL THIS RANDOM FUCKING MATH
+-- ## MODEL SIZE MANIPULATION
+-- symmetrical insets are used to zoom in and out. in particular,
+-- `SetViewInsets(x,x,x,x)` will for negative `x` zoom in by some margin.
+-- the intuition for how much `x` will zoom is that `SetViewInsets(x,x,x,x)`,
+-- given a frame of size `s`, is equivalent in zoom to a model frame of size
+-- `s - 2 * x`. that is, negative view insets are effectively adding a margin
+-- size to the model frame, in frame space units, but cropping the render to
+-- the actual frame size, which remains smaller. a corollary of this is that,
+-- because the effective render size of the model frame needs to be
+-- proportional to the size of the visible model frame, `s - 2 * x` must be a
+-- linear function on `s` => `x` must be a linear function on `s`. here,
+-- `x = DIGITAL_ZOOM_FACTOR * s`
+-- ## MODEL POSITION MANIPULATION
+-- the asymmetrical (margin) insets are merely for shifting the model by
+-- coordinate differences in frame space: `SetViewInsets(x,-x,0,0)` will
+-- simply shift the model to the right by `x` frame-space units, equivalent
+-- to adding `x` to the x of the model frame, wrt to the position of the
+-- rasterized model
+local function tryToAlignModelMaskWithRegion(mask, region)
+   local leftSrc, bottomSrc, sizeSrc, _ = mask:GetRect() -- expect square size
+   -- but this is only possible if the positions have been initialized
+   if not leftSrc then
+      return false
+   end
+   local leftDst, bottomDst, widthDst, heightDst = region:GetRect()
+   if not leftDst then
+      return false
+   end
+   -- the model mask must be square, because i do not know of a way to
+   -- stretch the model only on one axis: target the minimum destination size
+   -- when resizing, since having a portrait be too big is worse than too
+   -- small (bleeds outside frames)
+   local minSizeDst = min(widthDst, heightDst)
+   local sizeInset = (sizeSrc - minSizeDst) / 2
+   -- zoom in as if the frame were the size of the destination region, but
+   -- leave margin accounting for the size of the actual source region
+   local digitalZoomInset = DIGITAL_ZOOM_FACTOR * minSizeDst + sizeInset
+   -- a lot of terms here... given that the zoom inset effectively resizes
+   -- the mask with respect to the center, the size inset must be subtracted
+   -- from the effective margin, lest the size inset effectively be applied
+   -- twice. additionally, because the destination region is treated as
+   -- square, half the real-to-square size difference must be added to center
+   -- the destination square within its potentially larger real region
+   local leftMargin = (leftDst - leftSrc) - sizeInset
+       + (widthDst - minSizeDst) / 2
+   local bottomMargin = (bottomDst - bottomSrc) - sizeInset
+       + (heightDst - minSizeDst) / 2
+   mask:SetViewInsets(
+      digitalZoomInset + leftMargin,
+      digitalZoomInset - leftMargin,
+      digitalZoomInset - bottomMargin,
+      digitalZoomInset + bottomMargin
+   )
+   return true
+end
+
 local function setModelMaskInsets(model, mask)
-   local sizeSrc, _ = mask:GetSize() -- expect square size
-   -- also, set insets to align the model mask with the texture mask
-   local leftSrc, bottomSrc = mask:GetLeft(), mask:GetBottom()
-   local leftDst, bottomDst, widthDst, heightDst = model.bgMask:GetRect()
-   -- # NOTO BENE ON ALL THIS RANDOM FUCKING MATH
-   -- ## MODEL SIZE MANIPULATION
-   -- symmetrical insets are used to zoom in and out. in particular,
-   -- `SetViewInsets(x,x,x,x)` will for negative `x` zoom in by some margin.
-   -- the intuition for how much `x` will zoom is that `SetViewInsets(x,x,x,x)`,
-   -- given a frame of size `s`, is equivalent in zoom to a model frame of size
-   -- `s - 2 * x`. that is, negative view insets are effectively adding a margin
-   -- size to the model frame, in frame space units, but cropping the render to
-   -- the actual frame size, which remains smaller. a corollary of this is that,
-   -- because the effective render size of the model frame needs to be
-   -- proportional to the size of the visible model frame, `s - 2 * x` must be a
-   -- linear function on `s` => `x` must be a linear function on `s`. here,
-   -- `x = DIGITAL_ZOOM_FACTOR * s`
-   -- ## MODEL POSITION MANIPULATION
-   -- the asymmetrical (margin) insets are merely for shifting the model by
-   -- coordinate differences in frame space: `SetViewInsets(x,-x,0,0)` will
-   -- simply shift the model to the right by `x` frame-space units, equivalent
-   -- to adding `x` to the x of the model frame, wrt to the position of the
-   -- rasterized model
-   if not leftSrc or not leftDst then
-      local digitalZoomInset = DIGITAL_ZOOM_FACTOR * sizeSrc
+   -- if there is a texture mask, the model mask should be aligned with it
+   local alignRegion = model.externalPortraitMask
+   local isAligned
+   if alignRegion then
+      isAligned = tryToAlignModelMaskWithRegion(mask, alignRegion)
+   else
+      isAligned = false
+   end
+   -- fallback is simply to align with the model frame itself
+   if not isAligned then
+      local frameSize, _ = mask:GetSize() -- expect square size
+      local digitalZoomInset = DIGITAL_ZOOM_FACTOR * frameSize
       mask:SetViewInsets(
          digitalZoomInset,
          digitalZoomInset,
          digitalZoomInset,
          digitalZoomInset
-      )
-   else
-      -- the model mask must be square, because i do not know of a way to
-      -- stretch the model only on one axis: target the minimum destination size
-      -- when resizing, since having a portrait be too big is worse than too
-      -- small (bleeds outside frames)
-      local minSizeDst = min(widthDst, heightDst)
-      local sizeInset = (sizeSrc - minSizeDst) / 2
-      -- zoom in as if the frame were the size of the destination region, but
-      -- leave margin accounting for the size of the actual source region
-      local digitalZoomInset = DIGITAL_ZOOM_FACTOR * minSizeDst + sizeInset
-      -- a lot of terms here... given that the zoom inset effectively resizes
-      -- the mask with respect to the center, the size inset must be subtracted
-      -- from the effective margin, lest the size inset effectively be applied
-      -- twice. additionally, because the destination region is treated as
-      -- square, half the real-to-square size difference must be added to center
-      -- the destination square within its potentially larger real region
-      local leftMargin = (leftDst - leftSrc) - sizeInset
-          + (widthDst - minSizeDst) / 2
-      local bottomMargin = (bottomDst - bottomSrc) - sizeInset
-          + (heightDst - minSizeDst) / 2
-      mask:SetViewInsets(
-         digitalZoomInset + leftMargin,
-         digitalZoomInset - leftMargin,
-         digitalZoomInset - bottomMargin,
-         digitalZoomInset + bottomMargin
       )
    end
 end
@@ -339,7 +363,7 @@ end
 
 local UPDATE_PERIOD = 1 / 30
 -- create the animated model frame
-local function createModel(portraitTexture)
+local function createModel(portraitTexture, disableMasking)
    local textureFrame = portraitTexture:GetParent()
    local model = CreateFrame("PlayerModel", nil, textureFrame)
    model:SetAllPoints(portraitTexture)
@@ -372,12 +396,14 @@ local function createModel(portraitTexture)
          self:SetPaused(UnitIsDead(self.unit))
       end
    end)
-   createModelTextures(model, portraitTexture)
-   local mask1 = createCircularModelMask(model)
-   local mask2 = createCircularModelMask(model)
-   local baseRoll = -0.17
-   mask1:SetCameraRoll(baseRoll)
-   mask2:SetCameraRoll(baseRoll + math.pi / 12)
+   createModelTextures(model, portraitTexture, disableMasking)
+   if not disableMasking or model.externalPortraitMask then
+      local mask1 = createCircularModelMask(model)
+      local mask2 = createCircularModelMask(model)
+      local baseRoll = -0.17
+      mask1:SetCameraRoll(baseRoll)
+      mask2:SetCameraRoll(baseRoll + math.pi / 12)
+   end
    maintainModelColorOverlay(portraitTexture, model)
    return model
 end
@@ -397,7 +423,7 @@ local function rollIdleAnimationVariation(playlist)
    return 0
 end
 
-local function getOrCreateModelState(portraitTexture)
+local function getOrCreateModelState(portraitTexture, disableMasking)
    local extant = models[portraitTexture]
    if extant then
       return extant
@@ -414,7 +440,7 @@ local function getOrCreateModelState(portraitTexture)
       return nil
    end
 
-   local model = createModel(portraitTexture)
+   local model = createModel(portraitTexture, disableMasking)
    local state = {
       animated = true,
       model = model,
@@ -463,11 +489,11 @@ end
 -- the default portrait otherwise. note that if the unit is not loaded (not
 -- "visible" to the client) or the default portrait is missing, then the model
 -- will have no texture, so in that case we fall back to default portraits
-local function setAnimatedPortraitTexture(portraitTexture, unit)
+local function setAnimatedPortraitTexture(portraitTexture, unit, disableMasking)
    if portraitsNotToAnimate[portraitTexture] then
       return
    end
-   local state = getOrCreateModelState(portraitTexture)
+   local state = getOrCreateModelState(portraitTexture, disableMasking)
    if not state then
       portraitsNotToAnimate[portraitTexture] = true
       return
