@@ -424,6 +424,23 @@ local function rollIdleAnimationVariation(playlist)
    return 0
 end
 
+local function setPortraitAnimated(portraitTexture, state, shouldAnimate)
+   local model = state.model
+   if shouldAnimate and not state.notAPortrait then
+      portraitTexture:Hide()
+      model:Show()
+      if model.alsoHide then
+         model.alsoHide:Hide()
+      end
+   else
+      portraitTexture:Show()
+      model:Hide()
+      if model.alsoHide then
+         model.alsoHide:Show()
+      end
+   end
+end
+
 local function getOrCreateModelState(portraitTexture, disableMasking)
    local extant = models[portraitTexture]
    if extant then
@@ -443,8 +460,9 @@ local function getOrCreateModelState(portraitTexture, disableMasking)
 
    local model = createModel(portraitTexture, disableMasking)
    local state = {
-      animated = true,
       model = model,
+      notAPortrait = false,
+      blocked = false,
       blockingModels = {},
       idlePlaylist = nil,
       nextIdleVariation = nil,
@@ -463,6 +481,17 @@ local function getOrCreateModelState(portraitTexture, disableMasking)
       self:SetAnimation(0, variation)
    end)
    models[portraitTexture] = state
+
+   local function temporarilyDisablePortrait(self)
+      setPortraitAnimated(self, state, false)
+      state.notAPortrait = true
+   end
+   -- overriding the texture of a portrait "disables" that portrait until next
+   -- `SetPortraitTexture`
+   hooksecurefunc(portraitTexture, "SetTexture", temporarilyDisablePortrait)
+   hooksecurefunc(portraitTexture, "SetAtlas", temporarilyDisablePortrait)
+   hooksecurefunc(portraitTexture, "SetColorTexture", temporarilyDisablePortrait)
+
    return state
 end
 
@@ -486,23 +515,6 @@ local function updateModelFromUnit(portraitTexture, unit, state)
    setModelAlpha(model, portraitTexture:GetAlpha())
 end
 
-local function setPortraitAnimated(portraitTexture, state, shouldAnimate)
-   local model = state.model
-   if shouldAnimate then
-      portraitTexture:Hide()
-      model:Show()
-      if model.alsoHide then
-         model.alsoHide:Hide()
-      end
-   else
-      portraitTexture:Show()
-      model:Hide()
-      if model.alsoHide then
-         model.alsoHide:Show()
-      end
-   end
-end
-
 -- update the portrait to the animated model if possible and desired, or to
 -- the default portrait otherwise. note that if the unit is not loaded (not
 -- "visible" to the client) or the default portrait is missing, then the model
@@ -516,6 +528,7 @@ local function setAnimatedPortraitTexture(portraitTexture, unit, disableMasking)
       portraitsNotToAnimate[portraitTexture] = true
       return
    end
+   state.notAPortrait = false
    -- resetting unit and refreshing camera will visibly reset the portrait:
    -- only do it when absolutely necessary, and let UNIT_PORTRAIT_UPDATE
    -- handle when the same unit requires a portrait-model update
@@ -528,7 +541,7 @@ local function setAnimatedPortraitTexture(portraitTexture, unit, disableMasking)
       updateModelFromUnit(portraitTexture, unit, state)
    end
    -- either show regular static portrait or replace it with animated model
-   local shouldAnimate = state.animated
+   local shouldAnimate = not state.blocked
        -- units not "visible" to the client cannot have their model loaded
        and UnitIsVisible(unit)
        -- back in original classic, at least, i observed missing portraits in
@@ -554,7 +567,7 @@ end
 
 local function blockAnimatedPortrait(portraitTexture, state, blockingModel)
    state.blockingModels[blockingModel] = true
-   state.animated = false
+   state.blocked = true
    state.model:Hide()
    portraitTexture:Show()
 end
@@ -562,7 +575,7 @@ end
 local function unblockAnimatedPortrait(portraitTexture, state, blockingModel)
    state.blockingModels[blockingModel] = nil
    if next(state.blockingModels) == nil then
-      state.animated = true
+      state.blocked = false
       portraitTexture:Hide()
       state.model:Show()
    end
