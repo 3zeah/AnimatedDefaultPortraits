@@ -480,15 +480,8 @@ local function registerPotentiallyBlockingModelFrame(frame)
    frame:HookScript("OnHide", unblockAnimatedPortraits)
 end
 
-function AnimatedDefaultPortraits_OnLoad(self)
-   self:RegisterEvent("PLAYER_LOGIN")
-   self:RegisterEvent("INSPECT_READY")
-   self:RegisterEvent("PORTRAITS_UPDATED")
-   self:RegisterEvent("UNIT_PORTRAIT_UPDATE")
-end
-
 -- retexture the frames and enable the animated portraits
-function AnimatedDefaultPortraits_OnEvent(_, event, ...)
+local function onEvent(_, event, ...)
    if event == "PLAYER_LOGIN" then
       enableAnimatedPortraits()
       if IS_CLASSIC_UI then
@@ -517,3 +510,15 @@ function AnimatedDefaultPortraits_OnEvent(_, event, ...)
       end
    end
 end
+
+local function init()
+   local f = CreateFrame("Frame")
+   f:Hide()
+   f:SetScript("OnEvent", onEvent)
+   f:RegisterEvent("PLAYER_LOGIN")
+   f:RegisterEvent("INSPECT_READY")
+   f:RegisterEvent("PORTRAITS_UPDATED")
+   f:RegisterEvent("UNIT_PORTRAIT_UPDATE")
+end
+
+init()
