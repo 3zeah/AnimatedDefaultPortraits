@@ -630,12 +630,13 @@ local function onEvent(_, event, ...)
          registerPotentiallyBlockingModelFrame(CharacterModelFrame)
          registerPotentiallyBlockingModelFrame(DressUpModelFrame)
          registerPotentiallyBlockingModelFrame(SideDressUpModel)
+      else
+         registerPotentiallyBlockingModelFrame(CharacterModelScene)
+         registerPotentiallyBlockingModelFrame(DressUpFrame.ModelScene)
       end
    elseif event == "INSPECT_READY" then
-      if IS_CLASSIC_UI then
-         -- inspect model frame is not available before an inspect
-         registerPotentiallyBlockingModelFrame(InspectModelFrame)
-      end
+      -- inspect model frame is not available before an inspect
+      registerPotentiallyBlockingModelFrame(InspectModelFrame)
    elseif event == "PORTRAITS_UPDATED" then
       for portraitTexture, state in pairs(models) do
          local unit = state.model.unit
