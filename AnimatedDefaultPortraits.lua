@@ -6,7 +6,6 @@ local function isClassicClient()
        or WOW_PROJECT_ID == WOW_PROJECT_MISTS_CLASSIC
 end
 local IS_CLASSIC_CLIENT = isClassicClient()
-local IS_CLASSIC_UI = PlayerFrameTexture
 
 -- experimentally evaluated and tweaked to make the models match the portraits
 local function createModelLight()
@@ -33,20 +32,29 @@ local function createModelLight()
    end
 end
 local function getPortraitsNotToAnimate()
-   if IS_CLASSIC_UI then
-      return {
-         [MicroButtonPortrait] = true,
-         [TargetFrameToTPortrait] = true,
-         [FocusFrameToTPortrait] = true,
-      }
-   else
-      return {
-         [CharacterMicroButton.Portrait] = true,
-         [PaperDollSidebarTab1.Icon] = true,
-         [TargetFrameToT.Portrait] = true,
-         [FocusFrameToT.Portrait] = true,
-      }
+   local result = {}
+   if MicroButtonPortrait then
+      result[MicroButtonPortrait] = true
    end
+   if CharacterMicroButton and CharacterMicroButton.Portrait then
+      result[CharacterMicroButton.Portrait] = true
+   end
+   if PaperDollSidebarTab1 and PaperDollSidebarTab1.Icon then
+      result[PaperDollSidebarTab1.Icon] = true
+   end
+   if TargetFrameToTPortrait then
+      result[TargetFrameToTPortrait] = true
+   end
+   if TargetFrameToT and TargetFrameToT.Portrait then
+      result[TargetFrameToT.Portrait] = true
+   end
+   if FocusFrameToTPortrait then
+      result[FocusFrameToTPortrait] = true
+   end
+   if FocusFrameToT and FocusFrameToT.Portrait then
+      result[FocusFrameToT.Portrait] = true
+   end
+   return result
 end
 local CIRCLE_MASK_TEXTURES = {
    [130924] = true,  -- interface/characterframe/tempportraitalphamask.blp
@@ -113,7 +121,9 @@ end
 local CIRCLE_MASK_TEXTURE = 130924
 -- sampled from actual blizzard portraits
 local PORTRAIT_BACKGROUND_COLOR
-if IS_CLASSIC_CLIENT then
+if WOW_PROJECT_ID == WOW_PROJECT_MISTS_CLASSIC then
+   PORTRAIT_BACKGROUND_COLOR = CreateColorFromBytes(13, 47, 74, 255)
+elseif IS_CLASSIC_CLIENT then
    PORTRAIT_BACKGROUND_COLOR = CreateColorFromBytes(0, 14, 33, 255)
 else
    PORTRAIT_BACKGROUND_COLOR = CreateColorFromBytes(4, 12, 31, 255)
@@ -166,7 +176,7 @@ end
 -- mask with the original portrait-texture mask that it is replacing, since, in
 -- the blizzard ui, even portraits that are pre-masked may be cropped extra
 local DIGITAL_ZOOM_FACTOR
-if IS_CLASSIC_CLIENT then
+if IS_CLASSIC_CLIENT and WOW_PROJECT_ID ~= WOW_PROJECT_MISTS_CLASSIC then
    -- do not ask me why even this apparently differs between classic and
    -- mainline, but with the portrait background color subtly differing and the
    -- model-frame lighting values being different as well, i am not surprised
@@ -608,6 +618,9 @@ end
 -- track model frames from blizzard ui and turn off animated portraits that
 -- are blocked by those model frames
 local function registerPotentiallyBlockingModelFrame(frame)
+   if not frame then
+      return
+   end
    if potentiallyBlockingModelFrames[frame] then
       return
    end
@@ -622,14 +635,11 @@ end
 local function onEvent(_, event, ...)
    if event == "PLAYER_LOGIN" then
       enableAnimatedPortraits()
-      if IS_CLASSIC_UI then
-         registerPotentiallyBlockingModelFrame(CharacterModelFrame)
-         registerPotentiallyBlockingModelFrame(DressUpModelFrame)
-         registerPotentiallyBlockingModelFrame(SideDressUpModel)
-      else
-         registerPotentiallyBlockingModelFrame(CharacterModelScene)
-         registerPotentiallyBlockingModelFrame(DressUpFrame.ModelScene)
-      end
+      registerPotentiallyBlockingModelFrame(CharacterModelFrame)
+      registerPotentiallyBlockingModelFrame(DressUpModelFrame)
+      registerPotentiallyBlockingModelFrame(SideDressUpModel)
+      registerPotentiallyBlockingModelFrame(CharacterModelScene)
+      registerPotentiallyBlockingModelFrame(DressUpFrame.ModelScene)
    elseif event == "INSPECT_READY" then
       -- inspect model frame is not available before an inspect
       registerPotentiallyBlockingModelFrame(InspectModelFrame)
