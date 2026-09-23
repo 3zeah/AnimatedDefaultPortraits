@@ -341,6 +341,7 @@ local function mirrorHigherTextureRegion(model, texture)
    textureCopy:SetAllPoints(texture)
    textureCopy:SetTexture(texture:GetTexture())
    textureCopy:SetTexCoord(texture:GetTexCoord())
+   model.alsoHide = texture
 end
 
 local function setModelLayer(model, portraitTexture)
@@ -485,6 +486,23 @@ local function updateModelFromUnit(portraitTexture, unit, state)
    setModelAlpha(model, portraitTexture:GetAlpha())
 end
 
+local function setPortraitAnimated(portraitTexture, state, shouldAnimate)
+   local model = state.model
+   if shouldAnimate then
+      portraitTexture:Hide()
+      model:Show()
+      if model.alsoHide then
+         model.alsoHide:Hide()
+      end
+   else
+      portraitTexture:Show()
+      model:Hide()
+      if model.alsoHide then
+         model.alsoHide:Show()
+      end
+   end
+end
+
 -- update the portrait to the animated model if possible and desired, or to
 -- the default portrait otherwise. note that if the unit is not loaded (not
 -- "visible" to the client) or the default portrait is missing, then the model
@@ -510,18 +528,13 @@ local function setAnimatedPortraitTexture(portraitTexture, unit, disableMasking)
       updateModelFromUnit(portraitTexture, unit, state)
    end
    -- either show regular static portrait or replace it with animated model
-   if not state.animated
+   local shouldAnimate = state.animated
        -- units not "visible" to the client cannot have their model loaded
-       or not UnitIsVisible(unit)
+       and UnitIsVisible(unit)
        -- back in original classic, at least, i observed missing portraits in
        -- some cases: preserve this behavior
-       or not portraitTexture:GetTexture() then
-      portraitTexture:Show()
-      state.model:Hide()
-   else
-      portraitTexture:Hide()
-      state.model:Show()
-   end
+       and portraitTexture:GetTexture()
+   setPortraitAnimated(portraitTexture, state, shouldAnimate)
 end
 
 -- post-hook the global portrait texturing function with our animated variant
