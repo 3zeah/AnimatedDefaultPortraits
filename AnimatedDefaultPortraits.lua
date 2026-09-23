@@ -42,6 +42,7 @@ local function getPortraitsNotToAnimate()
    else
       return {
          [CharacterMicroButton.Portrait] = true,
+         [PaperDollSidebarTab1.Icon] = true,
          [TargetFrameToT.Portrait] = true,
          [FocusFrameToT.Portrait] = true,
       }
