@@ -121,11 +121,13 @@ end
 local CIRCLE_MASK_TEXTURE = 130924
 -- sampled from actual blizzard portraits
 local PORTRAIT_BACKGROUND_COLOR
-if WOW_PROJECT_ID == WOW_PROJECT_MISTS_CLASSIC then
-   PORTRAIT_BACKGROUND_COLOR = CreateColorFromBytes(13, 47, 74, 255)
-elseif IS_CLASSIC_CLIENT then
+if WOW_PROJECT_ID == WOW_PROJECT_CLASSIC
+    or WOW_PROJECT_ID == WOW_PROJECT_BURNING_CRUSADE_CLASSIC
+    or WOW_PROJECT_ID == WOW_PROJECT_WRATH_CLASSIC then -- classic classic
    PORTRAIT_BACKGROUND_COLOR = CreateColorFromBytes(0, 14, 33, 255)
-else
+elseif IS_CLASSIC_CLIENT then                           -- changed in cata
+   PORTRAIT_BACKGROUND_COLOR = CreateColorFromBytes(13, 47, 74, 255)
+else                                                    -- retail
    PORTRAIT_BACKGROUND_COLOR = CreateColorFromBytes(4, 12, 31, 255)
 end
 -- create the solid-color background texture and color overlay of the model
@@ -176,6 +178,7 @@ end
 -- mask with the original portrait-texture mask that it is replacing, since, in
 -- the blizzard ui, even portraits that are pre-masked may be cropped extra
 local DIGITAL_ZOOM_FACTOR
+-- untested: wrath and cata; there is no way of verifying this through videos
 if IS_CLASSIC_CLIENT and WOW_PROJECT_ID ~= WOW_PROJECT_MISTS_CLASSIC then
    -- do not ask me why even this apparently differs between classic and
    -- mainline, but with the portrait background color subtly differing and the
