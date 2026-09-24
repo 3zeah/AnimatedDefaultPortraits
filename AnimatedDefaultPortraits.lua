@@ -449,6 +449,9 @@ local function getOrCreateModelState(portraitTexture, disableMasking)
       return extant
    end
 
+   if portraitTexture == AchievementFrameComparisonHeaderPortrait then
+      return nil
+   end
    local w, h = portraitTexture:GetSize()
    -- non-square portraits simply do not work with the model-masking hack, and
    -- small portraits are not detailed enough to bother animating
@@ -523,10 +526,6 @@ end
 -- will have no texture, so in that case we fall back to default portraits
 local function setAnimatedPortraitTexture(portraitTexture, unit, disableMasking)
    if portraitsNotToAnimate[portraitTexture] then
-      return
-   end
-   if portraitTexture == AchievementFrameComparisonHeaderPortrait then
-      portraitsNotToAnimate[AchievementFrameComparisonHeaderPortrait] = true
       return
    end
    local state = getOrCreateModelState(portraitTexture, disableMasking)
