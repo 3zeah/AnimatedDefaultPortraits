@@ -363,6 +363,21 @@ local function lowerDrawLayer(level)
    end
 end
 
+-- call whenever an independent variable is updated, eg `state.model.unit`
+local function refreshWhetherAnimated(portraitTexture, model)
+   local shouldAnimate = not model.blocked
+       and portraitTexture:GetTexture() == "RTPortrait1"
+       -- units not "visible" to the client cannot have their model loaded
+       and UnitIsVisible(model.unit)
+   if shouldAnimate then
+      portraitTexture:Hide()
+      model:Show()
+   else
+      portraitTexture:Show()
+      model:Hide()
+   end
+end
+
 local UPDATE_PERIOD = 1 / 30
 -- create the animated model frame
 local function createModel(portraitTexture, disableMasking)
@@ -407,6 +422,8 @@ local function createModel(portraitTexture, disableMasking)
       if self.unit then
          self:SetPaused(UnitIsDead(self.unit))
       end
+      -- this is just defensive: we already try to refresh on `SetTexture` etc
+      refreshWhetherAnimated(portraitTexture, self)
       -- if using raid-style party frames, and then going into edit mode to
       -- turn raid-style off, the party frames will not have their model mask
       -- set properly, because the frame size will be incorrect during the
@@ -445,25 +462,6 @@ local function rollIdleAnimationVariation(playlist)
       end
    end
    return 0
-end
-
--- call whenever an independent variable is updated, eg `state.notAPortrait`
-local function refreshWhetherAnimated(portraitTexture, state)
-   local model = state.model
-   local shouldAnimate = not state.notAPortrait
-       and not state.blocked
-       -- units not "visible" to the client cannot have their model loaded
-       and UnitIsVisible(model.unit)
-       -- back in original classic, at least, i observed missing portraits in
-       -- some cases: preserve this behavior
-       and portraitTexture:GetTexture()
-   if shouldAnimate then
-      portraitTexture:Hide()
-      model:Show()
-   else
-      portraitTexture:Show()
-      model:Hide()
-   end
 end
 
 local function getOrCreateModelState(portraitTexture, disableMasking)
@@ -510,15 +508,13 @@ local function getOrCreateModelState(portraitTexture, disableMasking)
    end)
    models[portraitTexture] = state
 
-   local function temporarilyDisablePortrait(self)
-      state.notAPortrait = true
-      refreshWhetherAnimated(self, state)
+   -- `refreshWhetherAnimated` will see that texture is not set to portrait
+   local function disableAnimation(self)
+      refreshWhetherAnimated(self, model)
    end
-   -- overriding the texture of a portrait "disables" that portrait until next
-   -- `SetPortraitTexture`
-   hooksecurefunc(portraitTexture, "SetTexture", temporarilyDisablePortrait)
-   hooksecurefunc(portraitTexture, "SetAtlas", temporarilyDisablePortrait)
-   hooksecurefunc(portraitTexture, "SetColorTexture", temporarilyDisablePortrait)
+   hooksecurefunc(portraitTexture, "SetTexture", disableAnimation)
+   hooksecurefunc(portraitTexture, "SetAtlas", disableAnimation)
+   hooksecurefunc(portraitTexture, "SetColorTexture", disableAnimation)
 
    return state
 end
@@ -568,7 +564,7 @@ local function setAnimatedPortraitTexture(portraitTexture, unit, disableMasking)
       updateModelFromUnit(portraitTexture, unit, state)
    end
    state.notAPortrait = false
-   refreshWhetherAnimated(portraitTexture, state)
+   refreshWhetherAnimated(portraitTexture, state.model)
 end
 
 -- post-hook the global portrait texturing function with our animated variant
@@ -588,15 +584,15 @@ end
 
 local function blockAnimatedPortrait(portraitTexture, state, blockingModel)
    state.blockingModels[blockingModel] = true
-   state.blocked = true
-   refreshWhetherAnimated(portraitTexture, state)
+   state.model.blocked = true
+   refreshWhetherAnimated(portraitTexture, state.model)
 end
 
 local function unblockAnimatedPortrait(portraitTexture, state, blockingModel)
    state.blockingModels[blockingModel] = nil
    if next(state.blockingModels) == nil then
-      state.blocked = false
-      refreshWhetherAnimated(portraitTexture, state)
+      state.model.blocked = false
+      refreshWhetherAnimated(portraitTexture, state.model)
    end
 end
 
@@ -661,7 +657,7 @@ local function onEvent(_, event, ...)
          local unit = state.model.unit
          if unit then
             updateModelFromUnit(portraitTexture, unit, state)
-            refreshWhetherAnimated(portraitTexture, state)
+            refreshWhetherAnimated(portraitTexture, state.model)
          end
       end
    elseif event == "UNIT_PORTRAIT_UPDATE" then
@@ -669,7 +665,7 @@ local function onEvent(_, event, ...)
       for portraitTexture, state in pairs(models) do
          if state.model.unit and state.model.unit == unit then
             updateModelFromUnit(portraitTexture, unit, state)
-            refreshWhetherAnimated(portraitTexture, state)
+            refreshWhetherAnimated(portraitTexture, state.model)
          end
       end
    end
