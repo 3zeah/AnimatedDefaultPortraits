@@ -407,6 +407,16 @@ local function createModel(portraitTexture, disableMasking)
       if self.unit then
          self:SetPaused(UnitIsDead(self.unit))
       end
+      -- if using raid-style party frames, and then going into edit mode to
+      -- turn raid-style off, the party frames will not have their model mask
+      -- set properly, because the frame size will be incorrect during the
+      -- OnShow, and no OnSizeChanged will fire, either: blizz cannot be trusted
+      if self.mask1 then
+         setModelMaskInsets(self, self.mask1)
+      end
+      if self.mask2 then
+         setModelMaskInsets(self, self.mask2)
+      end
    end)
    createModelTextures(model, portraitTexture, disableMasking)
    if not disableMasking or model.externalPortraitMask then
@@ -415,6 +425,8 @@ local function createModel(portraitTexture, disableMasking)
       local baseRoll = -0.17
       mask1:SetCameraRoll(baseRoll)
       mask2:SetCameraRoll(baseRoll + math.pi / 12)
+      model.mask1 = mask1
+      model.mask2 = mask2
    end
    maintainModelColorOverlay(portraitTexture, model)
    return model
