@@ -211,11 +211,11 @@ local function tryToAlignModelMaskWithRegion(mask, region)
    local leftSrc, bottomSrc, sizeSrc, _ = mask:GetRect() -- expect square size
    -- but this is only possible if the positions have been initialized
    if not leftSrc then
-      return false
+      return nil
    end
    local leftDst, bottomDst, widthDst, heightDst = region:GetRect()
    if not leftDst then
-      return false
+      return nil
    end
    -- the model mask must be square, because i do not know of a way to
    -- stretch the model only on one axis: target the minimum destination size
@@ -236,35 +236,40 @@ local function tryToAlignModelMaskWithRegion(mask, region)
        + (widthDst - minSizeDst) / 2
    local bottomMargin = (bottomDst - bottomSrc) - sizeInset
        + (heightDst - minSizeDst) / 2
-   mask:SetViewInsets(
-      digitalZoomInset + leftMargin,
-      digitalZoomInset - leftMargin,
-      digitalZoomInset - bottomMargin,
-      digitalZoomInset + bottomMargin
-   )
-   return true
+   return
+       digitalZoomInset + leftMargin,
+       digitalZoomInset - leftMargin,
+       digitalZoomInset - bottomMargin,
+       digitalZoomInset + bottomMargin
 end
 
-local function setModelMaskInsets(model, mask)
+-- camera/insets experimentally tweaked to ensure only the corners are masked
+local function evalModelMaskInsets(model, mask)
    -- if there is a texture mask, the model mask should be aligned with it
    local alignRegion = model.externalPortraitMask
-   local isAligned
    if alignRegion then
-      isAligned = tryToAlignModelMaskWithRegion(mask, alignRegion)
-   else
-      isAligned = false
+      local left, right, top, bottom =
+          tryToAlignModelMaskWithRegion(mask, alignRegion)
+      if left then
+         return left, right, top, bottom
+      end
    end
    -- fallback is simply to align with the model frame itself
-   if not isAligned then
-      local frameSize, _ = mask:GetSize() -- expect square size
-      local digitalZoomInset = DIGITAL_ZOOM_FACTOR * frameSize
-      mask:SetViewInsets(
-         digitalZoomInset,
-         digitalZoomInset,
-         digitalZoomInset,
-         digitalZoomInset
-      )
+   local frameSize, _ = mask:GetSize() -- expect square size
+   local digitalZoomInset = DIGITAL_ZOOM_FACTOR * frameSize
+   return digitalZoomInset, digitalZoomInset, digitalZoomInset, digitalZoomInset
+end
+
+-- faster and more comfortable than setting the insets for each mask separately
+local function updateModelMaskInsets(model)
+   local mask1 = model.mask1
+   if not mask1 then
+      return
    end
+   -- all masks share the same region rect: eval insets only once
+   local left, right, top, bottom = evalModelMaskInsets(model, mask1)
+   mask1:SetViewInsets(left, right, top, bottom)
+   model.mask2:SetViewInsets(left, right, top, bottom)
 end
 
 local function setModelMaskCamera(mask)
@@ -298,16 +303,8 @@ local function createCircularModelMask(model)
    mask:MakeCurrentCameraCustom()
    mask:SetCameraFacing(math.pi / 2)
    mask:SetPosition(0.1114, 0, -0.2837) -- center one of the gears
-   -- camera/insets experimentally tweaked to ensure only the corners are masked
-   setModelMaskInsets(model, mask)
    setModelMaskCamera(mask)
-   -- at load time, not all portraits have masks available, but this depends on
-   -- those masks for alignment
-   mask:HookScript("OnShow", function(self)
-      setModelMaskInsets(model, self)
-   end)
    mask:HookScript("OnSizeChanged", function(self)
-      setModelMaskInsets(model, self)
       setModelMaskCamera(self)
    end)
    -- culling behavior is optimized away if mask model is actually hidden:
@@ -401,16 +398,21 @@ local function createModel(portraitTexture, disableMasking)
    model.light = light
    -- because models may be hidden briefly by other model frames
    model:SetKeepModelOnHide(true)
-   -- this used to be required in old client, but maybe not anymore, but does
-   -- not hurt: when the model is hidden and re-shown without setting a new unit
-   -- then this guards against the model frame resetting outside addon control
    model:HookScript("OnShow", function(self)
+      -- this used to be required in old client, but maybe not anymore, but does
+      -- not hurt: when the model is hidden and re-shown without setting a new
+      -- unit, then this guards against the model frame resetting outside addon
+      -- control
       self:SetPortraitZoom(1)
+      -- at load time, not all portraits have masks available, but the insets
+      -- depend on those masks for alignment
+      updateModelMaskInsets(self)
    end)
    -- camera position breaks when eg scale is changed
    model:HookScript("OnSizeChanged", function(self)
       self:RefreshCamera()
       self:SetPortraitZoom(1)
+      updateModelMaskInsets(self)
    end)
    local secondsSinceUpdate = 0
    model:HookScript("OnUpdate", function(self, elapsed)
@@ -428,17 +430,15 @@ local function createModel(portraitTexture, disableMasking)
       -- turn raid-style off, the party frames will not have their model mask
       -- set properly, because the frame size will be incorrect during the
       -- OnShow, and no OnSizeChanged will fire, either: blizz cannot be trusted
-      if self.mask1 then
-         setModelMaskInsets(self, self.mask1)
-      end
-      if self.mask2 then
-         setModelMaskInsets(self, self.mask2)
-      end
+      updateModelMaskInsets(self)
    end)
    createModelTextures(model, portraitTexture, disableMasking)
    if not disableMasking or model.externalPortraitMask then
       local mask1 = createCircularModelMask(model)
       local mask2 = createCircularModelMask(model)
+      local left, right, top, bottom = evalModelMaskInsets(model, mask1)
+      mask1:SetViewInsets(left, right, top, bottom)
+      mask2:SetViewInsets(left, right, top, bottom)
       local baseRoll = -0.17
       mask1:SetCameraRoll(baseRoll)
       mask2:SetCameraRoll(baseRoll + math.pi / 12)
