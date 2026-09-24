@@ -447,9 +447,17 @@ local function rollIdleAnimationVariation(playlist)
    return 0
 end
 
-local function setPortraitAnimated(portraitTexture, state, shouldAnimate)
+-- call whenever an independent variable is updated, eg `state.notAPortrait`
+local function refreshWhetherAnimated(portraitTexture, state)
    local model = state.model
-   if shouldAnimate and not state.notAPortrait then
+   local shouldAnimate = not state.notAPortrait
+       and not state.blocked
+       -- units not "visible" to the client cannot have their model loaded
+       and UnitIsVisible(model.unit)
+       -- back in original classic, at least, i observed missing portraits in
+       -- some cases: preserve this behavior
+       and portraitTexture:GetTexture()
+   if shouldAnimate then
       portraitTexture:Hide()
       model:Show()
    else
@@ -503,8 +511,8 @@ local function getOrCreateModelState(portraitTexture, disableMasking)
    models[portraitTexture] = state
 
    local function temporarilyDisablePortrait(self)
-      setPortraitAnimated(self, state, false)
       state.notAPortrait = true
+      refreshWhetherAnimated(self, state)
    end
    -- overriding the texture of a portrait "disables" that portrait until next
    -- `SetPortraitTexture`
@@ -548,7 +556,6 @@ local function setAnimatedPortraitTexture(portraitTexture, unit, disableMasking)
       portraitsNotToAnimate[portraitTexture] = true
       return
    end
-   state.notAPortrait = false
    -- resetting unit and refreshing camera will visibly reset the portrait:
    -- only do it when absolutely necessary, and let UNIT_PORTRAIT_UPDATE
    -- handle when the same unit requires a portrait-model update
@@ -560,14 +567,8 @@ local function setAnimatedPortraitTexture(portraitTexture, unit, disableMasking)
       state.guid = guid
       updateModelFromUnit(portraitTexture, unit, state)
    end
-   -- either show regular static portrait or replace it with animated model
-   local shouldAnimate = not state.blocked
-       -- units not "visible" to the client cannot have their model loaded
-       and UnitIsVisible(unit)
-       -- back in original classic, at least, i observed missing portraits in
-       -- some cases: preserve this behavior
-       and portraitTexture:GetTexture()
-   setPortraitAnimated(portraitTexture, state, shouldAnimate)
+   state.notAPortrait = false
+   refreshWhetherAnimated(portraitTexture, state)
 end
 
 -- post-hook the global portrait texturing function with our animated variant
@@ -588,16 +589,14 @@ end
 local function blockAnimatedPortrait(portraitTexture, state, blockingModel)
    state.blockingModels[blockingModel] = true
    state.blocked = true
-   state.model:Hide()
-   portraitTexture:Show()
+   refreshWhetherAnimated(portraitTexture, state)
 end
 
 local function unblockAnimatedPortrait(portraitTexture, state, blockingModel)
    state.blockingModels[blockingModel] = nil
    if next(state.blockingModels) == nil then
       state.blocked = false
-      portraitTexture:Hide()
-      state.model:Show()
+      refreshWhetherAnimated(portraitTexture, state)
    end
 end
 
@@ -662,6 +661,7 @@ local function onEvent(_, event, ...)
          local unit = state.model.unit
          if unit then
             updateModelFromUnit(portraitTexture, unit, state)
+            refreshWhetherAnimated(portraitTexture, state)
          end
       end
    elseif event == "UNIT_PORTRAIT_UPDATE" then
@@ -669,6 +669,7 @@ local function onEvent(_, event, ...)
       for portraitTexture, state in pairs(models) do
          if state.model.unit and state.model.unit == unit then
             updateModelFromUnit(portraitTexture, unit, state)
+            refreshWhetherAnimated(portraitTexture, state)
          end
       end
    end
