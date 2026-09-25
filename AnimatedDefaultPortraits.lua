@@ -279,9 +279,7 @@ local function createCircularModelMask(model)
    mask:SetCameraFacing(math.pi / 2)
    mask:SetPosition(0.1114, 0, -0.2837) -- center one of the gears
    setModelMaskCamera(mask)
-   mask:HookScript("OnSizeChanged", function(self)
-      setModelMaskCamera(self)
-   end)
+   mask:HookScript("OnSizeChanged", setModelMaskCamera)
    -- culling behavior is optimized away if mask model is actually hidden:
    -- make it pseudo-invisible
    mask:SetAlpha(0.01)      -- anything lower than 1% gets rounded to 0 = hide
