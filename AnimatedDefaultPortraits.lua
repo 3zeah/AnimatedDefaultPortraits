@@ -788,6 +788,7 @@ local function onEvent(_, event, ...)
       registerPotentiallyBlockingExternalModelFrame(SideDressUpModel)
       registerPotentiallyBlockingExternalModelFrame(CharacterModelScene)
       registerPotentiallyBlockingExternalModelFrame(DressUpFrame.ModelScene)
+      registerPotentiallyBlockingExternalModelFrame(TabardModel)
    elseif event == "INSPECT_READY" then
       -- inspect model frame is not available before an inspect
       registerPotentiallyBlockingExternalModelFrame(InspectModelFrame)
