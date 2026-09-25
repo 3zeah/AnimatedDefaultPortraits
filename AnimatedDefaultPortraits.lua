@@ -579,7 +579,6 @@ local function getOrCreateModelState(portraitTexture, disableMasking)
    local state = {
       model = model,
       notAPortrait = false,
-      blocked = false,
       blockingModels = {},
       idlePlaylist = nil,
       nextIdleVariation = nil,
