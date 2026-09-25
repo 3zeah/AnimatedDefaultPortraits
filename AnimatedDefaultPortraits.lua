@@ -299,7 +299,10 @@ local function createCircularModelMask(container, model, roll)
    local mask1 = createCircularModelMaskModel(container, model)
    local mask2 = createCircularModelMaskModel(container, model)
    local left, right, top, bottom = evalModelMaskInsets(model, mask1)
+   -- if `left`, then `right`, `top` and `bottom`
+   ---@diagnostic disable-next-line: param-type-mismatch
    mask1:SetViewInsets(left, right, top, bottom)
+   ---@diagnostic disable-next-line: param-type-mismatch
    mask2:SetViewInsets(left, right, top, bottom)
    local baseRoll = (roll or 0) - 0.17
    mask1:SetCameraRoll(baseRoll)
