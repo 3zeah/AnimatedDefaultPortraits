@@ -394,12 +394,92 @@ local function refreshWhetherAnimated(portraitTexture, model)
    if shouldAnimate then
       portraitTexture:Hide()
       model:Show()
+      return true
    else
       if not textureIsPortrait then
          model.unit = nil
       end
       portraitTexture:Show()
       model:Hide()
+      return false
+   end
+end
+
+local FRAME_STRATAS = {
+   "WORLD",
+   "BACKGROUND",
+   "LOW",
+   "MEDIUM",
+   "HIGH",
+   "DIALOG",
+   "FULLSCREEN",
+   "FULLSCREEN_DIALOG",
+   "TOOLTIP",
+}
+local function evalFrameStrataGreaterThanOrdering()
+   local result = {}
+   for i, strata in ipairs(FRAME_STRATAS) do
+      local result_i = {}
+      for j = 1, i - 1 do
+         result_i[FRAME_STRATAS[j]] = true
+      end
+      result[strata] = result_i
+   end
+   return result
+end
+local FRAME_STRATA_GREATER_THAN_ORDERING = evalFrameStrataGreaterThanOrdering()
+
+-- left > right => true, left < right => false, left = right => nil
+local function compareEffectiveFrameLevel(frameLhs, frameRhs)
+   local strataLhs = frameLhs:GetFrameStrata()
+   local strataRhs = frameRhs:GetFrameStrata()
+   if strataLhs ~= strataRhs then
+      return FRAME_STRATA_GREATER_THAN_ORDERING[strataLhs][strataRhs] or false
+   end
+   local lvlLhs = max(frameLhs:GetFrameLevel(), frameLhs:GetRaisedFrameLevel())
+   local lvlRhs = max(frameRhs:GetFrameLevel(), frameRhs:GetRaisedFrameLevel())
+   if lvlLhs > lvlRhs then
+      return true
+   elseif lvlLhs < lvlRhs then
+      return false
+   else
+      return nil
+   end
+end
+
+local function blockAnimatedPortrait(portraitTexture, state, blocker)
+   state.blockingModels[blocker] = true
+   state.model.blocked = true
+   refreshWhetherAnimated(portraitTexture, state.model)
+end
+
+local function unblockAnimatedPortrait(portraitTexture, state, blocker)
+   state.blockingModels[blocker] = nil
+   if next(state.blockingModels) == nil then
+      state.model.blocked = false
+      refreshWhetherAnimated(portraitTexture, state.model)
+   end
+end
+
+-- check whether the given blocker overlaps and is above any animated portrait,
+-- and ensure they are not animated if so. this is laborious workaround for the
+-- issue that model frames cull higher but overlapping model frames
+local function blockOverlappedPortraitModels(blocker)
+   for otherPortraitTexture, otherState in pairs(models) do
+      if blocker ~= otherState.model then
+         if blocker:Intersects(otherState.model)
+             and compareEffectiveFrameLevel(blocker, otherState.model) then
+            blockAnimatedPortrait(otherPortraitTexture, otherState, blocker)
+         else
+            unblockAnimatedPortrait(otherPortraitTexture, otherState, blocker)
+         end
+      end
+   end
+end
+
+local function unblockAllPortraitModels(modelFrame)
+   for portraitTexture, modelState in pairs(models) do
+      unblockAnimatedPortrait(portraitTexture, modelState, modelFrame)
    end
 end
 
@@ -435,7 +515,9 @@ local function createModel(portraitTexture, disableMasking)
       -- at load time, not all portraits have masks available, but the insets
       -- depend on those masks for alignment
       updateModelMaskInsets(self)
+      blockOverlappedPortraitModels(self)
    end)
+   model:SetScript("OnHide", unblockAllPortraitModels)
    -- camera position breaks when eg scale is changed
    model:SetScript("OnSizeChanged", function(self)
       self:RefreshCamera()
@@ -453,12 +535,15 @@ local function createModel(portraitTexture, disableMasking)
          self:SetPaused(UnitIsDead(self.unit))
       end
       -- this is just defensive: we already try to refresh on `SetTexture` etc
-      refreshWhetherAnimated(portraitTexture, self)
+      local isAnimated = refreshWhetherAnimated(portraitTexture, self)
       -- if using raid-style party frames, and then going into edit mode to
       -- turn raid-style off, the party frames will not have their model mask
       -- set properly, because the frame size will be incorrect during the
       -- OnShow, and no OnSizeChanged will fire, either: blizz cannot be trusted
       updateModelMaskInsets(self)
+      if isAnimated then
+         blockOverlappedPortraitModels(self)
+      end
    end)
    createModelTextures(model, portraitTexture, disableMasking)
 
@@ -663,24 +748,9 @@ local function enableAnimatedPortraits()
    hooksecurefunc("SetPortraitTexture", setAnimatedPortraitTexture)
 end
 
-local function blockAnimatedPortrait(portraitTexture, state, blockingModel)
-   state.blockingModels[blockingModel] = true
-   state.model.blocked = true
-   refreshWhetherAnimated(portraitTexture, state.model)
-end
-
-local function unblockAnimatedPortrait(portraitTexture, state, blockingModel)
-   state.blockingModels[blockingModel] = nil
-   if next(state.blockingModels) == nil then
-      state.model.blocked = false
-      refreshWhetherAnimated(portraitTexture, state.model)
-   end
-end
-
 local BLOCK_CHECK_UPDATE_PERIOD = 1 / 30
 local secondsSinceBlockCheck = {}
-local function blockOverlappedAnimatedPortraits(modelFrame, elapsed)
-   -- elapsed is not sent for OnShow, ie the first check
+local function updatePotentiallyBlockingExternalModelFrame(modelFrame, elapsed)
    if elapsed then
       local t = (secondsSinceBlockCheck[modelFrame] or 0) + elapsed
       if t < BLOCK_CHECK_UPDATE_PERIOD then
@@ -689,25 +759,13 @@ local function blockOverlappedAnimatedPortraits(modelFrame, elapsed)
       end
    end
    secondsSinceBlockCheck[modelFrame] = 0
-   for portraitTexture, modelState in pairs(models) do
-      if modelState.model:Intersects(modelFrame) then
-         blockAnimatedPortrait(portraitTexture, modelState, modelFrame)
-      else
-         unblockAnimatedPortrait(portraitTexture, modelState, modelFrame)
-      end
-   end
-end
-
-local function unblockAnimatedPortraits(modelFrame)
-   for portraitTexture, modelState in pairs(models) do
-      unblockAnimatedPortrait(portraitTexture, modelState, modelFrame)
-   end
+   blockOverlappedPortraitModels(modelFrame)
 end
 
 -- modern clients appear unable to render models if the model frames intersect:
 -- track model frames from blizzard ui and turn off animated portraits that
 -- are blocked by those model frames
-local function registerPotentiallyBlockingModelFrame(frame)
+local function registerPotentiallyBlockingExternalModelFrame(frame)
    if not frame then
       return
    end
@@ -715,24 +773,24 @@ local function registerPotentiallyBlockingModelFrame(frame)
       return
    end
    potentiallyBlockingModelFrames[frame] = true
-   frame:HookScript("OnShow", blockOverlappedAnimatedPortraits)
+   frame:HookScript("OnShow", blockOverlappedPortraitModels)
    -- check on update because the blocking frame may have moved...
-   frame:HookScript("OnUpdate", blockOverlappedAnimatedPortraits)
-   frame:HookScript("OnHide", unblockAnimatedPortraits)
+   frame:HookScript("OnUpdate", updatePotentiallyBlockingExternalModelFrame)
+   frame:HookScript("OnHide", unblockAllPortraitModels)
 end
 
 -- retexture the frames and enable the animated portraits
 local function onEvent(_, event, ...)
    if event == "PLAYER_LOGIN" then
       enableAnimatedPortraits()
-      registerPotentiallyBlockingModelFrame(CharacterModelFrame)
-      registerPotentiallyBlockingModelFrame(DressUpModelFrame)
-      registerPotentiallyBlockingModelFrame(SideDressUpModel)
-      registerPotentiallyBlockingModelFrame(CharacterModelScene)
-      registerPotentiallyBlockingModelFrame(DressUpFrame.ModelScene)
+      registerPotentiallyBlockingExternalModelFrame(CharacterModelFrame)
+      registerPotentiallyBlockingExternalModelFrame(DressUpModelFrame)
+      registerPotentiallyBlockingExternalModelFrame(SideDressUpModel)
+      registerPotentiallyBlockingExternalModelFrame(CharacterModelScene)
+      registerPotentiallyBlockingExternalModelFrame(DressUpFrame.ModelScene)
    elseif event == "INSPECT_READY" then
       -- inspect model frame is not available before an inspect
-      registerPotentiallyBlockingModelFrame(InspectModelFrame)
+      registerPotentiallyBlockingExternalModelFrame(InspectModelFrame)
    elseif event == "PORTRAITS_UPDATED" then
       for portraitTexture, state in pairs(models) do
          local unit = state.model.unit
