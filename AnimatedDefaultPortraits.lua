@@ -572,16 +572,6 @@ local function enableAnimatedPortraits()
    hooksecurefunc("SetPortraitTexture", setAnimatedPortraitTexture)
 end
 
-local function regionsIntersect(a, b)
-   local aLeft, aBottom, aWidth, aHeight = a:GetScaledRect()
-   local bLeft, bBottom, bWidth, bHeight = b:GetScaledRect()
-   if not aLeft or not bLeft then
-      return false
-   end
-   return aLeft <= bLeft + bWidth and bLeft <= aLeft + aWidth
-       and aBottom <= bBottom + bHeight and bBottom <= aBottom + aHeight
-end
-
 local function blockAnimatedPortrait(portraitTexture, state, blockingModel)
    state.blockingModels[blockingModel] = true
    state.model.blocked = true
@@ -609,7 +599,7 @@ local function blockOverlappedAnimatedPortraits(modelFrame, elapsed)
    end
    secondsSinceBlockCheck[modelFrame] = 0
    for portraitTexture, modelState in pairs(models) do
-      if regionsIntersect(modelState.model, modelFrame) then
+      if modelState.model:Intersects(modelFrame) then
          blockAnimatedPortrait(portraitTexture, modelState, modelFrame)
       else
          unblockAnimatedPortrait(portraitTexture, modelState, modelFrame)
