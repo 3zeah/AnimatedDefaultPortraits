@@ -31,9 +31,11 @@ local function createModelLight()
       }
    end
 end
-local CIRCLE_MASK_TEXTURES = {
+local SUPPORTED_MASK_TEXTURES = {
    [130924] = true,  -- interface/characterframe/tempportraitalphamask.blp
    [3528314] = true, -- interface/masks/circlemask.blp
+   [4682541] = true, -- interface/hud/uiunitframeplayerportraitmask.blp
+   [5321198] = true, -- interface/hud/uiunitframeplayerportraitmask2x.blp
 }
 local UD_MALE_ANIMATION_PLAYLIST = {
    -- 5% each observed with small experiment, but boosted here to account for
@@ -78,14 +80,14 @@ local portraitsNotToAnimate = {}
 -- are only hooked once (see function `registerPotentiallyBlockingModelFrame`)
 local potentiallyBlockingModelFrames = {}
 
-local function findCircleMaskTexture(texture)
+local function findSupportedMaskTexture(texture)
    local maskCount = texture:GetNumMaskTextures()
    if maskCount == 0 then
       return nil
    end
    for i = 1, maskCount do
       local mask = texture:GetMaskTexture(i)
-      if CIRCLE_MASK_TEXTURES[mask:GetTexture()] then
+      if SUPPORTED_MASK_TEXTURES[mask:GetTexture()] then
          return mask
       end
    end
@@ -132,7 +134,7 @@ local function createModelTextures(model, portraitTexture, disableMasking)
    end
    -- there may also be a mask texture, even if portrait masking is disabled.
    -- in retail, both masks are typically applied, eg for the target frame
-   local externalPortraitMask = findCircleMaskTexture(portraitTexture)
+   local externalPortraitMask = findSupportedMaskTexture(portraitTexture)
    if externalPortraitMask then
       local mask = model:CreateMaskTexture()
       mask:SetAllPoints(externalPortraitMask)
@@ -235,16 +237,22 @@ local function evalModelMaskInsets(model, mask)
    return digitalZoomInset, digitalZoomInset, digitalZoomInset, digitalZoomInset
 end
 
--- faster and more comfortable than setting the insets for each mask separately
-local function updateModelMaskInsets(model)
-   local mask1 = model.mask1
-   if not mask1 then
+local function updateModelMaskInsetsInContainer(model, container)
+   if not container then
       return
    end
    -- all masks share the same region rect: eval insets only once
-   local left, right, top, bottom = evalModelMaskInsets(model, mask1)
-   mask1:SetViewInsets(left, right, top, bottom)
-   model.mask2:SetViewInsets(left, right, top, bottom)
+   local left, right, top, bottom = evalModelMaskInsets(model, container.model1)
+   container.model1:SetViewInsets(left, right, top, bottom)
+   container.model2:SetViewInsets(left, right, top, bottom)
+end
+
+-- faster and more comfortable than setting the insets for each mask separately
+local function updateModelMaskInsets(model)
+   updateModelMaskInsetsInContainer(model, model.circleMaskFull)
+   updateModelMaskInsetsInContainer(model, model.circleMaskTopLeft)
+   updateModelMaskInsetsInContainer(model, model.circleMaskTopRight)
+   updateModelMaskInsetsInContainer(model, model.circleMaskBottomLeft)
 end
 
 local function setModelMaskCamera(mask)
@@ -258,7 +266,7 @@ end
 -- any model would do that has a sufficiently round hole: this one is available
 -- even on classic clients
 local CIRCLE_MASK_MODEL = 587744 -- Interface/Buttons/TalkToMe_Gears.M2
-local function createCircularModelMask(model)
+local function createCircularModelMaskModel(container, model)
    -- this is a crazy idea... it is not possible to apply texture masks to
    -- models, but if a model BG is rendered below a model FG, but model BG is
    -- above model FG in 3D space, then model BG will obscure model FG,
@@ -270,9 +278,9 @@ local function createCircularModelMask(model)
    -- this hack is subject to lose to random blizz updates. the previous
    -- solution is robust: modify the unit frame texture asset to be thicker
    -- (from version 1.0.0)
-   local mask = CreateFrame("Model", nil, model)
-   mask:SetFrameStrata("BACKGROUND") -- below any portraits
-   mask:SetAllPoints()
+   local mask = CreateFrame("Model", nil, container)
+   mask:SetFrameStrata("BACKGROUND") -- lowest: below any portraits
+   mask:SetAllPoints(model)
    mask:SetModel(CIRCLE_MASK_MODEL)
    mask:SetPaused(true)
    mask:MakeCurrentCameraCustom()
@@ -285,6 +293,30 @@ local function createCircularModelMask(model)
    mask:SetAlpha(0.01)      -- anything lower than 1% gets rounded to 0 = hide
    mask:SetModelAlpha(0.01) -- compounds with frame alpha
    return mask
+end
+
+local function createCircularModelMask(container, model, roll)
+   local mask1 = createCircularModelMaskModel(container, model)
+   local mask2 = createCircularModelMaskModel(container, model)
+   local left, right, top, bottom = evalModelMaskInsets(model, mask1)
+   mask1:SetViewInsets(left, right, top, bottom)
+   mask2:SetViewInsets(left, right, top, bottom)
+   local baseRoll = (roll or 0) - 0.17
+   mask1:SetCameraRoll(baseRoll)
+   mask2:SetCameraRoll(baseRoll + math.pi / 12)
+   return mask1, mask2
+end
+
+local function createCircularModelMaskContainer(model, roll)
+   local container = CreateFrame("Frame", nil, model)
+   container:SetUsingParentLevel(true)
+   -- use container to crop model mask without having to re-evaluate alignment
+   -- (the mask model frame itself is still aligned with full portrait model)
+   container:SetClipsChildren(true)
+   local mask1, mask2 = createCircularModelMask(container, model, roll)
+   container.model1 = mask1
+   container.model2 = mask2
+   return container
 end
 
 local function setModelAlpha(model, a)
@@ -406,18 +438,31 @@ local function createModel(portraitTexture, disableMasking)
       updateModelMaskInsets(self)
    end)
    createModelTextures(model, portraitTexture, disableMasking)
+
    if not disableMasking or model.externalPortraitMask then
-      local mask1 = createCircularModelMask(model)
-      local mask2 = createCircularModelMask(model)
-      local left, right, top, bottom = evalModelMaskInsets(model, mask1)
-      mask1:SetViewInsets(left, right, top, bottom)
-      mask2:SetViewInsets(left, right, top, bottom)
-      local baseRoll = -0.17
-      mask1:SetCameraRoll(baseRoll)
-      mask2:SetCameraRoll(baseRoll + math.pi / 12)
-      model.mask1 = mask1
-      model.mask2 = mask2
+      if model.externalPortraitMask and (
+             model.externalPortraitMask:GetTexture() == 5321198
+             or model.externalPortraitMask:GetTexture() == 4682541
+          ) then -- if mainline unit frame player portrait mask
+         -- then create special mask containers for each masked corner
+         local topLeft = createCircularModelMaskContainer(model, 0)
+         topLeft:SetPoint("TOPLEFT", model, "TOPLEFT")
+         topLeft:SetPoint("BOTTOMRIGHT", model, "CENTER")
+         local topRight = createCircularModelMaskContainer(model, math.pi / 2)
+         topRight:SetPoint("TOPRIGHT", model, "TOPRIGHT")
+         topRight:SetPoint("BOTTOMLEFT", model, "CENTER")
+         local bottomLeft = createCircularModelMaskContainer(model, 3 * math.pi / 4)
+         bottomLeft:SetPoint("BOTTOMLEFT", model, "BOTTOMLEFT")
+         bottomLeft:SetPoint("TOPRIGHT", model, "CENTER")
+         model.circleMaskTopLeft = topLeft
+         model.circleMaskTopRight = topRight
+         model.circleMaskBottomLeft = bottomLeft
+      else -- otherwise, this is a circle mask: just go with full circle mask
+         local mask1, mask2 = createCircularModelMask(model, model)
+         model.circleMaskFull = { model1 = mask1, model2 = mask2 }
+      end
    end
+
    maintainModelColorOverlay(portraitTexture, model)
    return model
 end
