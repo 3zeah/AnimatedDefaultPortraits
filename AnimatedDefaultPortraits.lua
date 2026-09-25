@@ -31,31 +31,6 @@ local function createModelLight()
       }
    end
 end
-local function getPortraitsNotToAnimate()
-   local result = {}
-   if MicroButtonPortrait then
-      result[MicroButtonPortrait] = true
-   end
-   if CharacterMicroButton and CharacterMicroButton.Portrait then
-      result[CharacterMicroButton.Portrait] = true
-   end
-   if PaperDollSidebarTab1 and PaperDollSidebarTab1.Icon then
-      result[PaperDollSidebarTab1.Icon] = true
-   end
-   if TargetFrameToTPortrait then
-      result[TargetFrameToTPortrait] = true
-   end
-   if TargetFrameToT and TargetFrameToT.Portrait then
-      result[TargetFrameToT.Portrait] = true
-   end
-   if FocusFrameToTPortrait then
-      result[FocusFrameToTPortrait] = true
-   end
-   if FocusFrameToT and FocusFrameToT.Portrait then
-      result[FocusFrameToT.Portrait] = true
-   end
-   return result
-end
 local CIRCLE_MASK_TEXTURES = {
    [130924] = true,  -- interface/characterframe/tempportraitalphamask.blp
    [3528314] = true, -- interface/masks/circlemask.blp
@@ -98,7 +73,7 @@ local ANIMATION_OVERRIDES = {
 -- portrait texture that was replaced by that model
 local models = {}
 -- blacklist
-local portraitsNotToAnimate = getPortraitsNotToAnimate()
+local portraitsNotToAnimate = {}
 -- state set of all registered potentially-blocking model frames, such that they
 -- are only hooked once (see function `registerPotentiallyBlockingModelFrame`)
 local potentiallyBlockingModelFrames = {}
@@ -464,13 +439,31 @@ local function rollIdleAnimationVariation(playlist)
    return 0
 end
 
+local function shouldBlacklist(portraitTexture)
+   return portraitTexture == MicroButtonPortrait
+       or (
+          CharacterMicroButton
+          and CharacterMicroButton.Portrait
+          and portraitTexture == CharacterMicroButton.Portrait
+       )
+       or (
+          PaperDollSidebarTab1
+          and portraitTexture == PaperDollSidebarTab1.Icon
+       )
+       or portraitTexture == TargetFrameToTPortrait
+       or TargetFrameToT and portraitTexture == TargetFrameToT.Portrait
+       or portraitTexture == FocusFrameToTPortrait
+       or (FocusFrameToT and portraitTexture == FocusFrameToT.Portrait)
+       or portraitTexture == AchievementFrameComparisonHeaderPortrait
+end
+
 local function getOrCreateModelState(portraitTexture, disableMasking)
    local extant = models[portraitTexture]
    if extant then
       return extant
    end
 
-   if portraitTexture == AchievementFrameComparisonHeaderPortrait then
+   if shouldBlacklist(portraitTexture) then
       return nil
    end
    local w, h = portraitTexture:GetSize()
