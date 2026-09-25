@@ -385,14 +385,19 @@ end
 
 -- call whenever an independent variable is updated, eg `state.model.unit`
 local function refreshWhetherAnimated(portraitTexture, model)
-   local shouldAnimate = not model.blocked
-       and portraitTexture:GetTexture() == "RTPortrait1"
+   local textureIsPortrait = portraitTexture:GetTexture() == "RTPortrait1"
+   local shouldAnimate = textureIsPortrait
+       and not model.blocked
+       and model.unit
        -- units not "visible" to the client cannot have their model loaded
        and UnitIsVisible(model.unit)
    if shouldAnimate then
       portraitTexture:Hide()
       model:Show()
    else
+      if not textureIsPortrait then
+         model.unit = nil
+      end
       portraitTexture:Show()
       model:Hide()
    end
@@ -606,9 +611,9 @@ local function getOrCreateModelState(portraitTexture, disableMasking)
 end
 
 -- either to a new unit, or to refresh the extant unit (eg, gear change)
-local function updateModelFromUnit(portraitTexture, unit, state)
+local function updateModelFromUnit(portraitTexture, state)
    local model = state.model
-   model.unit = unit
+   local unit = model.unit
    model:SetUnit(unit)
    model:RefreshCamera()
    model:SetPortraitZoom(1)
@@ -638,6 +643,7 @@ local function setAnimatedPortraitTexture(portraitTexture, unit, disableMasking)
       portraitsNotToAnimate[portraitTexture] = true
       return
    end
+   state.model.unit = unit
    -- resetting unit and refreshing camera will visibly reset the portrait:
    -- only do it when absolutely necessary, and let UNIT_PORTRAIT_UPDATE
    -- handle when the same unit requires a portrait-model update
@@ -647,7 +653,7 @@ local function setAnimatedPortraitTexture(portraitTexture, unit, disableMasking)
    -- any model updates, then, and hence `isVisible` is part of the skip eval)
    if not state.model:IsVisible() or not state.guid or state.guid ~= guid then
       state.guid = guid
-      updateModelFromUnit(portraitTexture, unit, state)
+      updateModelFromUnit(portraitTexture, state)
    end
    state.notAPortrait = false
    refreshWhetherAnimated(portraitTexture, state.model)
@@ -732,15 +738,15 @@ local function onEvent(_, event, ...)
       for portraitTexture, state in pairs(models) do
          local unit = state.model.unit
          if unit then
-            updateModelFromUnit(portraitTexture, unit, state)
+            updateModelFromUnit(portraitTexture, state)
             refreshWhetherAnimated(portraitTexture, state.model)
          end
       end
    elseif event == "UNIT_PORTRAIT_UPDATE" then
       local unit = ...
       for portraitTexture, state in pairs(models) do
-         if state.model.unit and state.model.unit == unit then
-            updateModelFromUnit(portraitTexture, unit, state)
+         if state.model.unit == unit then
+            updateModelFromUnit(portraitTexture, state)
             refreshWhetherAnimated(portraitTexture, state.model)
          end
       end
