@@ -287,7 +287,7 @@ local function createCircularModelMaskModel(container, model)
    mask:SetCameraFacing(math.pi / 2)
    mask:SetPosition(0.1114, 0, -0.2837) -- center one of the gears
    setModelMaskCamera(mask)
-   mask:HookScript("OnSizeChanged", setModelMaskCamera)
+   mask:SetScript("OnSizeChanged", setModelMaskCamera)
    -- culling behavior is optimized away if mask model is actually hidden:
    -- make it pseudo-invisible
    mask:SetAlpha(0.01)      -- anything lower than 1% gets rounded to 0 = hide
@@ -403,7 +403,7 @@ local function createModel(portraitTexture, disableMasking)
    model.light = light
    -- because models may be hidden briefly by other model frames
    model:SetKeepModelOnHide(true)
-   model:HookScript("OnShow", function(self)
+   model:SetScript("OnShow", function(self)
       -- this used to be required in old client, but maybe not anymore, but does
       -- not hurt: when the model is hidden and re-shown without setting a new
       -- unit, then this guards against the model frame resetting outside addon
@@ -414,13 +414,13 @@ local function createModel(portraitTexture, disableMasking)
       updateModelMaskInsets(self)
    end)
    -- camera position breaks when eg scale is changed
-   model:HookScript("OnSizeChanged", function(self)
+   model:SetScript("OnSizeChanged", function(self)
       self:RefreshCamera()
       self:SetPortraitZoom(1)
       updateModelMaskInsets(self)
    end)
    local secondsSinceUpdate = 0
-   model:HookScript("OnUpdate", function(self, elapsed)
+   model:SetScript("OnUpdate", function(self, elapsed)
       secondsSinceUpdate = secondsSinceUpdate + elapsed
       if secondsSinceUpdate < UPDATE_PERIOD then
          return
