@@ -301,8 +301,9 @@ local function createCircularModelMaskModel(container, model)
    mask:SetScript("OnSizeChanged", setModelMaskCamera)
    -- culling behavior is optimized away if mask model is actually hidden:
    -- make it pseudo-invisible
-   mask:SetAlpha(0.01)      -- anything lower than 1% gets rounded to 0 = hide
-   mask:SetModelAlpha(0.01) -- compounds with frame alpha
+   mask:SetIgnoreParentAlpha(true)
+   mask:SetAlpha(0.0001)      -- anything lower seems to get rounded to 0 = hide
+   mask:SetModelAlpha(0.0001) -- compounds with frame alpha
    return mask
 end
 
