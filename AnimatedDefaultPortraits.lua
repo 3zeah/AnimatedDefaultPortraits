@@ -432,22 +432,34 @@ local function evalFrameStrataGreaterThanOrdering()
 end
 local FRAME_STRATA_GREATER_THAN_ORDERING = evalFrameStrataGreaterThanOrdering()
 
--- left > right => true, left < right => false, left = right => nil
-local function compareEffectiveFrameLevel(frameLhs, frameRhs)
+-- that is, also considering whether raised due to `Frame:IsToplevel`
+local function getEffectiveFrameLevel(frame)
+   return max(frame:GetFrameLevel(), frame:GetRaisedFrameLevel())
+end
+
+-- that is, considering scale
+local function getEffectiveArea(frame)
+   local _, _, w, h = frame:GetScaledRect()
+   return w * h
+end
+
+local function leftFrameShouldBlockRight(frameLhs, frameRhs)
+   -- higher strata wins
    local strataLhs = frameLhs:GetFrameStrata()
    local strataRhs = frameRhs:GetFrameStrata()
    if strataLhs ~= strataRhs then
       return FRAME_STRATA_GREATER_THAN_ORDERING[strataLhs][strataRhs] or false
    end
-   local lvlLhs = max(frameLhs:GetFrameLevel(), frameLhs:GetRaisedFrameLevel())
-   local lvlRhs = max(frameRhs:GetFrameLevel(), frameRhs:GetRaisedFrameLevel())
-   if lvlLhs > lvlRhs then
-      return true
-   elseif lvlLhs < lvlRhs then
-      return false
-   else
-      return nil
+   -- within a strata, larger portraits win
+   local sizeLhs = getEffectiveArea(frameLhs)
+   local sizeRhs = getEffectiveArea(frameRhs)
+   if abs(sizeLhs - sizeRhs) >= 1 then
+      return sizeLhs > sizeRhs
    end
+   -- otherwise, check which is higher
+   local levelLhs = getEffectiveFrameLevel(frameLhs)
+   local levelRhs = getEffectiveFrameLevel(frameRhs)
+   return levelLhs > levelRhs
 end
 
 local function blockAnimatedPortrait(portraitTexture, state, blocker)
@@ -469,9 +481,10 @@ end
 -- issue that model frames cull higher but overlapping model frames
 local function blockOverlappedPortraitModels(blocker)
    for otherPortraitTexture, otherState in pairs(models) do
-      if blocker ~= otherState.model then
-         if blocker:Intersects(otherState.model)
-             and compareEffectiveFrameLevel(blocker, otherState.model) then
+      local otherModel = otherState.model
+      if blocker ~= otherModel then
+         if blocker:Intersects(otherModel)
+             and leftFrameShouldBlockRight(blocker, otherState.model) then
             blockAnimatedPortrait(otherPortraitTexture, otherState, blocker)
          else
             unblockAnimatedPortrait(otherPortraitTexture, otherState, blocker)
