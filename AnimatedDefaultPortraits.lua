@@ -433,11 +433,6 @@ local function evalFrameStrataGreaterThanOrdering()
 end
 local FRAME_STRATA_GREATER_THAN_ORDERING = evalFrameStrataGreaterThanOrdering()
 
--- that is, also considering whether raised due to `Frame:IsToplevel`
-local function getEffectiveFrameLevel(frame)
-   return max(frame:GetFrameLevel(), frame:GetRaisedFrameLevel())
-end
-
 -- that is, considering scale
 local function getEffectiveArea(frame)
    local _, _, w, h = frame:GetScaledRect()
@@ -458,8 +453,13 @@ local function leftFrameShouldBlockRight(frameLhs, frameRhs)
       return sizeLhs > sizeRhs
    end
    -- otherwise, check which is higher
-   local levelLhs = getEffectiveFrameLevel(frameLhs)
-   local levelRhs = getEffectiveFrameLevel(frameRhs)
+   local raisedLevelLhs = frameLhs:GetRaisedFrameLevel()
+   local raisedLevelRhs = frameRhs:GetRaisedFrameLevel()
+   if raisedLevelLhs ~= raisedLevelRhs then
+      return raisedLevelLhs > raisedLevelRhs
+   end
+   local levelLhs = frameLhs:GetFrameLevel()
+   local levelRhs = frameRhs:GetFrameLevel()
    if levelLhs ~= levelRhs then
       return levelLhs > levelRhs
    end
