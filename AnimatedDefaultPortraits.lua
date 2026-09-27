@@ -31,6 +31,16 @@ local function createModelLight()
       }
    end
 end
+-- scaling up the model allows us to scale up the camera distance without
+-- altering the portrait appearance. a maximal camera distance is desirable
+-- to avoid the portraits occlusion-clipping foregrounding ui panels with
+-- models, such as the character frame (more info in README)
+local PORTRAIT_MODEL_SCALE = 30
+-- for the model mask, however, we want the mask to occlusion-clip the unit
+-- model: keep the scale high enough not to occlude other panels, but ideally
+-- lower than the model scale (although for most models, equal is fine
+-- (scorpions are a bitch, specifically))
+local MODEL_MASK_SCALE = 20
 local SUPPORTED_MASK_TEXTURES = {
    [130924] = true,  -- interface/characterframe/tempportraitalphamask.blp
    [3528314] = true, -- interface/masks/circlemask.blp
@@ -76,9 +86,6 @@ local ANIMATION_OVERRIDES = {
 local models = {}
 -- blacklist
 local portraitsNotToAnimate = {}
--- state set of all registered potentially-blocking model frames, such that they
--- are only hooked once (see function `registerPotentiallyBlockingModelFrame`)
-local potentiallyBlockingModelFrames = {}
 
 local PORTRAIT_SHAPE_CIRCLE = 1
 local PORTRAIT_SHAPE_PLAYER_FRAME = 2
@@ -266,12 +273,13 @@ local function updateModelMaskInsets(model)
    updateModelMaskInsetsInContainer(model, model.circleMaskBottomLeft)
 end
 
-local function setModelMaskCamera(mask)
+local function updateModelMaskCamera(mask)
+   mask:SetModelScale(MODEL_MASK_SCALE / mask:GetEffectiveScale())
    -- at around camera distance 8, model 587744 stops rendering properly
    -- at around camera distance 30, the model stops covering portrait models
    -- that lean in (eg blood elf female sigh)
    -- the lowest natural ui scale is 65% => 9 / 65% < 14 should be fine
-   mask:SetCameraPosition(0, 14 * mask:GetEffectiveScale(), 0)
+   mask:SetCameraPosition(0, 14 * MODEL_MASK_SCALE, 0)
 end
 
 -- any model would do that has a sufficiently round hole: this one is available
@@ -300,8 +308,8 @@ local function createCircularModelMaskModel(container, model)
    mask:MakeCurrentCameraCustom()
    mask:SetCameraFacing(math.pi / 2)
    mask:SetPosition(0.1114, 0, -0.2837) -- center one of the gears
-   setModelMaskCamera(mask)
-   mask:SetScript("OnSizeChanged", setModelMaskCamera)
+   updateModelMaskCamera(mask)
+   mask:SetScript("OnSizeChanged", updateModelMaskCamera)
    -- culling behavior is optimized away if mask model is actually hidden:
    -- make it pseudo-invisible
    mask:SetIgnoreParentAlpha(true)
@@ -626,6 +634,7 @@ local function createModel(portraitTexture, disableMasking)
    local light = createModelLight()
    model:SetLight(true, light)
    model.light = light
+   model:SetModelScale(PORTRAIT_MODEL_SCALE / model:GetEffectiveScale())
    -- because models may be hidden briefly by other model frames
    model:SetKeepModelOnHide(true)
    model:SetScript("OnShow", function(self)
@@ -642,6 +651,7 @@ local function createModel(portraitTexture, disableMasking)
    model:SetScript("OnHide", unblockAllPortraitModels)
    -- camera position breaks when eg scale is changed
    model:SetScript("OnSizeChanged", function(self)
+      self:SetModelScale(PORTRAIT_MODEL_SCALE / self:GetEffectiveScale())
       self:RefreshCamera()
       self:SetPortraitZoom(1)
       updateModelMaskInsets(self)
@@ -872,50 +882,10 @@ local function enableAnimatedPortraits()
    hooksecurefunc("SetPortraitTexture", setAnimatedPortraitTexture)
 end
 
-local BLOCK_CHECK_UPDATE_PERIOD = 1 / 30
-local secondsSinceBlockCheck = {}
-local function updatePotentiallyBlockingExternalModelFrame(modelFrame, elapsed)
-   if elapsed then
-      local t = (secondsSinceBlockCheck[modelFrame] or 0) + elapsed
-      if t < BLOCK_CHECK_UPDATE_PERIOD then
-         secondsSinceBlockCheck[modelFrame] = t
-         return
-      end
-   end
-   secondsSinceBlockCheck[modelFrame] = 0
-   blockOverlappedPortraitModels(modelFrame)
-end
-
--- modern clients appear unable to render models if the model frames intersect:
--- track model frames from blizzard ui and turn off animated portraits that
--- are blocked by those model frames
-local function registerPotentiallyBlockingExternalModelFrame(frame)
-   if not frame then
-      return
-   end
-   if potentiallyBlockingModelFrames[frame] then
-      return
-   end
-   potentiallyBlockingModelFrames[frame] = true
-   frame:HookScript("OnShow", blockOverlappedPortraitModels)
-   -- check on update because the blocking frame may have moved...
-   frame:HookScript("OnUpdate", updatePotentiallyBlockingExternalModelFrame)
-   frame:HookScript("OnHide", unblockAllPortraitModels)
-end
-
 -- retexture the frames and enable the animated portraits
 local function onEvent(_, event, ...)
    if event == "PLAYER_LOGIN" then
       enableAnimatedPortraits()
-      registerPotentiallyBlockingExternalModelFrame(CharacterModelFrame)
-      registerPotentiallyBlockingExternalModelFrame(DressUpModelFrame)
-      registerPotentiallyBlockingExternalModelFrame(SideDressUpModel)
-      registerPotentiallyBlockingExternalModelFrame(CharacterModelScene)
-      registerPotentiallyBlockingExternalModelFrame(DressUpFrame.ModelScene)
-      registerPotentiallyBlockingExternalModelFrame(TabardModel)
-   elseif event == "INSPECT_READY" then
-      -- inspect model frame is not available before an inspect
-      registerPotentiallyBlockingExternalModelFrame(InspectModelFrame)
    elseif event == "PORTRAITS_UPDATED" then
       for portraitTexture, state in pairs(models) do
          local unit = state.model.unit
@@ -940,7 +910,6 @@ local function init()
    f:Hide()
    f:SetScript("OnEvent", onEvent)
    f:RegisterEvent("PLAYER_LOGIN")
-   f:RegisterEvent("INSPECT_READY")
    f:RegisterEvent("PORTRAITS_UPDATED")
    f:RegisterEvent("UNIT_PORTRAIT_UPDATE")
 end

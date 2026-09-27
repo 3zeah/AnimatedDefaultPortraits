@@ -4,8 +4,8 @@ World of Warcraft add-on. Animate the default unit-frame portraits with minimal 
 
 ## Limitations
 
-* UI models interfere with each other when intersecting (technical limitation by Blizzard). Custom UI layouts may have to be adapted for optimal results
-    - This add-on will ensure that only the more important portrait is animated if two are very close together
+* Only one portrait is animated if two are very close together. Custom UI layouts may have to be adapted for optimal results
+    - Technical limitation by Blizzard: UI models occlude each other when intersecting
 * Compatibility not guaranteed (but possible) with add-ons that alter unit frames or other portrait frames
 
 ## Technical details
@@ -30,6 +30,8 @@ This quirk may not have been present in the original classic client, and also fe
 
 #### Corollary limitations
 
-By observation 3, there is no known way to circumvent that two models may interfere with each other when intersecting, without altering the look of the model. It is possible to raise or lower a given model wrt camera space without altering its apparent size, by altering the camera distance and offsetting this with frame-view insets, but this will necessarily alter the perspective of the model.
+By observation 3, the only known way to circumvent that two models may occlude each other when intersecting (without altering the look of the model), is to scale up both the model and camera distance of the lower model frame. Increasing the camera distance of the lower model ensures that it is deeper than the higher model, which precludes occlusion. Also scaling up the model ensures that this is visually invariant. (It is possible also to crop the image to compensate for camera-distance changes, but this alters the perspective of the model image.)
+
+To ensure that animated portraits do not occlude other UI model panels, such as the character frame, portrait models are scaled up as much as possible without observing frustum clipping. But portraits themselves are more tricky in that if one portrait was made less deep to account for another, it may again occlude UI model panels: for now, the add-on simply disables the animation for one of each pair of overlapping portraits.
 
 The above is the only significant limitation of this add-on. Were it resolved, portraits could be placed arbitrarily close together, or even made to overlap.
