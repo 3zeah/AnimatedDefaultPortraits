@@ -80,6 +80,9 @@ local portraitsNotToAnimate = {}
 -- are only hooked once (see function `registerPotentiallyBlockingModelFrame`)
 local potentiallyBlockingModelFrames = {}
 
+local PORTRAIT_SHAPE_CIRCLE = 1
+local PORTRAIT_SHAPE_PLAYER_FRAME = 2
+
 local function findFirstNamedParent(f)
    local result = f:GetParent()
    while not result:GetName() do
@@ -433,10 +436,98 @@ local function evalFrameStrataGreaterThanOrdering()
 end
 local FRAME_STRATA_GREATER_THAN_ORDERING = evalFrameStrataGreaterThanOrdering()
 
+local function getDistanceSquared(xA, yA, xB, yB)
+   return abs(xA - xB) ^ 2 + abs(yA - yB) ^ 2
+end
+
+-- that is, also considering model masking. model-mask models will not interfere
+-- with each other, but will interfere with visible models, eg portrait models.
+-- thus, this function returns true exactly when some visible section of either
+-- model intersects with the bounds of the other model frame
+local function modelsVisiblyIntersect(modelA, modelB)
+   local leftA, bottomA, widthA, heightA = modelA:GetScaledRect()
+   -- no reported size => region is not properly loaded => region can be ignored
+   if not heightA then
+      return false
+   end
+   local leftB, bottomB, widthB, heightB = modelB:GetScaledRect()
+   if not heightB then
+      return false
+   end
+   local rightA = leftA + widthA
+   local topA = bottomA + heightA
+   local rightB = leftB + widthB
+   local topB = bottomB + heightB
+   local boundsIntersect = leftA <= rightB and leftB <= rightA
+       and bottomA <= topB and bottomB <= topA
+   -- optimization
+   if not boundsIntersect then
+      return false
+   end
+   local shapeA = modelA.animatedDefaultPortraitsMaskShape
+   local shapeB = modelB.animatedDefaultPortraitsMaskShape
+   -- if no shape, the model is rectangular: intersect because bounds intersect
+   if not shapeA or not shapeB then
+      return true
+   end
+   local centerXA = leftA + widthA / 2
+   local centerYA = bottomA + heightA / 2
+   local centerXB = leftB + widthB / 2
+   local centerYB = bottomB + heightB / 2
+   -- at least some corners are rounded: first, assume both models are circles
+   -- and check whether the circles intersect
+   local distanceSquared =
+       getDistanceSquared(centerXA, centerYA, centerXB, centerYB)
+   local radiusA = max(widthA, heightA) / 2
+   local radiusB = max(widthB, heightB) / 2
+   -- 99% is just to provide some visual margin
+   if distanceSquared < (0.99 * (radiusA + radiusB)) ^ 2 then
+      return true
+   end
+   -- finally, since the bounds intersect, but the regions are not close enough
+   -- to circle-intersect, only one corner of each region are intersecting:
+   -- check that both corners are masked and that neither are in the circle of
+   -- the other
+   local bIsToBottomRight = centerXA < centerXB and centerYB < centerYA
+   local bIsToTopLeft = centerXB < centerXA and centerYA < centerYB
+   -- `PORTRAIT_SHAPE_PLAYER_FRAME` is the only non-circle shape: it has an
+   -- un-masked lower-right corner
+   if (shapeA == PORTRAIT_SHAPE_PLAYER_FRAME and bIsToBottomRight)
+       or (shapeB == PORTRAIT_SHAPE_PLAYER_FRAME and bIsToTopLeft) then
+      return true
+   end
+   local offendingXA, offendingYA
+   local offendingXB, offendingYB
+   if bIsToBottomRight then
+      offendingXA, offendingYA = rightA, bottomA
+      offendingXB, offendingYB = leftB, topB
+   elseif bIsToTopLeft then
+      offendingXA, offendingYA = leftA, topA
+      offendingXB, offendingYB = rightB, bottomB
+   elseif centerXA < centerXB and centerYA < centerYB then
+      -- B is to top right
+      offendingXA, offendingYA = rightA, topA
+      offendingXB, offendingYB = leftB, bottomB
+   else
+      -- B is to bottom left
+      offendingXA, offendingYA = leftA, bottomA
+      offendingXB, offendingYB = rightB, topB
+   end
+   -- are the intersecting corners inside the circle shape?
+   local cornerDistanceSquaredA =
+       getDistanceSquared(offendingXA, offendingYA, centerXB, centerYB)
+   if cornerDistanceSquaredA < (0.99 * radiusB) ^ 2 then
+      return true
+   end
+   local cornerDistanceSquaredB =
+       getDistanceSquared(offendingXB, offendingYB, centerXA, centerYA)
+   return cornerDistanceSquaredB < (0.99 * radiusA) ^ 2
+end
+
 -- that is, considering scale
 local function getEffectiveArea(frame)
    local _, _, w, h = frame:GetScaledRect()
-   return w * h
+   return (w or 0) * (h or 0)
 end
 
 local function leftFrameShouldBlockRight(frameLhs, frameRhs)
@@ -496,8 +587,10 @@ local function blockOverlappedPortraitModels(blocker)
    for otherPortraitTexture, otherState in pairs(models) do
       local otherModel = otherState.model
       if blocker ~= otherModel then
-         if blocker:Intersects(otherModel)
-             and leftFrameShouldBlockRight(blocker, otherState.model) then
+         if otherState.model:GetRect() -- region actually exists
+             and (otherPortraitTexture:IsVisible() or otherModel:IsVisible())
+             and leftFrameShouldBlockRight(blocker, otherState.model)
+             and modelsVisiblyIntersect(blocker, otherState.model) then
             blockAnimatedPortrait(otherPortraitTexture, otherState, blocker)
          else
             unblockAnimatedPortrait(otherPortraitTexture, otherState, blocker)
@@ -594,9 +687,11 @@ local function createModel(portraitTexture, disableMasking)
          model.circleMaskTopLeft = topLeft
          model.circleMaskTopRight = topRight
          model.circleMaskBottomLeft = bottomLeft
+         model.animatedDefaultPortraitsMaskShape = PORTRAIT_SHAPE_PLAYER_FRAME
       else -- otherwise, this is a circle mask: just go with full circle mask
          local mask1, mask2 = createCircularModelMask(model, model)
          model.circleMaskFull = { model1 = mask1, model2 = mask2 }
+         model.animatedDefaultPortraitsMaskShape = PORTRAIT_SHAPE_CIRCLE
       end
    end
 
