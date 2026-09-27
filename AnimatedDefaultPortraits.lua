@@ -460,7 +460,19 @@ local function leftFrameShouldBlockRight(frameLhs, frameRhs)
    -- otherwise, check which is higher
    local levelLhs = getEffectiveFrameLevel(frameLhs)
    local levelRhs = getEffectiveFrameLevel(frameRhs)
-   return levelLhs > levelRhs
+   if levelLhs ~= levelRhs then
+      return levelLhs > levelRhs
+   end
+   -- finally, since this function must not return true for both frames, lest
+   -- both be blocked, we require a final fallback: comparing positions is
+   -- fine because, by an above guard, the frames are of equal size, and, thus,
+   -- if they are also on the same position, then it is fine to block both
+   local leftLhs = frameLhs:GetLeft()
+   local leftRhs = frameRhs:GetLeft()
+   if leftLhs ~= leftRhs then
+      return leftLhs < leftRhs
+   end
+   return frameLhs:GetBottom() < frameRhs:GetBottom()
 end
 
 local function blockAnimatedPortrait(portraitTexture, state, blocker)
