@@ -30,8 +30,14 @@ This quirk may not have been present in the original classic client, and also fe
 
 #### Corollary limitations
 
-By observation 3, the only known way to circumvent that two models may occlude each other when intersecting (without altering the look of the model), is to scale up both the model and camera distance of the lower model frame. Increasing the camera distance of the lower model ensures that it is deeper than the higher model, which precludes occlusion. Also scaling up the model ensures that this is visually invariant. (It is possible also to crop the image to compensate for camera-distance changes, but this alters the perspective of the model image.)
-
-To ensure that animated portraits do not occlude other UI model panels, such as the character frame, portrait models are scaled up as much as possible without observing frustum clipping. But portraits themselves are more tricky in that if one portrait was made less deep to account for another, it may again occlude UI model panels: for now, the add-on simply disables the animation for one of each pair of overlapping portraits.
+By observation 3, there is no known way to circumvent that two models may interfere with each other when intersecting, without altering the look of the model.
 
 The above is the only significant limitation of this add-on. Were it resolved, portraits could be placed arbitrarily close together, or even made to overlap.
+
+* It is possible to alter camera distance and offset the perceived distance with frame-view insets, but this will necessarily alter the perspective of the model
+* It is possible to alter camera distance and offset the zoom by scaling the model, but this does not play nice with particles
+    - Fails the skeletal warhorse test: creature with display id 10720 shuld amass background glow
+* Another problem with trying to scale the model is that frustum clipping becomes an issue. It is possible with `ModelScene` (instead of `PlayerModel`) explicitly to set the clipping planes, but `ModelScene` does not work properly (as far as I can tell...)
+    - `ModelScene` has a baseline ambient light, at zero configured lighting, that is brighter than the portrait lighting
+    - `ModelScene` apparently cannot display textured non-players without providing the display ID (all we have is unit token)
+    - `ModelScene` does not have `SetPortraitZoom`, and its camera space apparently does not correspond to `PlayerModel` camera space, so even using a hidden reference model is laborious (maybe not impossible, though)
