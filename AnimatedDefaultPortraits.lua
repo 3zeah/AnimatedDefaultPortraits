@@ -175,7 +175,7 @@ if IS_CLASSIC_CLIENT and WOW_PROJECT_ID ~= WOW_PROJECT_MISTS_CLASSIC then
    -- do not ask me why even this apparently differs between classic and
    -- mainline, but with the portrait background color subtly differing and the
    -- model-frame lighting values being different as well, i am not surprised
-   DIGITAL_ZOOM_FACTOR = -136.5
+   DIGITAL_ZOOM_FACTOR = -134.5
 else
    DIGITAL_ZOOM_FACTOR = -130
 end
@@ -304,7 +304,7 @@ local function createCircularModelMaskModel(container, model)
    mask:SetPaused(true)
    mask:MakeCurrentCameraCustom()
    mask:SetCameraFacing(math.pi / 2)
-   mask:SetPosition(0.1114, 0, -0.2837) -- center one of the gears
+   mask:SetPosition(0.1118, 0, -0.2837) -- center one of the gears
    updateModelMaskCamera(mask)
    mask:SetScript("OnSizeChanged", updateModelMaskCamera)
    -- culling behavior is optimized away if mask model is actually hidden:
