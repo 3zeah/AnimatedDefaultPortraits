@@ -1,6 +1,6 @@
 # Animated Default Portraits
 
-World of Warcraft add-on. Animate the default unit-frame portraits with minimal side effects. Apart from being animated, the portraits are otherwise indistinguishable from the baseline portraits. Supports all clients: both mainline and classic.
+World of Warcraft add-on. Animate the default unit-frame portraits with minimal side effects. The animated portraits are otherwise indistinguishable from the baseline portraits. Supports all clients: both mainline and classic.
 
 ## Limitations
 
@@ -16,7 +16,7 @@ Traditional texture masking may not be applied to models in the UI (`ModelFrame`
 
 ### Solution
 
-This add-on leverages a quirk in the UI model renderer to apply a circular mask to its animated-portrait models. Put briefly, a frame-widget model _A_ will appear to participate in the occlusion of frame-widget model B, although _A_ is below _B_ in frame space (eg, _A_ has lower frame level), as long as _B_ is deeper than _A_ in 3D-camera space (ie, _A_ is closer to its camera).
+This add-on leverages a quirk in the UI model renderer to apply a circular mask to its animated-portrait models. Put briefly, a frame-widget model _A_ will appear to participate in the occlusion of frame-widget model _B_, although _A_ is below _B_ in frame space (eg, _A_ has lower frame level), as long as _B_ is deeper than _A_ in 3D-camera space (ie, _A_ is closer to its camera).
 
 Given a portrait model, this add-on creates another model frame, the "mask model," and places it below the portrait frame. This mask model is set to some model with a small circular hole and zoomed in heavily to ensure it is nearer all parts of all possible portrait models wrt camera space. The mask model is then made imperceptibly transparent. In conclusion, the portrait model is effectively rendered through a circular hole.
 
@@ -30,9 +30,7 @@ This quirk may not have been present in the original classic client, and also fe
 
 #### Corollary limitations
 
-By observation 3, there is no known way to circumvent that two models may interfere with each other when intersecting, without altering the look of the model.
-
-The above is the only significant limitation of this add-on. Were it resolved, portraits could be placed arbitrarily close together, or even made to overlap.
+By observation 3, there is no known way to circumvent that two models may interfere with each other when intersecting, without altering the look of the model. This is the only significant limitation of this add-on. Were it resolved, portraits could be placed arbitrarily close together, or even made to overlap.
 
 * It is possible to alter camera distance and offset the perceived distance with frame-view insets, but this will necessarily alter the perspective of the model
 * It is possible to alter camera distance and offset the zoom by scaling the model, but this does not play nice with particles
