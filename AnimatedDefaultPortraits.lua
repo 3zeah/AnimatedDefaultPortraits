@@ -610,8 +610,31 @@ local function unblockAllPortraitModels(modelFrame)
    end
 end
 
+-- not necessarily exhaustive
+local SCORPION_MODELS = {
+   [125815] = true,  -- creature/scorpion/scorpion.m2
+   [461265] = true,  -- creature/hordescorpionmount/hordescorpion.m2
+   [463776] = true,  -- creature/hordescorpionmount/hordescorpionmount.m2
+}
 local function updateModelScale(model)
-   model:SetModelScale(1 / model:GetEffectiveScale())
+   local baseScale
+   -- the dreaded scorpid hack: scorpids keep waving their fakakta claws through
+   -- and very close to the camera, which causes the claw to pop out of the
+   -- model mask, which relies on the portrait model being at a lower depth for
+   -- occlusion. by increasing the model scale, the depth of the portrait model
+   -- is arbitrarily increased without affecting the perspective. the SCORPION
+   -- EFFECT appears worse in mainline, presumably because the clipping plane
+   -- is nearer, maybe
+   --
+   -- do not apply this workaround to all models, though, because it ruins
+   -- particles and puts deep models at risk of getting far-clipped: verify each
+   -- model that is included here
+   if not IS_CLASSIC_CLIENT and SCORPION_MODELS[model:GetModelFileID()] then
+      baseScale = 500
+   else
+      baseScale = 1
+   end
+   model:SetModelScale(baseScale / model:GetEffectiveScale())
 end
 
 local UPDATE_PERIOD = 1 / 30
