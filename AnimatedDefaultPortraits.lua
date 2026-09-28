@@ -610,6 +610,10 @@ local function unblockAllPortraitModels(modelFrame)
    end
 end
 
+local function updateModelScale(model)
+   model:SetModelScale(1 / model:GetEffectiveScale())
+end
+
 local UPDATE_PERIOD = 1 / 30
 -- create the animated model frame
 local function createModel(portraitTexture, disableMasking)
@@ -647,6 +651,7 @@ local function createModel(portraitTexture, disableMasking)
    model:SetScript("OnHide", unblockAllPortraitModels)
    -- camera position breaks when eg scale is changed
    model:SetScript("OnSizeChanged", function(self)
+      updateModelScale(self)
       self:RefreshCamera()
       self:SetPortraitZoom(1)
       updateModelMaskInsets(self)
@@ -828,6 +833,7 @@ local function updateModelFromUnit(portraitTexture, state)
    local model = state.model
    local unit = model.unit
    model:SetUnit(unit)
+   updateModelScale(model)
    model:RefreshCamera()
    model:SetPortraitZoom(1)
    local animationPlaylist = ANIMATION_OVERRIDES[model:GetModelFileID()]
