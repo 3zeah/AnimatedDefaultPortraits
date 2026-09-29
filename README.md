@@ -1,6 +1,6 @@
 # Animated Default Portraits
 
-World of Warcraft add-on. Animate the default unit-frame portraits with minimal side effects. The animated portraits are otherwise indistinguishable from the baseline portraits. Supports all clients: both mainline and classic.
+World of Warcraft add-on. Animate the default unit-frame portraits with minimal side effects and without user configuration. The animated portraits are otherwise indistinguishable from the baseline portraits. Supports all clients: both mainline and classic.
 
 ## Limitations
 
@@ -14,7 +14,7 @@ World of Warcraft add-on. Animate the default unit-frame portraits with minimal 
 
 #### Background
 
-Traditional texture masking may not be applied to models in the UI (`ModelFrame` or `ModelScene`). This is why other add-ons elect either to alter portrait containers to be rectangular, or to inscribe portaits within the circle beneath some visual smoothing. Either solution alters the look of the UI beyond simply animating the portraits.
+Traditional texture masking may not be applied to models in the UI (`Model` or `ModelScene`). This is why other add-ons elect either to alter portrait containers to be rectangular, or to inscribe portaits within the circle beneath some visual smoothing. Either solution alters the look of the UI beyond simply animating the portraits.
 
 #### Solution
 
