@@ -14,7 +14,7 @@ World of Warcraft add-on. Animate the default unit-frame portraits with minimal 
 
 #### Background
 
-Traditional texture masking may not be applied to models in the UI (`Model` or `ModelScene`). This is why other add-ons elect either to alter portrait containers to be rectangular, or to inscribe portaits within the circle beneath some visual smoothing. Either solution alters the look of the UI beyond simply animating the portraits.
+Traditional texture masking may not be applied to models in the UI (`Model` or `ModelScene`). This is why other add-ons elect either to alter portrait containers to be rectangular, or to inscribe portraits within the circle beneath some visual smoothing. Either solution alters the look of the UI beyond simply animating the portraits.
 
 #### Solution
 
@@ -36,7 +36,7 @@ By observation 3, there is no known way to circumvent that two models may interf
 
 * It is possible to alter camera distance and offset the perceived distance with frame-view insets, but this will necessarily alter the perspective of the model
 * It is possible to alter camera distance and offset the zoom by scaling the model, but this does not play nice with particles
-    - Fails the skeletal warhorse test: creature with display id 10720 shuld amass background glow
+    - Fails the skeletal warhorse test: creature with display id 10720 should amass background glow
 * Another problem with trying to scale the model is that frustum clipping becomes an issue. It is possible with `ModelScene` (instead of `PlayerModel`) explicitly to set the clipping planes, but `ModelScene` does not work properly (as far as I can tell...)
     - `ModelScene` has a baseline ambient light, at zero configured lighting, that is brighter than the portrait lighting
     - `ModelScene` apparently cannot display textured non-players without providing the display ID (all we have is unit token)
@@ -58,7 +58,7 @@ Because other UI models may overlap with user-placed unit-frame portraits, anima
 
 Some animations of some models may clip out of the model-mask occlusion space, by bringing parts very close to the camera (eg scorpid waving claws). This results in parts of the portrait model rendering outside of its container. The workaround is to alter the model scale: configure new ones when encountered.
 
-#### Unfilmable animation blacklist
+#### Off-screen-animation blacklist
 
 Some animation variants of some models are blacklisted, because they bring the model off-frame (eg classic ud males when they stand upright): configure new ones when encountered.
 
@@ -99,7 +99,7 @@ Other considerations
 * UI scale or edit-mode scaling should induce no visual changes
     - Test: edit mode and or UI-scale graphics setting
 * Portraits that have their opacity altered or become tinted should become so even when animated, and this should look as identical as possible
-    - Test: the only known example is low-health units in classc, for the target, focus and party frames
+    - Test: the only known example is low-health units in classic, for the target, focus and party frames
 
 ### Known unit portraits
 
@@ -154,4 +154,4 @@ Identified in source code but not confirmed or properly tested
 * Party-member super-tracking??? (via `SuperTrackedFrameMixin`)
 * `GarrisonCapacityDisplayFrame.PortraitContainer.portrait`
 * `OrderHallTalentFrame.PortraitContainer.portrait`
-* `ProfessionsCustomerOders.PortraitContainer.portrait`
+* `ProfessionsCustomerOrders.PortraitContainer.portrait`

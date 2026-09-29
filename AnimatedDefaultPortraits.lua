@@ -180,7 +180,7 @@ else
    DIGITAL_ZOOM_FACTOR = -130
 end
 
--- # NOTO BENE ON ALL THIS RANDOM FUCKING MATH
+-- # NOTA BENE ON ALL THIS RANDOM FUCKING MATH
 -- ## MODEL SIZE MANIPULATION
 -- symmetrical insets are used to zoom in and out. in particular,
 -- `SetViewInsets(x,x,x,x)` will for negative `x` zoom in by some margin.
@@ -288,7 +288,7 @@ local function createCircularModelMaskModel(container, model)
    -- above model FG in 3D space, then model BG will obscure model FG,
    -- effectively culling part of the foreground model without rendering
    -- anything above it. here, we leverage this by putting a zoomed-in circular
-   -- gear below the portait model to cull its corners, and thus fit the
+   -- gear below the portrait model to cull its corners, and thus fit the
    -- portrait neatly inside the circular unit frame
    --
    -- this hack is subject to lose to random blizz updates. the previous
@@ -937,7 +937,7 @@ local function registerPotentiallyBlockingExternalModelFrame(frame)
    frame:HookScript("OnHide", unblockAllPortraitModels)
 end
 
--- retexture the frames and enable the animated portraits
+-- re-texture the frames and enable the animated portraits
 local function onEvent(_, event, ...)
    if event == "PLAYER_LOGIN" then
       enableAnimatedPortraits()
