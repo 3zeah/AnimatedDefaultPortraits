@@ -1,8 +1,10 @@
 local _, ns = ...
+
 -- Const
 local MaskShape = ns.MaskShape
 local ModelFileId = ns.ModelFileId
 local TextureFileId = ns.TextureFileId
+
 -- Util
 local Set = ns.Set
 local GetDistanceSquared = ns.GetDistanceSquared
@@ -10,6 +12,7 @@ local CLIENT_IS_CLASSIC = ns.CLIENT_IS_CLASSIC
 local TextureIsPortrait = ns.TextureIsPortrait
 local LeftStrataIsAboveRight = ns.LeftStrataIsAboveRight
 local LowerDrawLayer = ns.LowerDrawLayer
+
 -- Config
 local MIN_PORTRAIT_SIZE_TO_ANIMATE = ns.MIN_PORTRAIT_SIZE_TO_ANIMATE
 local ShouldNotAnimate = ns.ShouldNotAnimate
@@ -17,7 +20,8 @@ local CreateBaselinePortraitLight = ns.CreateBaselinePortraitLight
 local PORTRAIT_BACKGROUND_COLOR = ns.PORTRAIT_BACKGROUND_COLOR
 local MASK_MODEL_CONFIG = ns.MASK_MODEL_CONFIG
 local SUPPORTED_MASK_TEXTURE_SHAPES = ns.SUPPORTED_MASK_TEXTURE_SHAPES
-local ANIMATION_OVERRIDES = ns.ANIMATION_OVERRIDES
+
+local AnimationVariantBlacklister = ns.AnimationVariantBlacklister
 
 -- state table of all animated model frames, indexed by each corresponding
 -- portrait texture that was replaced by that model
@@ -645,21 +649,6 @@ local function createModel(portraitTexture, disableMasking)
    return model
 end
 
-local function rollIdleAnimationVariation(playlist)
-   if next(playlist) == nil then
-      return 0
-   end
-   local rng = fastrandom()
-   local total_p = 0
-   for variation, p in pairs(playlist) do
-      total_p = total_p + p
-      if rng < total_p then
-         return variation
-      end
-   end
-   return 0
-end
-
 local function getOrCreateModelState(portraitTexture, disableMasking)
    local extant = models[portraitTexture]
    if extant then
@@ -683,22 +672,8 @@ local function getOrCreateModelState(portraitTexture, disableMasking)
       model = model,
       notAPortrait = false,
       blockingModels = {},
-      idlePlaylist = nil,
-      nextIdleVariation = nil,
+      animationVariantBlacklister = AnimationVariantBlacklister.Create(model)
    }
-   model:SetScript("OnAnimFinished", function(self)
-      local playlist = state.idlePlaylist
-      if not playlist then
-         return
-      end
-      local nextVariation = state.nextIdleVariation
-      if not nextVariation then
-         return
-      end
-      local variation = nextVariation
-      state.nextIdleVariation = rollIdleAnimationVariation(playlist)
-      self:SetAnimation(0, variation)
-   end)
    models[portraitTexture] = state
 
    -- `refreshWhetherAnimated` will see that texture is not set to portrait
@@ -720,14 +695,8 @@ local function updateModelFromUnit(portraitTexture, state)
    updateModelScale(model)
    model:RefreshCamera()
    model:SetPortraitZoom(1)
-   local animationPlaylist = ANIMATION_OVERRIDES[model:GetModelFileID()]
-   if animationPlaylist then
-      state.idlePlaylist = animationPlaylist
-      state.nextIdleVariation = rollIdleAnimationVariation(animationPlaylist)
-      model:SetAnimation(0, rollIdleAnimationVariation(animationPlaylist))
-   else
-      state.idlePlaylist = nil
-   end
+   AnimationVariantBlacklister
+       .UpdateAfterModelChanged(state.animationVariantBlacklister, model)
    model:SetPaused(UnitIsDead(unit))
    setModelVertexColor(model, portraitTexture:GetVertexColor())
    setModelAlpha(model, portraitTexture:GetAlpha())

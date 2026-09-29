@@ -6,4 +6,5 @@
 Const.lua
 Util.lua
 Config.lua
+AnimationVariantBlacklister.lua
 AnimatedDefaultPortraits.lua

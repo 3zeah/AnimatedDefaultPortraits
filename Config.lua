@@ -122,35 +122,3 @@ do
             MaskShape.MAINLINE_PLAYER_PORTRAIT,
     }
 end
-
--- OFF-SCREEN ANIMATION BLACKLIST
-do
-    local UD_MALE_ANIMATION_PLAYLIST = {
-        -- 5% each observed with small experiment, but boosted here to account for
-        -- lack of secondary idle stance (otherwise, character feels stiff)
-        [2] = 0.075,
-        [3] = 0.075,
-    }
-    -- zombies have a 1/3 of each variation: just remove the bad one
-    local ZOMBIE_ANIMATION_PLAYLIST = { [2] = 1 / 3 }
-    local NO_VARIATION_PLAYLIST = {}
-    -- the set of known model id:s where an idle variation is awkwardly off-camera,
-    -- mapped to a table of whitelisted idle variations with probability of playing
-    ns.ANIMATION_OVERRIDES = {
-        -- undead male leans away
-        [ModelFileId.UNDEAD_MALE] = UD_MALE_ANIMATION_PLAYLIST,
-        [ModelFileId.SKELETON_MALE] = UD_MALE_ANIMATION_PLAYLIST,
-        [ModelFileId.CRACK_ELF_MALE] = UD_MALE_ANIMATION_PLAYLIST,
-        -- undead female crouches (5% of 1 + 5% of 2 -> 10% of 2)
-        [ModelFileId.UNDEAD_FEMALE] = { [2] = 0.1 },
-        -- carrion birds fly far up
-        [ModelFileId.CARRION_BIRD] = NO_VARIATION_PLAYLIST,
-        [ModelFileId.CARRION_BIRD_OUTLAND] = NO_VARIATION_PLAYLIST,
-        [ModelFileId.VULTURE] = NO_VARIATION_PLAYLIST,
-        [ModelFileId.VULTURE_MOUNT] = NO_VARIATION_PLAYLIST,
-        -- zombie turns away
-        [ModelFileId.ZOMBIE] = ZOMBIE_ANIMATION_PLAYLIST,
-        [ModelFileId.ZOMBIE_ARM] = ZOMBIE_ANIMATION_PLAYLIST,
-        [ModelFileId.ZOMBIE2] = ZOMBIE_ANIMATION_PLAYLIST,
-    }
-end
