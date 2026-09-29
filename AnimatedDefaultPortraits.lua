@@ -1,79 +1,21 @@
-local function isClassicClient()
-   return WOW_PROJECT_ID == WOW_PROJECT_CLASSIC
-       or WOW_PROJECT_ID == WOW_PROJECT_BURNING_CRUSADE_CLASSIC
-       or WOW_PROJECT_ID == WOW_PROJECT_WRATH_CLASSIC
-       or WOW_PROJECT_ID == WOW_PROJECT_CATACLYSM_CLASSIC
-       or WOW_PROJECT_ID == WOW_PROJECT_MISTS_CLASSIC
-end
-local IS_CLASSIC_CLIENT = isClassicClient()
-
--- experimentally evaluated and tweaked to make the models match the portraits
-local function createModelLight()
-   if IS_CLASSIC_CLIENT then
-      return {
-         omnidirectional = false,
-         -- (x+ is the back of the model, y+ the right-hand side, z+ the bottom)
-         point = CreateVector3D(-0.6, 0, -0.6),
-         ambientIntensity = 1 / 3,
-         ambientColor = CreateColor(1, 1, 1),
-         diffuseIntensity = 10 / 6,
-         diffuseColor = CreateColor(1, 1, 1),
-      }
-   else
-      return {
-         omnidirectional = false,
-         -- (x+ is the back of the model, y+ the right-hand side, z+ the bottom)
-         point = CreateVector3D(-0.6, 0, -0.6),
-         ambientIntensity = 0.45,
-         ambientColor = CreateColor(1, 1, 1),
-         diffuseIntensity = 1,
-         diffuseColor = CreateColor(1, 1, 1),
-      }
-   end
-end
--- to ensure the mask model occlusion-clips all parts of all possible unit
--- models, the mask model must be as close to the camera as possible. lowering
--- the model scale allows a  nearer camera before hitting the near frustum clip
-local MODEL_MASK_SCALE = 0.6
-local SUPPORTED_MASK_TEXTURES = {
-   [130924] = true,  -- interface/characterframe/tempportraitalphamask.blp
-   [3528314] = true, -- interface/masks/circlemask.blp
-   [4682541] = true, -- interface/hud/uiunitframeplayerportraitmask.blp
-   [5321198] = true, -- interface/hud/uiunitframeplayerportraitmask2x.blp
-}
-local UD_MALE_ANIMATION_PLAYLIST = {
-   -- 5% each observed with small experiment, but boosted here to account for
-   -- lack of secondary idle stance (character feels stiff)
-   [2] = 0.075,
-   [3] = 0.075,
-}
-local ZOMBIE_ANIMATION_PLAYLIST = { [2] = 1 / 3 }
--- the set of known model id:s where an idle variation is awkwardly off-camera,
--- mapped to a table of whitelisted idle variations with probability of playing
-local ANIMATION_OVERRIDES = {
-   -- character/scourge/male/scourgemale.m2: leans away
-   [121768] = UD_MALE_ANIMATION_PLAYLIST,
-   -- character/skeleton/male/skeletonmale.m2: ^
-   [121942] = UD_MALE_ANIMATION_PLAYLIST,
-   -- creature/crackelf/crackelfmale.m2 ^
-   [123299] = UD_MALE_ANIMATION_PLAYLIST,
-   -- character/scourge/female/scourgefemale.m2: crouches
-   [121608] = { [2] = 0.1 }, -- 5% of 1 + 5% of 2 -> 10% of 2 (see ud male)
-   -- creature/carrionbird/carrionbird.m2: flies up
-   [123137] = {},
-   -- creature/carrionbirdoutland/carrionbirdoutland.m2 ^
-   [123148] = {},
-   -- creature/vulture/vulture.m2 ^
-   [1661349] = {},
-   -- creature/vulturemount/vulturemount.m2 ^
-   [1926505] = {},
-   -- creature/zombie/zombie.m2: looks away
-   [126570] = ZOMBIE_ANIMATION_PLAYLIST,
-   -- creature/zombie/zombiearm.m2 ^
-   [126571] = ZOMBIE_ANIMATION_PLAYLIST,
-   -- creature/zombie2/zombie2.m2 ^
-   [1888300] = ZOMBIE_ANIMATION_PLAYLIST,
-}
+local _, ns = ...
+-- Const
+local MaskShape = ns.MaskShape
+local ModelFileId = ns.ModelFileId
+local TextureFileId = ns.TextureFileId
+-- Util
+local Set = ns.Set
+local GetDistanceSquared = ns.GetDistanceSquared
+local CLIENT_IS_CLASSIC = ns.CLIENT_IS_CLASSIC
+local TextureIsPortrait = ns.TextureIsPortrait
+local LeftStrataIsAboveRight = ns.LeftStrataIsAboveRight
+local LowerDrawLayer = ns.LowerDrawLayer
+-- Config
+local CreateBaselinePortraitLight = ns.CreateBaselinePortraitLight
+local PORTRAIT_BACKGROUND_COLOR = ns.PORTRAIT_BACKGROUND_COLOR
+local MASK_MODEL_CONFIG = ns.MASK_MODEL_CONFIG
+local SUPPORTED_MASK_TEXTURE_SHAPES = ns.SUPPORTED_MASK_TEXTURE_SHAPES
+local ANIMATION_OVERRIDES = ns.ANIMATION_OVERRIDES
 
 -- state table of all animated model frames, indexed by each corresponding
 -- portrait texture that was replaced by that model
@@ -83,9 +25,6 @@ local portraitsNotToAnimate = {}
 -- state set of all registered potentially-blocking model frames, such that they
 -- are only hooked once (see function `registerPotentiallyBlockingModelFrame`)
 local potentiallyBlockingModelFrames = {}
-
-local PORTRAIT_SHAPE_CIRCLE = 1
-local PORTRAIT_SHAPE_PLAYER_FRAME = 2
 
 local function findFirstNamedParent(f)
    local result = f:GetParent()
@@ -102,33 +41,22 @@ local function findSupportedMaskTexture(texture)
    end
    for i = 1, maskCount do
       local mask = texture:GetMaskTexture(i)
-      if SUPPORTED_MASK_TEXTURES[mask:GetTexture()] then
-         return mask
+      local shape = SUPPORTED_MASK_TEXTURE_SHAPES[mask:GetTexture()]
+      if shape then
+         return mask, shape
       end
    end
    return texture:GetMaskTexture(1)
 end
 
--- interface/characterframe/tempportraitalphamask.blp
-local CIRCLE_MASK_TEXTURE = 130924
--- sampled from actual blizzard portraits
-local PORTRAIT_BACKGROUND_COLOR
-if WOW_PROJECT_ID == WOW_PROJECT_CLASSIC
-    or WOW_PROJECT_ID == WOW_PROJECT_BURNING_CRUSADE_CLASSIC
-    or WOW_PROJECT_ID == WOW_PROJECT_WRATH_CLASSIC then -- classic classic
-   PORTRAIT_BACKGROUND_COLOR = CreateColorFromBytes(0, 14, 33, 255)
-elseif IS_CLASSIC_CLIENT then                           -- changed in cata
-   PORTRAIT_BACKGROUND_COLOR = CreateColorFromBytes(13, 47, 74, 255)
-else                                                    -- retail
-   PORTRAIT_BACKGROUND_COLOR = CreateColorFromBytes(4, 12, 31, 255)
-end
 -- create the solid-color background texture and color overlay of the model
 local function createModelTextures(model, portraitTexture, disableMasking)
    local layer, subLayer = model:GetModelDrawLayer()
    -- it APPEARS the model is always drawn above the background at same level,
    -- but if we ever cannot rely on that, note that the classic trade frame will
    -- break: TradeFrameRecipientPortrait is at (OVERLAY, 1), but
-   -- TradeFrame.TopBorder is at (OVERLAY,0)
+   -- TradeFrame.TopBorder is at (OVERLAY,0), so there is no way to sandwich
+   -- both our elements to separate draw layers
    local bg = model:CreateTexture(nil, layer, nil, subLayer)
    bg:SetColorTexture(
       PORTRAIT_BACKGROUND_COLOR.r,
@@ -141,7 +69,7 @@ local function createModelTextures(model, portraitTexture, disableMasking)
       local mask = model:CreateMaskTexture()
       mask:SetAllPoints(portraitTexture)
       mask:SetTexture(
-         CIRCLE_MASK_TEXTURE,
+         TextureFileId.TEMP_PORTRAIT_ALPHA_MASK,
          "CLAMPTOBLACKADDITIVE",
          "CLAMPTOBLACKADDITIVE"
       )
@@ -149,35 +77,20 @@ local function createModelTextures(model, portraitTexture, disableMasking)
    end
    -- there may also be a mask texture, even if portrait masking is disabled.
    -- in retail, both masks are typically applied, eg for the target frame
-   local externalPortraitMask = findSupportedMaskTexture(portraitTexture)
-   if externalPortraitMask then
+   local maskTexture, shape = findSupportedMaskTexture(portraitTexture)
+   if maskTexture then
       local mask = model:CreateMaskTexture()
-      mask:SetAllPoints(externalPortraitMask)
+      mask:SetAllPoints(maskTexture)
       mask:SetTexture(
-         externalPortraitMask:GetTexture(),
+         maskTexture:GetTexture(),
          "CLAMPTOBLACKADDITIVE",
          "CLAMPTOBLACKADDITIVE"
       )
       bg:AddMaskTexture(mask)
-      model.externalPortraitMask = mask
+      model.referenceMask = { texture = maskTexture, shape = shape }
    end
 
    model.bg = bg
-end
-
--- insets allow zooming in on the model without culling the mask from camera
--- distance being too low. additionally, insets are used to align the model
--- mask with the original portrait-texture mask that it is replacing, since, in
--- the blizzard ui, even portraits that are pre-masked may be cropped extra
-local DIGITAL_ZOOM_FACTOR
--- untested: wrath and cata; there is no way of verifying this through videos
-if IS_CLASSIC_CLIENT and WOW_PROJECT_ID ~= WOW_PROJECT_MISTS_CLASSIC then
-   -- do not ask me why even this apparently differs between classic and
-   -- mainline, but with the portrait background color subtly differing and the
-   -- model-frame lighting values being different as well, i am not surprised
-   DIGITAL_ZOOM_FACTOR = -134.5
-else
-   DIGITAL_ZOOM_FACTOR = -130
 end
 
 -- # NOTA BENE ON ALL THIS RANDOM FUCKING MATH
@@ -192,7 +105,7 @@ end
 -- because the effective render size of the model frame needs to be
 -- proportional to the size of the visible model frame, `s - 2 * x` must be a
 -- linear function on `s` => `x` must be a linear function on `s`. here,
--- `x = DIGITAL_ZOOM_FACTOR * s`
+-- `x = MASK_DIGITAL_ZOOM_FACTOR * s`
 -- ## MODEL POSITION MANIPULATION
 -- the asymmetrical (margin) insets are merely for shifting the model by
 -- coordinate differences in frame space: `SetViewInsets(x,-x,0,0)` will
@@ -217,7 +130,8 @@ local function tryToAlignModelMaskWithRegion(mask, region)
    local sizeInset = (sizeSrc - minSizeDst) / 2
    -- zoom in as if the frame were the size of the destination region, but
    -- leave margin accounting for the size of the actual source region
-   local digitalZoomInset = DIGITAL_ZOOM_FACTOR * minSizeDst + sizeInset
+   local digitalZoomInset = MASK_MODEL_CONFIG.digitalZoomFactor
+       * minSizeDst + sizeInset
    -- a lot of terms here... given that the zoom inset effectively resizes
    -- the mask with respect to the center, the size inset must be subtracted
    -- from the effective margin, lest the size inset effectively be applied
@@ -235,20 +149,19 @@ local function tryToAlignModelMaskWithRegion(mask, region)
        digitalZoomInset + bottomMargin
 end
 
--- camera/insets experimentally tweaked to ensure only the corners are masked
 local function evalModelMaskInsets(model, mask)
    -- if there is a texture mask, the model mask should be aligned with it
-   local alignRegion = model.externalPortraitMask
-   if alignRegion then
+   local referenceMask = model.referenceMask
+   if referenceMask then
       local left, right, top, bottom =
-          tryToAlignModelMaskWithRegion(mask, alignRegion)
+          tryToAlignModelMaskWithRegion(mask, referenceMask.texture)
       if left then
          return left, right, top, bottom
       end
    end
    -- fallback is simply to align with the model frame itself
    local frameSize, _ = mask:GetSize() -- expect square size
-   local digitalZoomInset = DIGITAL_ZOOM_FACTOR * frameSize
+   local digitalZoomInset = MASK_MODEL_CONFIG.digitalZoomFactor * frameSize
    return digitalZoomInset, digitalZoomInset, digitalZoomInset, digitalZoomInset
 end
 
@@ -271,40 +184,24 @@ local function updateModelMaskInsets(model)
 end
 
 local function updateModelMaskCamera(mask)
-   mask:SetModelScale(MODEL_MASK_SCALE / mask:GetEffectiveScale())
-   -- at around camera distance 8, model 587744 stops rendering properly
-   -- at around camera distance 30, the model stops covering portrait models
-   -- that lean in (eg blood elf female sigh)
-   -- the lowest natural ui scale is 65% => 9 / 65% < 14 should be fine
-   mask:SetCameraPosition(0, 14 * MODEL_MASK_SCALE, 0)
+   mask:SetModelScale(MASK_MODEL_CONFIG.scale / mask:GetEffectiveScale())
+   mask:SetCameraPosition(
+      0, MASK_MODEL_CONFIG.cameraDistance * MASK_MODEL_CONFIG.scale, 0
+   )
 end
 
--- any model would do that has a sufficiently round hole: this one is available
--- even on classic clients
-local CIRCLE_MASK_MODEL = 587744 -- Interface/Buttons/TalkToMe_Gears.M2
 local function createCircularModelMaskModel(container, model)
-   -- this is a crazy idea... it is not possible to apply texture masks to
-   -- models, but if a model BG is rendered below a model FG, but model BG is
-   -- above model FG in 3D space, then model BG will obscure model FG,
-   -- effectively culling part of the foreground model without rendering
-   -- anything above it. here, we leverage this by putting a zoomed-in circular
-   -- gear below the portrait model to cull its corners, and thus fit the
-   -- portrait neatly inside the circular unit frame
-   --
-   -- this hack is subject to lose to random blizz updates. the previous
-   -- solution is robust: modify the unit frame texture asset to be thicker
-   -- (from version 1.0.0)
    local mask = CreateFrame("Model", nil, container)
    mask:SetFrameStrata("BACKGROUND") -- lowest: below any portraits
    mask:SetFixedFrameStrata(true)
    mask:SetFrameLevel(0)
    mask:SetFixedFrameLevel(true)
    mask:SetAllPoints(model)
-   mask:SetModel(CIRCLE_MASK_MODEL)
+   mask:SetModel(MASK_MODEL_CONFIG.fileId)
    mask:SetPaused(true)
    mask:MakeCurrentCameraCustom()
-   mask:SetCameraFacing(math.pi / 2)
-   mask:SetPosition(0.1118, 0, -0.2837) -- center one of the gears
+   mask:SetCameraFacing(MASK_MODEL_CONFIG.cameraFacing)
+   mask:SetPosition(MASK_MODEL_CONFIG.posX, 0, MASK_MODEL_CONFIG.posZ)
    updateModelMaskCamera(mask)
    mask:SetScript("OnSizeChanged", updateModelMaskCamera)
    -- culling behavior is optimized away if mask model is actually hidden:
@@ -324,8 +221,10 @@ local function createCircularModelMask(container, model, roll)
    mask1:SetViewInsets(left, right, top, bottom)
    ---@diagnostic disable-next-line: param-type-mismatch
    mask2:SetViewInsets(left, right, top, bottom)
-   local baseRoll = (roll or 0) - 0.17
+   local baseRoll = (roll or 0) + MASK_MODEL_CONFIG.cameraRoll
    mask1:SetCameraRoll(baseRoll)
+   -- mask-model circle has 12 vertices: by adding a second model rolled by 1/24
+   -- revolution, the effective circle has 24 vertices
    mask2:SetCameraRoll(baseRoll + math.pi / 12)
    return mask1, mask2
 end
@@ -381,23 +280,9 @@ local function maintainModelColorOverlay(portraitTexture, model)
    end)
 end
 
-local function lowerDrawLayer(level)
-   if level == "HIGHLIGHT" then
-      return "OVERLAY"
-   elseif level == "OVERLAY" then
-      return "ARTWORK"
-   elseif level == "ARTWORK" then
-      return "BORDER"
-   elseif level == "BORDER" then
-      return "BACKGROUND"
-   else
-      return "BACKGROUND"
-   end
-end
-
 -- call whenever an independent variable is updated, eg `state.model.unit`
 local function refreshWhetherAnimated(portraitTexture, model)
-   local textureIsPortrait = portraitTexture:GetTexture() == "RTPortrait1"
+   local textureIsPortrait = TextureIsPortrait(portraitTexture)
    local shouldAnimate = textureIsPortrait
        and not model.blocked
        and model.unit
@@ -415,34 +300,6 @@ local function refreshWhetherAnimated(portraitTexture, model)
       model:Hide()
       return false
    end
-end
-
-local FRAME_STRATAS = {
-   "WORLD",
-   "BACKGROUND",
-   "LOW",
-   "MEDIUM",
-   "HIGH",
-   "DIALOG",
-   "FULLSCREEN",
-   "FULLSCREEN_DIALOG",
-   "TOOLTIP",
-}
-local function evalFrameStrataGreaterThanOrdering()
-   local result = {}
-   for i, strata in ipairs(FRAME_STRATAS) do
-      local result_i = {}
-      for j = 1, i - 1 do
-         result_i[FRAME_STRATAS[j]] = true
-      end
-      result[strata] = result_i
-   end
-   return result
-end
-local FRAME_STRATA_GREATER_THAN_ORDERING = evalFrameStrataGreaterThanOrdering()
-
-local function getDistanceSquared(xA, yA, xB, yB)
-   return abs(xA - xB) ^ 2 + abs(yA - yB) ^ 2
 end
 
 -- that is, also considering model masking. model-mask models will not interfere
@@ -482,7 +339,7 @@ local function modelsVisiblyIntersect(modelA, modelB)
    -- at least some corners are rounded: first, assume both models are circles
    -- and check whether the circles intersect
    local distanceSquared =
-       getDistanceSquared(centerXA, centerYA, centerXB, centerYB)
+       GetDistanceSquared(centerXA, centerYA, centerXB, centerYB)
    local radiusA = max(widthA, heightA) / 2
    local radiusB = max(widthB, heightB) / 2
    -- 99% is just to provide some visual margin
@@ -497,8 +354,8 @@ local function modelsVisiblyIntersect(modelA, modelB)
    local bIsToTopLeft = centerXB < centerXA and centerYA < centerYB
    -- `PORTRAIT_SHAPE_PLAYER_FRAME` is the only non-circle shape: it has an
    -- un-masked lower-right corner
-   if (shapeA == PORTRAIT_SHAPE_PLAYER_FRAME and bIsToBottomRight)
-       or (shapeB == PORTRAIT_SHAPE_PLAYER_FRAME and bIsToTopLeft) then
+   if (shapeA == MaskShape.MAINLINE_PLAYER_PORTRAIT and bIsToBottomRight)
+       or (shapeB == MaskShape.MAINLINE_PLAYER_PORTRAIT and bIsToTopLeft) then
       return true
    end
    local offendingXA, offendingYA
@@ -520,12 +377,12 @@ local function modelsVisiblyIntersect(modelA, modelB)
    end
    -- are the intersecting corners inside the circle shape?
    local cornerDistanceSquaredA =
-       getDistanceSquared(offendingXA, offendingYA, centerXB, centerYB)
+       GetDistanceSquared(offendingXA, offendingYA, centerXB, centerYB)
    if cornerDistanceSquaredA < (0.99 * radiusB) ^ 2 then
       return true
    end
    local cornerDistanceSquaredB =
-       getDistanceSquared(offendingXB, offendingYB, centerXA, centerYA)
+       GetDistanceSquared(offendingXB, offendingYB, centerXA, centerYA)
    return cornerDistanceSquaredB < (0.99 * radiusA) ^ 2
 end
 
@@ -540,7 +397,7 @@ local function leftFrameShouldBlockRight(frameLhs, frameRhs)
    local strataLhs = frameLhs:GetFrameStrata()
    local strataRhs = frameRhs:GetFrameStrata()
    if strataLhs ~= strataRhs then
-      return FRAME_STRATA_GREATER_THAN_ORDERING[strataLhs][strataRhs] or false
+      return LeftStrataIsAboveRight(strataLhs, strataRhs)
    end
    -- within a strata, significantly larger portraits win
    local sizeLhs = getEffectiveArea(frameLhs)
@@ -611,11 +468,11 @@ local function unblockAllPortraitModels(modelFrame)
 end
 
 -- not necessarily exhaustive
-local SCORPION_MODELS = {
-   [125815] = true,  -- creature/scorpion/scorpion.m2
-   [461265] = true,  -- creature/hordescorpionmount/hordescorpion.m2
-   [463776] = true,  -- creature/hordescorpionmount/hordescorpionmount.m2
-}
+local SCORPION_MODELS = Set(
+   ModelFileId.SCORPION,
+   ModelFileId.HORDE_SCORPION,
+   ModelFileId.HORDE_SCORPION_MOUNT
+)
 local function updateModelScale(model)
    local baseScale
    -- the dreaded scorpid hack: scorpids keep waving their fakakta claws through
@@ -629,7 +486,7 @@ local function updateModelScale(model)
    -- do not apply this workaround to all models, though, because it ruins
    -- particles and puts deep models at risk of getting far-clipped: verify each
    -- model that is included here
-   if not IS_CLASSIC_CLIENT and SCORPION_MODELS[model:GetModelFileID()] then
+   if not CLIENT_IS_CLASSIC and SCORPION_MODELS[model:GetModelFileID()] then
       baseScale = 500
    else
       baseScale = 1
@@ -652,10 +509,10 @@ local function createModel(portraitTexture, disableMasking)
    if subLevel >= 0 then
       model:SetModelDrawLayer(drawLayer)
    else
-      model:SetModelDrawLayer(lowerDrawLayer(drawLayer))
+      model:SetModelDrawLayer(LowerDrawLayer(drawLayer))
    end
 
-   local light = createModelLight()
+   local light = CreateBaselinePortraitLight()
    model:SetLight(true, light)
    model.light = light
    -- because models may be hidden briefly by other model frames
@@ -702,11 +559,10 @@ local function createModel(portraitTexture, disableMasking)
    end)
    createModelTextures(model, portraitTexture, disableMasking)
 
-   if not disableMasking or model.externalPortraitMask then
-      if model.externalPortraitMask and (
-             model.externalPortraitMask:GetTexture() == 5321198
-             or model.externalPortraitMask:GetTexture() == 4682541
-          ) then -- if mainline unit frame player portrait mask
+   if not disableMasking or model.referenceMask then
+      local referenceMask = model.referenceMask
+      if referenceMask
+          and referenceMask.shape == MaskShape.MAINLINE_PLAYER_PORTRAIT then
          -- then create special mask containers for each masked corner
          local topLeft = createCircularModelMaskContainer(model, 0)
          topLeft:SetPoint("TOPLEFT", model, "TOPLEFT")
@@ -720,11 +576,11 @@ local function createModel(portraitTexture, disableMasking)
          model.circleMaskTopLeft = topLeft
          model.circleMaskTopRight = topRight
          model.circleMaskBottomLeft = bottomLeft
-         model.animatedDefaultPortraitsMaskShape = PORTRAIT_SHAPE_PLAYER_FRAME
-      else -- otherwise, this is a circle mask: just go with full circle mask
+         model.animatedDefaultPortraitsMaskShape = MaskShape.MAINLINE_PLAYER_PORTRAIT
+      else -- otherwise, this is a circle mask
          local mask1, mask2 = createCircularModelMask(model, model)
          model.circleMaskFull = { model1 = mask1, model2 = mask2 }
-         model.animatedDefaultPortraitsMaskShape = PORTRAIT_SHAPE_CIRCLE
+         model.animatedDefaultPortraitsMaskShape = MaskShape.CIRCLE
       end
    end
 

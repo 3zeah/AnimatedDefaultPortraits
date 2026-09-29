@@ -1,0 +1,50 @@
+local _, ns = ...
+
+ns.MaskShape = {
+    CIRCLE = 0,
+    MAINLINE_PLAYER_PORTRAIT = 1,
+}
+
+ns.ModelFileId = {
+    -- character/scourge/female/scourgefemale.m2
+    UNDEAD_FEMALE = 121608,
+    -- character/scourge/male/scourgemale.m2
+    UNDEAD_MALE = 121768,
+    -- character/skeleton/male/skeletonmale.m2
+    SKELETON_MALE = 121942,
+    -- creature/carrionbird/carrionbird.m2
+    CARRION_BIRD = 123137,
+    -- creature/carrionbirdoutland/carrionbirdoutland.m2
+    CARRION_BIRD_OUTLAND = 123148,
+    -- creature/crackelf/crackelfmale.m2
+    CRACK_ELF_MALE = 123299,
+    -- creature/scorpion/scorpion.m2
+    SCORPION = 125815,
+    -- creature/zombie/zombie.m2
+    ZOMBIE = 126570,
+    -- creature/zombie/zombiearm.m2
+    ZOMBIE_ARM = 126571,
+    -- creature/hordescorpionmount/hordescorpion.m2
+    HORDE_SCORPION = 461265,
+    -- creature/hordescorpionmount/hordescorpionmount.m2
+    HORDE_SCORPION_MOUNT = 463776,
+    -- Interface/Buttons/TalkToMe_Gears.M2
+    TALK_TO_ME_GEARS = 587744,
+    -- creature/vulture/vulture.m2
+    VULTURE = 1661349,
+    -- creature/zombie2/zombie2.m2
+    ZOMBIE2 = 1888300,
+    -- creature/vulturemount/vulturemount.m2
+    VULTURE_MOUNT = 1926505,
+}
+
+ns.TextureFileId = {
+    -- interface/characterframe/tempportraitalphamask.blp
+    TEMP_PORTRAIT_ALPHA_MASK = 130924,
+    -- interface/masks/circlemask.blp
+    CIRCLE_MASK = 3528314,
+    -- interface/hud/uiunitframeplayerportraitmask.blp
+    UI_UNIT_FRAME_PLAYER_PORTRAIT_MASK = 4682541,
+    -- interface/hud/uiunitframeplayerportraitmask2x.blp
+    UI_UNIT_FRAME_PLAYER_PORTRAIT_MASK_2X = 5321198,
+}
