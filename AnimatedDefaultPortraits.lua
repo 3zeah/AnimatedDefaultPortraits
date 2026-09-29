@@ -283,7 +283,7 @@ local function setModelAlpha(model, a)
 end
 
 local function setModelVertexColor(model, r, g, b, a)
-   local light = model.light
+   local light = CreateBaselinePortraitLight()
    light.ambientColor = CreateColor(r, g, b)
    light.diffuseColor = CreateColor(r, g, b)
    model:SetLight(true, light)
@@ -538,7 +538,6 @@ local function createModel(portraitTexture, disableMasking)
 
    local light = CreateBaselinePortraitLight()
    model:SetLight(true, light)
-   model.light = light
    -- because models may be hidden briefly by other model frames
    model:SetKeepModelOnHide(true)
    model:SetScript("OnShow", function(self)
