@@ -165,22 +165,46 @@ local function evalModelMaskInsets(model, mask)
    return digitalZoomInset, digitalZoomInset, digitalZoomInset, digitalZoomInset
 end
 
-local function updateModelMaskInsetsInContainer(model, container)
+local function applyOrEvalModelMaskInsetsToContainer(
+    model,
+    container,
+    left, right, top, bottom
+)
    if not container then
-      return
+      return nil
    end
-   -- all masks share the same region rect: eval insets only once
-   local left, right, top, bottom = evalModelMaskInsets(model, container.model1)
+   if not left then
+      left, right, top, bottom = evalModelMaskInsets(model, container.model1)
+   end
    container.model1:SetViewInsets(left, right, top, bottom)
    container.model2:SetViewInsets(left, right, top, bottom)
+   return left, right, top, bottom
 end
 
 -- faster and more comfortable than setting the insets for each mask separately
 local function updateModelMaskInsets(model)
-   updateModelMaskInsetsInContainer(model, model.circleMaskFull)
-   updateModelMaskInsetsInContainer(model, model.circleMaskTopLeft)
-   updateModelMaskInsetsInContainer(model, model.circleMaskTopRight)
-   updateModelMaskInsetsInContainer(model, model.circleMaskBottomLeft)
+   local left, right, top, bottom
+   -- all masks share the same region rect: eval insets only once
+   left, right, top, bottom = applyOrEvalModelMaskInsetsToContainer(
+      model,
+      model.circleMaskFull,
+      left, right, top, bottom
+   )
+   left, right, top, bottom = applyOrEvalModelMaskInsetsToContainer(
+      model,
+      model.circleMaskTopLeft,
+      left, right, top, bottom
+   )
+   applyOrEvalModelMaskInsetsToContainer(
+      model,
+      model.circleMaskTopRight,
+      left, right, top, bottom
+   )
+   applyOrEvalModelMaskInsetsToContainer(
+      model,
+      model.circleMaskBottomLeft,
+      left, right, top, bottom
+   )
 end
 
 local function updateModelMaskCamera(mask)
