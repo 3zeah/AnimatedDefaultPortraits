@@ -66,7 +66,7 @@ Unfortunately, "blacklisting" animation variants actually requires simulating th
 
 #### Disabling animations per portrait
 
-This is unfortunately a necessarily opinionated stylistic judgement, but there are, to me, some obvious examples of portraits that should not be animated, chiefly the "micro button", which opens the character frame (eg target-of-target portraits are not animated because they are relatively visually insignificant)
+This is unfortunately a necessarily opinionated stylistic judgement, but there are, to me, some obvious examples of portraits that should not be animated, chiefly the "micro button", which opens the character frame (eg target-of-target portraits are not animated because they are relatively visually insignificant).
 
 ### Testing
 
@@ -74,36 +74,39 @@ Use the `dev` branch and ensure it is rebased on main, or on whatever changes yo
 
 #### Test expectations
 
-For each new client (or for all clients if some client actually regressed: several behaviors actually change per client, not per Classic vs Mainline)
+For each new client (or for all clients if some client actually regressed: several behaviors actually differ per client, not only per Classic vs Mainline)
 
 * The portrait lighting and background color match baseline
-    - Test: `AdpPose();AdpFrameTex()` -> repeat `AdpToggle()`
+    - Test: `AdpPose();AdpFrameTex()`, and set a decently high scale for some unit frame, but not so high that baseline-portrait pixelation accounts for the visual difference -> repeat `AdpToggle()`
 * The circular portrait-model mask tightly inscribes circular portrait textures without a mask texture
-    - Test: `AdpFrameTex();AdpShowMask()` -> repeat `AdpToggle()` and or `AdpShowMask()`
-    - Circular texture edges are subject to blurring and anti-aliasing: ensure that the opaque pixels are inscribed
+    - Test: `AdpFrameTex();AdpShowMask()`, and set a very high scale for some unit frame -> repeat `AdpToggle()` and or `AdpShowMask()`
+    - Circular texture edges are subject to blurring and anti-aliasing: ensure that the opaque pixels are strictly inscribed
 * The portrait-model mask is aligned with the mask texture of portraits that have one
     - Test: same as above
 
 For each new or updated type of portrait
 
 * The portrait model does not peek out from portrait-container frames (eg the unit-frame texture frames)
-    - Test: `AdpFrameTex()`, or otherwise hiding Blizzard UI elements, may help to identify close calls
-* The portrait model is not incorrectly layered: it is behind foreground textures and above background textures, wrt the baseline portrait
-    - Test: `AdpToggle()`
+    - Test: by inspection, but `AdpFrameTex()`, or otherwise hiding Blizzard UI elements, may help to identify close calls
+* The portrait model is correctly layered: it is behind foreground textures and above background textures, wrt the baseline portrait
+    - Test: repeat `AdpToggle()`
 
 Other considerations
 
 * Intersecting portraits should not occlude each other: the more important portrait should remain animated
     - Test: edit mode
-    - Give extra consideration to special shapes such as the mainline player frame
+    - Also consider special shapes such as the mainline player frame
 * UI scale or edit-mode scaling should induce no visual changes
-    - Test: edit mode and or UI-scale graphics setting
-* Portraits that have their opacity altered or become tinted should become so even when animated, and this should look as identical as possible
-    - Test: the only known example is low-health units in classic, for the target, focus and party frames
+    - Test: by inspection
+* Portrait textures are sometimes set to images: this behavior should be preserved
+    - Classic/Mainline: tab between merchant and buyback tabs of merchant frame: portrait should be a sack image exactly in buyback tab
+    - Mainline: tab between character and reputation/currency tabs of character frame: portrait should be the spec icon exactly in character tab
+* Portraits that have their opacity altered or become tinted should become so even when animated, and this should look as identical to baseline as possible
+    - Test: the only known example is low-health units in classic, for the target, focus, and party frames
 
 ### Known unit portraits
 
-Each applies to all clients unless otherwise stated.
+Each is in all clients unless otherwise stated.
 
 * Unit frames
     - Player
@@ -116,24 +119,24 @@ Each applies to all clients unless otherwise stated.
     - Party frames
     - Party pets
 * Corner of NPC-dialogue frames
-    - Regular dialogue (gossip frame)
+    - Regular dialogue ("gossip" frame)
     - Quest-description dialogue
     - Merchant
     - Bank
     - Class/professions/skill trainer
-    - Pet-stable
-    - Flight-point selection (classic)
+    - Pet-stable (pre-cata)
+    - Flight-point selection (pre-cata)
     - Tabard design (guild master: "I want to create a guild crest.")
     - Guild registration (guild master: "How do I form a guild?")
-    - Guild-rename prompt
-* Character "micro button" (the button that opens the character frame)
+    - Guild-rename prompt (guild master: "I would like to rename my guild.")
+* Character-info menu button (the small button that opens the character frame)
 * Character frame corner: all tabs
 * Character-stats button in character frame (cata+)
-* Talent frame corner
-* Dress-up frame corner (ctrl-click item preview)
+* Talent frame corner (pre-cata)
+* Dressing-room frame corner (ctrl-click item preview)
 * Auction-house frame corner
-* Profession-crafting frame corner
-    - In classic, both `TradeSkillFrame` (eg First Aid) and `CraftFrame` (eg Enchanting), because do not ask me the difference
+* Profession-crafting frame corner (classic)
+    - Both `TradeSkillFrame` (eg First Aid) and `CraftFrame` (eg Enchanting), because do not ask me the difference
 * Inspect frame corner
 * Trade frame, player and recipient
     - Mainline: `/run ShowUIPanel(TradeFrame, 1);SetPortraitTexture(TradeFramePortrait, "player");SetPortraitTexture(TradeFrame.RecipientOverlay.portrait, "target")`
@@ -143,15 +146,15 @@ Each applies to all clients unless otherwise stated.
 
 #### IDK
 
-Identified in source code but not confirmed or properly tested
+Identified in source code but not confirmed or properly tested. Mostly or only newer mainline features.
 
-* `BarberShopAlternateFormTopPortrait` / `BarberShopAlternateFormBottomPortrait` (classic)
+* Arena-enemy pet frames?
 * Some "challenge-mode" party frames (via `ChallengeModeBannerPartyMemberMixin`): something about mythic+?
 * Voice activity notification? (via `VoiceActivityNotificationMixin`)
 * Party sync participants? (via `QuestSessionMemberMixin`)
 * `GarrisonRecruiterFrame.PortraitTexture`
 * `ItemInteractionFrame.PortraitContainer.portrait`
 * Party-member super-tracking??? (via `SuperTrackedFrameMixin`)
-* `GarrisonCapacityDisplayFrame.PortraitContainer.portrait`
+* `GarrisonCapacitiveDisplayFrame.PortraitContainer.portrait`
 * `OrderHallTalentFrame.PortraitContainer.portrait`
 * `ProfessionsCustomerOrders.PortraitContainer.portrait`
