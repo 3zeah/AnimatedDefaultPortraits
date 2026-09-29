@@ -30,6 +30,46 @@ function ns.ShouldNotAnimate(portraitTexture)
         or portraitTexture == AchievementFrameComparisonHeaderPortrait
 end
 
+do
+    local function findFirstNamedParent(f)
+        local result = f:GetParent()
+        while not result:GetName() do
+            result = result:GetParent()
+        end
+        return result
+    end
+
+    -- by using a frame buffer, alpha can be made more accurate (otherwise,
+    -- model alpha will blend with background alpha). the downside is that frame
+    -- buffering requires render-layer flattening, which makes make it impossible
+    -- to sandwich the model frame into other frames by fiddling with draw
+    -- layers. for most portrait containers, this does not actually matter, so it
+    -- is safe to enable this for any frame that has been vetted to look fine
+    -- with this enabled, but it is also only necessary if the portrait is ever
+    -- not opaque
+    function ns.ShouldRenderToFrameBuffer(portraitTexture)
+        return portraitTexture == PlayerPortrait
+            or (
+                PlayerFrame
+                and PlayerFrame.PlayerFrameContainer
+                and portraitTexture == PlayerFrame.PlayerFrameContainer.PlayerPortrait
+            )
+            or portraitTexture == TargetFramePortrait
+            or (
+                TargetFrame
+                and TargetFrame.TargetFrameContainer
+                and portraitTexture == TargetFrame.TargetFrameContainer.Portrait
+            )
+            or portraitTexture == FocusFramePortrait
+            or (
+                FocusFrame
+                and FocusFrame.TargetFrameContainer
+                and portraitTexture == FocusFrame.TargetFrameContainer.Portrait
+            )
+            or findFirstNamedParent(portraitTexture) == PartyFrame
+    end
+end
+
 -- PORTRAIT APPEARANCE
 do
     -- tweaked to match baseline portraits

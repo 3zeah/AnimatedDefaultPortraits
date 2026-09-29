@@ -16,6 +16,7 @@ local LowerDrawLayer = ns.LowerDrawLayer
 -- Config
 local MIN_PORTRAIT_SIZE_TO_ANIMATE = ns.MIN_PORTRAIT_SIZE_TO_ANIMATE
 local ShouldNotAnimate = ns.ShouldNotAnimate
+local ShouldRenderToFrameBuffer = ns.ShouldRenderToFrameBuffer
 local CreateBaselinePortraitLight = ns.CreateBaselinePortraitLight
 local PORTRAIT_BACKGROUND_COLOR = ns.PORTRAIT_BACKGROUND_COLOR
 local MASK_MODEL_CONFIG = ns.MASK_MODEL_CONFIG
@@ -31,14 +32,6 @@ local portraitsNotToAnimate = {}
 -- state set of all registered potentially-blocking model frames, such that they
 -- are only hooked once (see function `registerPotentiallyBlockingModelFrame`)
 local potentiallyBlockingModelFrames = {}
-
-local function findFirstNamedParent(f)
-   local result = f:GetParent()
-   while not result:GetName() do
-      result = result:GetParent()
-   end
-   return result
-end
 
 local function findSupportedMaskTexture(texture)
    local maskCount = texture:GetNumMaskTextures()
@@ -613,33 +606,7 @@ local function createModel(portraitTexture, disableMasking)
       end
    end
 
-   -- by using a frame buffer, alpha can be made more accurate (otherwise,
-   -- model alpha will blend with background alpha). the downside is that frame
-   -- buffering requires render-layer flattening, which makes make it impossible
-   -- to sandwich the model frame into other frames by fiddling with draw
-   -- layers. for most portrait containers, this does not actually matter, so it
-   -- is safe to enable this for any frame that has been vetted to look fine
-   -- with this enabled, but it is also only necessary if the portrait is ever
-   -- not opaque
-   if portraitTexture == PlayerPortrait
-       or (
-          PlayerFrame
-          and PlayerFrame.PlayerFrameContainer
-          and portraitTexture == PlayerFrame.PlayerFrameContainer.PlayerPortrait
-       )
-       or portraitTexture == TargetFramePortrait
-       or (
-          TargetFrame
-          and TargetFrame.TargetFrameContainer
-          and portraitTexture == TargetFrame.TargetFrameContainer.Portrait
-       )
-       or portraitTexture == FocusFramePortrait
-       or (
-          FocusFrame
-          and FocusFrame.TargetFrameContainer
-          and portraitTexture == FocusFrame.TargetFrameContainer.Portrait
-       )
-       or findFirstNamedParent(portraitTexture) == PartyFrame then
+   if ShouldRenderToFrameBuffer(portraitTexture) then
       model:SetFlattensRenderLayers(true)
       model:SetIsFrameBuffer(true)
       model.bg:SetIgnoreParentAlpha(true)
