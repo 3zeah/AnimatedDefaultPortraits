@@ -11,6 +11,8 @@ local TextureIsPortrait = ns.TextureIsPortrait
 local LeftStrataIsAboveRight = ns.LeftStrataIsAboveRight
 local LowerDrawLayer = ns.LowerDrawLayer
 -- Config
+local MIN_PORTRAIT_SIZE_TO_ANIMATE = ns.MIN_PORTRAIT_SIZE_TO_ANIMATE
+local ShouldNotAnimate = ns.ShouldNotAnimate
 local CreateBaselinePortraitLight = ns.CreateBaselinePortraitLight
 local PORTRAIT_BACKGROUND_COLOR = ns.PORTRAIT_BACKGROUND_COLOR
 local MASK_MODEL_CONFIG = ns.MASK_MODEL_CONFIG
@@ -658,41 +660,21 @@ local function rollIdleAnimationVariation(playlist)
    return 0
 end
 
-local function shouldBlacklist(portraitTexture)
-   return portraitTexture == MicroButtonPortrait
-       or (
-          CharacterMicroButton
-          and CharacterMicroButton.Portrait
-          and portraitTexture == CharacterMicroButton.Portrait
-       )
-       or (
-          PaperDollSidebarTab1
-          and portraitTexture == PaperDollSidebarTab1.Icon
-       )
-       or portraitTexture == TargetFrameToTPortrait
-       or TargetFrameToT and portraitTexture == TargetFrameToT.Portrait
-       or portraitTexture == FocusFrameToTPortrait
-       or (FocusFrameToT and portraitTexture == FocusFrameToT.Portrait)
-       or portraitTexture == AchievementFrameComparisonHeaderPortrait
-end
-
 local function getOrCreateModelState(portraitTexture, disableMasking)
    local extant = models[portraitTexture]
    if extant then
       return extant
    end
 
-   if shouldBlacklist(portraitTexture) then
+   if ShouldNotAnimate(portraitTexture) then
       return nil
    end
    local w, h = portraitTexture:GetSize()
    -- non-square portraits simply do not work with the model-masking hack, and
    -- small portraits are not detailed enough to bother animating
-   -- (the specific value here, 35, comes from target-of-target being 35 in
-   -- classic, but party and pet frames being 37: the former should be disabled
-   -- stylistically, imo, but the latter not, and thus this is a decent guide)
-   -- (the only non-square portrait i am aware of is the micro button)
-   if abs(w - h) > 0.5 or w < 35.5 then
+   -- (the only non-square portraits i am aware of are the micro button and the
+   -- the character-stats button in the post-cata character frame)
+   if abs(w - h) > 0.5 or w < MIN_PORTRAIT_SIZE_TO_ANIMATE - 0.5 then
       return nil
    end
 

@@ -7,6 +7,29 @@ local TextureFileId = ns.TextureFileId
 local CLIENT_IS_CLASSIC = ns.CLIENT_IS_CLASSIC
 local ClientIsClassicBefore = ns.ClientIsClassicBefore
 
+-- 36 comes from target-of-target being 35 in classic, but party and pet frames
+-- being 37: the former should be disabled stylistically, imo, but the latter
+-- not, and thus this is a decent guide
+ns.MIN_PORTRAIT_SIZE_TO_ANIMATE = 36
+
+function ns.ShouldNotAnimate(portraitTexture)
+    return portraitTexture == MicroButtonPortrait
+        or (
+            CharacterMicroButton
+            and CharacterMicroButton.Portrait
+            and portraitTexture == CharacterMicroButton.Portrait
+        )
+        or (
+            PaperDollSidebarTab1
+            and portraitTexture == PaperDollSidebarTab1.Icon
+        )
+        or portraitTexture == TargetFrameToTPortrait
+        or TargetFrameToT and portraitTexture == TargetFrameToT.Portrait
+        or portraitTexture == FocusFrameToTPortrait
+        or (FocusFrameToT and portraitTexture == FocusFrameToT.Portrait)
+        or portraitTexture == AchievementFrameComparisonHeaderPortrait
+end
+
 -- PORTRAIT APPEARANCE
 do
     -- tweaked to match baseline portraits
