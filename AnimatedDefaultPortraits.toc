@@ -5,6 +5,8 @@
 ## IconTexture: Interface/ICONS/Achievement_Character_Dwarf_Male.PNG
 Const.lua
 Util.lua
-Config.lua
 AnimationVariantBlacklister.lua
+FrameConfig.lua
+ModelMaskFrame.lua
+AnimatedPortraitFrame.lua
 AnimatedDefaultPortraits.lua

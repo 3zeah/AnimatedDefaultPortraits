@@ -1,3 +1,6 @@
+---system config for animated portrait frames, including the associated model
+---mask, chiefly per-client portrait-appearance data and mask-alignment values
+
 local _, ns = ...
 -- Const
 local MaskShape = ns.MaskShape
@@ -12,22 +15,23 @@ local ClientIsClassicBefore = ns.ClientIsClassicBefore
 -- not, and thus this is a decent guide
 ns.MIN_PORTRAIT_SIZE_TO_ANIMATE = 36
 
-function ns.ShouldNotAnimate(portraitTexture)
-    return portraitTexture == MicroButtonPortrait
+---if true for a given portrait, this add-on will effectively ignore it
+function ns.ShouldNotAnimate(portrait)
+    return portrait == MicroButtonPortrait
         or (
             CharacterMicroButton
             and CharacterMicroButton.Portrait
-            and portraitTexture == CharacterMicroButton.Portrait
+            and portrait == CharacterMicroButton.Portrait
         )
         or (
             PaperDollSidebarTab1
-            and portraitTexture == PaperDollSidebarTab1.Icon
+            and portrait == PaperDollSidebarTab1.Icon
         )
-        or portraitTexture == TargetFrameToTPortrait
-        or TargetFrameToT and portraitTexture == TargetFrameToT.Portrait
-        or portraitTexture == FocusFrameToTPortrait
-        or (FocusFrameToT and portraitTexture == FocusFrameToT.Portrait)
-        or portraitTexture == AchievementFrameComparisonHeaderPortrait
+        or portrait == TargetFrameToTPortrait
+        or TargetFrameToT and portrait == TargetFrameToT.Portrait
+        or portrait == FocusFrameToTPortrait
+        or (FocusFrameToT and portrait == FocusFrameToT.Portrait)
+        or portrait == AchievementFrameComparisonHeaderPortrait
 end
 
 do
