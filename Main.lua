@@ -296,9 +296,6 @@ local function updatePotentiallyBlockingExternalModelFrame(modelFrame, elapsed)
    blockOverlappedPortraitModels(modelFrame)
 end
 
--- modern clients appear unable to render models if the model frames intersect:
--- track model frames from blizzard ui and turn off animated portraits that
--- are blocked by those model frames
 local function registerPotentiallyBlockingExternalModelFrame(frame)
    -- do not register models owned by this add-on, and do not register twice
    if not frame or models[frame] or potentiallyBlockingModelFrames[frame] then
@@ -326,11 +323,16 @@ local METHODS_TO_HOOK_PER_MODEL_WIDGET = {
    ["TabardModel"] = { "SetModel", "SetCreature", "SetDisplayInfo", "SetUnit" },
    ["ModelScene"] = { "CreateActor" },
 }
+-- modern clients appear unable to render models if the model frames intersect:
+-- track model frames from blizzard ui and turn off animated portraits that
+-- overlap those model frames. typical example is the character frame covering
+-- a unit frame
+--
 -- by hooking into the api:s for actually showing a model in a model frame, we
 -- can hope to catch all potentially-blocking external models without having to
 -- explicitly register each, especially because some are not present at load
 -- time, eg the inspect model and the transmog-preview model
-local function tryToRegisterAllNewExternalModelFrames()
+local function preventIntersectingModelOcclusion()
    for widgetType, methods in pairs(METHODS_TO_HOOK_PER_MODEL_WIDGET) do
       local meta = getmetatable(CreateFrame(widgetType)).__index
       for _, method in ipairs(methods) do
@@ -345,13 +347,7 @@ end
 local function onEvent(_, event, ...)
    if event == "PLAYER_LOGIN" then
       enableAnimatedPortraits()
-      tryToRegisterAllNewExternalModelFrames()
-      registerPotentiallyBlockingExternalModelFrame(CharacterModelFrame)
-      registerPotentiallyBlockingExternalModelFrame(DressUpModelFrame)
-      registerPotentiallyBlockingExternalModelFrame(SideDressUpModel)
-      registerPotentiallyBlockingExternalModelFrame(CharacterModelScene)
-      registerPotentiallyBlockingExternalModelFrame(DressUpFrame.ModelScene)
-      registerPotentiallyBlockingExternalModelFrame(TabardModel)
+      preventIntersectingModelOcclusion()
    elseif event == "PORTRAITS_UPDATED" then
       for portraitTexture, state in pairs(states) do
          local unit = state.model.unit
