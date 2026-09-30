@@ -314,85 +314,30 @@ local function registerPotentiallyBlockingExternalModelFrame(frame)
    frame:HookScript("OnHide", unblockAllPortraitModels)
 end
 
+local METHODS_TO_HOOK_PER_MODEL_WIDGET = {
+   ["Model"] = { "SetModel" },
+   ["PlayerModel"] = { "SetModel", "SetCreature", "SetDisplayInfo", "SetUnit" },
+   ["CinematicModel"] = {
+      "SetModel", "SetCreature", "SetDisplayInfo", "SetUnit", "SetCreatureData"
+   },
+   ["DressUpModel"] = {
+      "SetModel", "SetCreature", "SetDisplayInfo", "SetUnit"
+   },
+   ["TabardModel"] = { "SetModel", "SetCreature", "SetDisplayInfo", "SetUnit" },
+   ["ModelScene"] = { "CreateActor" },
+}
 -- by hooking into the api:s for actually showing a model in a model frame, we
 -- can hope to catch all potentially-blocking external models without having to
 -- explicitly register each, especially because some are not present at load
 -- time, eg the inspect model and the transmog-preview model
 local function tryToRegisterAllNewExternalModelFrames()
-   do
-      local meta = getmetatable(CreateFrame("Model")).__index
-      hooksecurefunc(
-         meta, "SetModel", registerPotentiallyBlockingExternalModelFrame
-      )
-   end
-   do
-      local meta = getmetatable(CreateFrame("PlayerModel")).__index
-      hooksecurefunc(
-         meta, "SetModel", registerPotentiallyBlockingExternalModelFrame
-      )
-      hooksecurefunc(
-         meta, "SetCreature", registerPotentiallyBlockingExternalModelFrame
-      )
-      hooksecurefunc(
-         meta, "SetDisplayInfo", registerPotentiallyBlockingExternalModelFrame
-      )
-      hooksecurefunc(
-         meta, "SetUnit", registerPotentiallyBlockingExternalModelFrame
-      )
-   end
-   do
-      local meta = getmetatable(CreateFrame("CinematicModel")).__index
-      hooksecurefunc(
-         meta, "SetModel", registerPotentiallyBlockingExternalModelFrame
-      )
-      hooksecurefunc(
-         meta, "SetCreature", registerPotentiallyBlockingExternalModelFrame
-      )
-      hooksecurefunc(
-         meta, "SetDisplayInfo", registerPotentiallyBlockingExternalModelFrame
-      )
-      hooksecurefunc(
-         meta, "SetUnit", registerPotentiallyBlockingExternalModelFrame
-      )
-      hooksecurefunc(
-         meta, "SetCreatureData", registerPotentiallyBlockingExternalModelFrame
-      )
-   end
-   do
-      local meta = getmetatable(CreateFrame("DressUpModel")).__index
-      hooksecurefunc(
-         meta, "SetModel", registerPotentiallyBlockingExternalModelFrame
-      )
-      hooksecurefunc(
-         meta, "SetCreature", registerPotentiallyBlockingExternalModelFrame
-      )
-      hooksecurefunc(
-         meta, "SetDisplayInfo", registerPotentiallyBlockingExternalModelFrame
-      )
-      hooksecurefunc(
-         meta, "SetUnit", registerPotentiallyBlockingExternalModelFrame
-      )
-   end
-   do
-      local meta = getmetatable(CreateFrame("TabardModel")).__index
-      hooksecurefunc(
-         meta, "SetModel", registerPotentiallyBlockingExternalModelFrame
-      )
-      hooksecurefunc(
-         meta, "SetCreature", registerPotentiallyBlockingExternalModelFrame
-      )
-      hooksecurefunc(
-         meta, "SetDisplayInfo", registerPotentiallyBlockingExternalModelFrame
-      )
-      hooksecurefunc(
-         meta, "SetUnit", registerPotentiallyBlockingExternalModelFrame
-      )
-   end
-   do
-      local meta = getmetatable(CreateFrame("ModelScene")).__index
-      hooksecurefunc(
-         meta, "CreateActor", registerPotentiallyBlockingExternalModelFrame
-      )
+   for widgetType, methods in pairs(METHODS_TO_HOOK_PER_MODEL_WIDGET) do
+      local meta = getmetatable(CreateFrame(widgetType)).__index
+      for _, method in ipairs(methods) do
+         hooksecurefunc(
+            meta, method, registerPotentiallyBlockingExternalModelFrame
+         )
+      end
    end
 end
 
