@@ -328,10 +328,64 @@ local function tryToRegisterAllNewExternalModelFrames()
    do
       local meta = getmetatable(CreateFrame("PlayerModel")).__index
       hooksecurefunc(
+         meta, "SetModel", registerPotentiallyBlockingExternalModelFrame
+      )
+      hooksecurefunc(
+         meta, "SetCreature", registerPotentiallyBlockingExternalModelFrame
+      )
+      hooksecurefunc(
+         meta, "SetDisplayInfo", registerPotentiallyBlockingExternalModelFrame
+      )
+      hooksecurefunc(
+         meta, "SetUnit", registerPotentiallyBlockingExternalModelFrame
+      )
+   end
+   do
+      local meta = getmetatable(CreateFrame("CinematicModel")).__index
+      hooksecurefunc(
+         meta, "SetModel", registerPotentiallyBlockingExternalModelFrame
+      )
+      hooksecurefunc(
+         meta, "SetCreature", registerPotentiallyBlockingExternalModelFrame
+      )
+      hooksecurefunc(
+         meta, "SetDisplayInfo", registerPotentiallyBlockingExternalModelFrame
+      )
+      hooksecurefunc(
          meta, "SetUnit", registerPotentiallyBlockingExternalModelFrame
       )
       hooksecurefunc(
+         meta, "SetCreatureData", registerPotentiallyBlockingExternalModelFrame
+      )
+   end
+   do
+      local meta = getmetatable(CreateFrame("DressUpModel")).__index
+      hooksecurefunc(
          meta, "SetModel", registerPotentiallyBlockingExternalModelFrame
+      )
+      hooksecurefunc(
+         meta, "SetCreature", registerPotentiallyBlockingExternalModelFrame
+      )
+      hooksecurefunc(
+         meta, "SetDisplayInfo", registerPotentiallyBlockingExternalModelFrame
+      )
+      hooksecurefunc(
+         meta, "SetUnit", registerPotentiallyBlockingExternalModelFrame
+      )
+   end
+   do
+      local meta = getmetatable(CreateFrame("TabardModel")).__index
+      hooksecurefunc(
+         meta, "SetModel", registerPotentiallyBlockingExternalModelFrame
+      )
+      hooksecurefunc(
+         meta, "SetCreature", registerPotentiallyBlockingExternalModelFrame
+      )
+      hooksecurefunc(
+         meta, "SetDisplayInfo", registerPotentiallyBlockingExternalModelFrame
+      )
+      hooksecurefunc(
+         meta, "SetUnit", registerPotentiallyBlockingExternalModelFrame
       )
    end
    do
