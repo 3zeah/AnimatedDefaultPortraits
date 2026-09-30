@@ -1,5 +1,16 @@
 local _, ns = ...
 
+function ns.import(name)
+    local result = ns[name]
+    if result == nil then
+        error(
+            "ERROR: internal dependency \"" .. name .. "\" was not found during"
+            .. " loading, probably due to previous loading errors"
+        )
+    end
+    return result
+end
+
 function ns.GetDistanceSquared(xA, yA, xB, yB)
     return abs(xA - xB) ^ 2 + abs(yA - yB) ^ 2
 end
@@ -23,7 +34,7 @@ do -- project id util
     local WOW_CLASSIC_PROJECT_ORDER = evalWowClassicProjectOrder()
     local CLASSIC_RANK = WOW_CLASSIC_PROJECT_ORDER[WOW_PROJECT_ID]
 
-    ns.CLIENT_IS_CLASSIC = CLASSIC_RANK
+    ns.CLIENT_IS_CLASSIC = CLASSIC_RANK ~= nil
 
     function ns.ClientIsClassicBefore(projectId)
         return CLASSIC_RANK

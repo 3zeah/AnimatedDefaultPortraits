@@ -3,12 +3,12 @@
 
 local _, ns = ...
 -- Const
-local MaskShape = ns.MaskShape
-local ModelFileId = ns.ModelFileId
-local TextureFileId = ns.TextureFileId
+local MaskShape = ns.import("MaskShape")
+local ModelFileId = ns.import("ModelFileId")
+local TextureFileId = ns.import("TextureFileId")
 -- Util
-local CLIENT_IS_CLASSIC = ns.CLIENT_IS_CLASSIC
-local ClientIsClassicBefore = ns.ClientIsClassicBefore
+local CLIENT_IS_CLASSIC = ns.import("CLIENT_IS_CLASSIC")
+local ClientIsClassicBefore = ns.import("ClientIsClassicBefore")
 
 -- 36 comes from target-of-target being 35 in classic, but party and pet frames
 -- being 37: the former should be disabled stylistically, imo, but the latter

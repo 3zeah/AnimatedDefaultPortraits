@@ -1,15 +1,15 @@
 local _, ns = ...
 
 -- Util
-local TextureIsPortrait = ns.TextureIsPortrait
-local LeftStrataIsAboveRight = ns.LeftStrataIsAboveRight
+local TextureIsPortrait = ns.import("TextureIsPortrait")
+local LeftStrataIsAboveRight = ns.import("LeftStrataIsAboveRight")
 
 -- FrameConfig
-local MIN_PORTRAIT_SIZE_TO_ANIMATE = ns.MIN_PORTRAIT_SIZE_TO_ANIMATE
-local ShouldNotAnimate = ns.ShouldNotAnimate
+local MIN_PORTRAIT_SIZE_TO_ANIMATE = ns.import("MIN_PORTRAIT_SIZE_TO_ANIMATE")
+local ShouldNotAnimate = ns.import("ShouldNotAnimate")
 
-local AnimationVariantBlacklister = ns.AnimationVariantBlacklister
-local AnimatedPortraitFrame = ns.AnimatedPortraitFrame
+local AnimationVariantBlacklister = ns.import("AnimationVariantBlacklister")
+local AnimatedPortraitFrame = ns.import("AnimatedPortraitFrame")
 
 -- state table of all animated model frames, indexed by each corresponding
 -- portrait texture that was replaced by that model

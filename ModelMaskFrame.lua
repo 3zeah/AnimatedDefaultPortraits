@@ -13,9 +13,9 @@
 local _, ns = ...
 
 -- Const
-local MaskShape = ns.MaskShape
+local MaskShape = ns.import("MaskShape")
 -- FrameConfig
-local MASK_MODEL_CONFIG = ns.MASK_MODEL_CONFIG
+local MASK_MODEL_CONFIG = ns.import("MASK_MODEL_CONFIG")
 
 -- # NOTA BENE ON ALL THIS RANDOM FUCKING MATH
 -- ## MODEL SIZE MANIPULATION

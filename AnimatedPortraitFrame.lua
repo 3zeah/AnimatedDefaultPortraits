@@ -4,18 +4,18 @@
 local _, ns = ...
 
 -- Const
-local MaskShape = ns.MaskShape
-local TextureFileId = ns.TextureFileId
+local MaskShape = ns.import("MaskShape")
+local TextureFileId = ns.import("TextureFileId")
 -- Util
-local GetDistanceSquared = ns.GetDistanceSquared
-local LowerDrawLayer = ns.LowerDrawLayer
+local GetDistanceSquared = ns.import("GetDistanceSquared")
+local LowerDrawLayer = ns.import("LowerDrawLayer")
 -- FrameConfig
-local ShouldRenderToFrameBuffer = ns.ShouldRenderToFrameBuffer
-local CreateBaselinePortraitLight = ns.CreateBaselinePortraitLight
-local PORTRAIT_BACKGROUND_COLOR = ns.PORTRAIT_BACKGROUND_COLOR
-local SUPPORTED_MASK_TEXTURE_SHAPES = ns.SUPPORTED_MASK_TEXTURE_SHAPES
+local ShouldRenderToFrameBuffer = ns.import("ShouldRenderToFrameBuffer")
+local CreateBaselinePortraitLight = ns.import("CreateBaselinePortraitLight")
+local PORTRAIT_BACKGROUND_COLOR = ns.import("PORTRAIT_BACKGROUND_COLOR")
+local SUPPORTED_MASK_TEXTURE_SHAPES = ns.import("SUPPORTED_MASK_TEXTURE_SHAPES")
 
-local ModelMaskFrame = ns.ModelMaskFrame
+local ModelMaskFrame = ns.import("ModelMaskFrame")
 
 ---find a mask texture, preferring one that has a supported shape, such that
 ---the model mask may mirror it

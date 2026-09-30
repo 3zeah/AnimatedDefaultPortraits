@@ -5,7 +5,7 @@
 
 local _, ns = ...
 -- Const
-local ModelFileId = ns.ModelFileId
+local ModelFileId = ns.import("ModelFileId")
 
 -- the playlists below are defined such that each key defines the idle-animation
 -- variation, and the value is the probability that it plays. the base
