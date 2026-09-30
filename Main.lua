@@ -144,31 +144,35 @@ local function registerInternalModel(self)
    models[self] = true
 end
 
+local function onShowModel(self)
+   -- this used to be required in old client, but maybe not anymore, but does
+   -- not hurt: when the model is hidden and re-shown without setting a new
+   -- unit, then this guards against the model cam resetting outside addon
+   -- control
+   AnimatedPortraitFrame.UpdateCamera(self)
+   -- at load time, not all portraits have masks available, but the insets
+   -- depend on those masks for alignment: refresh alignment on show
+   AnimatedPortraitFrame.UpdateAlignments(self)
+   -- but even on-show, the regions may lie... see the "OnUpdate" script that
+   -- depends on this flag
+   self.doAlignOnNextUpdate = true
+   blockOverlappedPortraitModels(self)
+end
+
+local function onSizeChangedModel(self)
+   AnimatedPortraitFrame.UpdateScale(self)
+   AnimatedPortraitFrame.UpdateAlignments(self)
+end
+
 local UPDATE_PERIOD = 1 / 15
 -- create the animated model frame
 local function createModel(portraitTexture, disableMasking)
    local model = AnimatedPortraitFrame
        .Create(portraitTexture, not disableMasking, registerInternalModel)
 
-   model:SetScript("OnShow", function(self)
-      -- this used to be required in old client, but maybe not anymore, but does
-      -- not hurt: when the model is hidden and re-shown without setting a new
-      -- unit, then this guards against the model cam resetting outside addon
-      -- control
-      AnimatedPortraitFrame.UpdateCamera(self)
-      -- at load time, not all portraits have masks available, but the insets
-      -- depend on those masks for alignment: refresh alignment on show
-      AnimatedPortraitFrame.UpdateAlignments(self)
-      -- but even on-show, the regions may lie... see the "OnUpdate" script that
-      -- depends on this flag
-      self.doAlignOnNextUpdate = true
-      blockOverlappedPortraitModels(self)
-   end)
+   model:SetScript("OnShow", onShowModel)
    model:SetScript("OnHide", unblockAllPortraitModels)
-   model:SetScript("OnSizeChanged", function(self)
-      AnimatedPortraitFrame.UpdateScale(self)
-      AnimatedPortraitFrame.UpdateAlignments(self)
-   end)
+   model:SetScript("OnSizeChanged", onSizeChangedModel)
    local secondsSinceUpdate = 0
    model:SetScript("OnUpdate", function(self, elapsed)
       secondsSinceUpdate = secondsSinceUpdate + elapsed
