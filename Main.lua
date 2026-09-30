@@ -144,7 +144,7 @@ local function registerInternalModel(self)
    models[self] = true
 end
 
-local UPDATE_PERIOD = 1 / 30
+local UPDATE_PERIOD = 1 / 15
 -- create the animated model frame
 local function createModel(portraitTexture, disableMasking)
    local model = AnimatedPortraitFrame
@@ -278,7 +278,7 @@ local function enableAnimatedPortraits()
    hooksecurefunc("SetPortraitTexture", setAnimatedPortraitTexture)
 end
 
-local BLOCK_CHECK_UPDATE_PERIOD = 1 / 30
+local BLOCK_CHECK_UPDATE_PERIOD = 1 / 15
 local secondsSinceBlockCheck = {}
 local function updatePotentiallyBlockingExternalModelFrame(modelFrame, elapsed)
    if elapsed then
