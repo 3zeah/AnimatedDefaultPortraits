@@ -206,7 +206,9 @@ lib.UpdateCamera = updateCamera
 ---update required alignments after any size change, either to the portrait
 ---itself or its mask textures, with which the model mask aligns
 function lib.UpdateAlignments(self)
-   ModelMaskFrame.UpdateAlignment(self.mask)
+   if self.mask then
+      ModelMaskFrame.UpdateAlignment(self.mask)
+   end
 end
 
 -- update model scale after any change to the frame scale
