@@ -10,4 +10,4 @@ AnimationVariantBlacklister.lua
 FrameConfig.lua
 ModelMaskFrame.lua
 AnimatedPortraitFrame.lua
-AnimatedDefaultPortraits.lua
+Main.lua
