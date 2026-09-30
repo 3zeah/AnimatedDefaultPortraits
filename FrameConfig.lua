@@ -2,21 +2,29 @@
 ---mask, chiefly per-client portrait-appearance data and mask-alignment values
 
 local _, ns = ...
--- Const
-local MaskShape = ns.import("MaskShape")
-local ModelFileId = ns.import("ModelFileId")
-local TextureFileId = ns.import("TextureFileId")
--- Util
-local CLIENT_IS_CLASSIC = ns.import("CLIENT_IS_CLASSIC")
-local ClientIsClassicBefore = ns.import("ClientIsClassicBefore")
+---@module "Require"
+local require = ns.require
+
+---@module "Const"
+local Const = require(ns, "Const")
+---@module "Util"
+local Util = require(ns, "Util")
+
+local MaskShape = Const.MaskShape
+local ModelFileId = Const.ModelFileId
+local TextureFileId = Const.TextureFileId
+local CLIENT_IS_CLASSIC = Util.CLIENT_IS_CLASSIC
+local ClientIsClassicBefore = Util.ClientIsClassicBefore
+
+local lib = {}
 
 -- 36 comes from target-of-target being 35 in classic, but party and pet frames
 -- being 37: the former should be disabled stylistically, imo, but the latter
 -- not, and thus this is a decent guide
-ns.MIN_PORTRAIT_SIZE_TO_ANIMATE = 36
+lib.MIN_PORTRAIT_SIZE_TO_ANIMATE = 36
 
 ---if true for a given portrait, this add-on will effectively ignore it
-function ns.ShouldNotAnimate(portrait)
+function lib.ShouldNotAnimate(portrait)
     return portrait == MicroButtonPortrait
         or (
             CharacterMicroButton
@@ -51,7 +59,7 @@ do
     -- is safe to enable this for any frame that has been vetted to look fine
     -- with this enabled, but it is also only necessary if the portrait is ever
     -- not opaque
-    function ns.ShouldRenderToFrameBuffer(portraitTexture)
+    function lib.ShouldRenderToFrameBuffer(portraitTexture)
         return portraitTexture == PlayerPortrait
             or (
                 PlayerFrame
@@ -77,7 +85,7 @@ end
 -- PORTRAIT APPEARANCE
 do
     -- tweaked to match baseline portraits
-    function ns.CreateBaselinePortraitLight()
+    function lib.CreateBaselinePortraitLight()
         if CLIENT_IS_CLASSIC then
             return {
                 omnidirectional = false,
@@ -112,7 +120,7 @@ do
         end
     end
 
-    ns.PORTRAIT_BACKGROUND_COLOR = baselinePortraitBackgroundColor()
+    lib.PORTRAIT_BACKGROUND_COLOR = baselinePortraitBackgroundColor()
 end
 
 -- MODEL-MASK ALIGNMENT
@@ -129,7 +137,7 @@ do
         end
     end
 
-    ns.MASK_MODEL_CONFIG = {
+    lib.MASK_MODEL_CONFIG = {
         -- any model would do that has a sufficiently round hole: this one is available
         -- even on classic clients
         fileId = ModelFileId.TALK_TO_ME_GEARS,
@@ -155,7 +163,7 @@ do
         cameraRoll = -0.17
     }
 
-    ns.SUPPORTED_MASK_TEXTURE_SHAPES = {
+    lib.SUPPORTED_MASK_TEXTURE_SHAPES = {
         [TextureFileId.TEMP_PORTRAIT_ALPHA_MASK] =
             MaskShape.CIRCLE,
         [TextureFileId.CIRCLE_MASK] =
@@ -166,3 +174,6 @@ do
             MaskShape.MAINLINE_PLAYER_PORTRAIT,
     }
 end
+
+ns.FrameConfig = lib
+return lib

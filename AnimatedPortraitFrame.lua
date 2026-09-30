@@ -2,20 +2,26 @@
 ---elements such as the background texture and model mask
 
 local _, ns = ...
+---@module "Require"
+local require = ns.require
 
--- Const
-local MaskShape = ns.import("MaskShape")
-local TextureFileId = ns.import("TextureFileId")
--- Util
-local GetDistanceSquared = ns.import("GetDistanceSquared")
-local LowerDrawLayer = ns.import("LowerDrawLayer")
--- FrameConfig
-local ShouldRenderToFrameBuffer = ns.import("ShouldRenderToFrameBuffer")
-local CreateBaselinePortraitLight = ns.import("CreateBaselinePortraitLight")
-local PORTRAIT_BACKGROUND_COLOR = ns.import("PORTRAIT_BACKGROUND_COLOR")
-local SUPPORTED_MASK_TEXTURE_SHAPES = ns.import("SUPPORTED_MASK_TEXTURE_SHAPES")
+---@module "Const"
+local Const = require(ns, "Const")
+---@module "Util"
+local Util = require(ns, "Util")
+---@module "FrameConfig"
+local FrameConfig = require(ns, "FrameConfig")
+---@module "ModelMaskFrame"
+local ModelMaskFrame = require(ns, "ModelMaskFrame")
 
-local ModelMaskFrame = ns.import("ModelMaskFrame")
+local MaskShape = Const.MaskShape
+local TextureFileId = Const.TextureFileId
+local GetDistanceSquared = Util.GetDistanceSquared
+local LowerDrawLayer = Util.LowerDrawLayer
+local ShouldRenderToFrameBuffer = FrameConfig.ShouldRenderToFrameBuffer
+local CreateBaselinePortraitLight = FrameConfig.CreateBaselinePortraitLight
+local PORTRAIT_BACKGROUND_COLOR = FrameConfig.PORTRAIT_BACKGROUND_COLOR
+local SUPPORTED_MASK_TEXTURE_SHAPES = FrameConfig.SUPPORTED_MASK_TEXTURE_SHAPES
 
 ---find a mask texture, preferring one that has a supported shape, such that
 ---the model mask may mirror it
@@ -302,3 +308,4 @@ function lib.MayOcclude(modelA, modelB)
 end
 
 ns.AnimatedPortraitFrame = lib
+return lib

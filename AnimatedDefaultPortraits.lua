@@ -1,15 +1,20 @@
 local _, ns = ...
+---@module "Require"
+local require = ns.require
 
--- Util
-local TextureIsPortrait = ns.import("TextureIsPortrait")
-local LeftStrataIsAboveRight = ns.import("LeftStrataIsAboveRight")
+---@module "Util"
+local Util = require(ns, "Util")
+---@module "FrameConfig"
+local FrameConfig = require(ns, "FrameConfig")
+---@module "AnimationVariantBlacklister"
+local AnimationVariantBlacklister = require(ns, "AnimationVariantBlacklister")
+---@module "AnimatedPortraitFrame"
+local AnimatedPortraitFrame = require(ns, "AnimatedPortraitFrame")
 
--- FrameConfig
-local MIN_PORTRAIT_SIZE_TO_ANIMATE = ns.import("MIN_PORTRAIT_SIZE_TO_ANIMATE")
-local ShouldNotAnimate = ns.import("ShouldNotAnimate")
-
-local AnimationVariantBlacklister = ns.import("AnimationVariantBlacklister")
-local AnimatedPortraitFrame = ns.import("AnimatedPortraitFrame")
+local TextureIsPortrait = Util.TextureIsPortrait
+local LeftStrataIsAboveRight = Util.LeftStrataIsAboveRight
+local MIN_PORTRAIT_SIZE_TO_ANIMATE = FrameConfig.MIN_PORTRAIT_SIZE_TO_ANIMATE
+local ShouldNotAnimate = FrameConfig.ShouldNotAnimate
 
 -- state table of all animated model frames, indexed by each corresponding
 -- portrait texture that was replaced by that model

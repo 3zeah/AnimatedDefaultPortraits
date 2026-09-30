@@ -1,17 +1,6 @@
-local _, ns = ...
+local lib = {}
 
-function ns.import(name)
-    local result = ns[name]
-    if result == nil then
-        error(
-            "ERROR: internal dependency \"" .. name .. "\" was not found during"
-            .. " loading, probably due to previous loading errors"
-        )
-    end
-    return result
-end
-
-function ns.GetDistanceSquared(xA, yA, xB, yB)
+function lib.GetDistanceSquared(xA, yA, xB, yB)
     return abs(xA - xB) ^ 2 + abs(yA - yB) ^ 2
 end
 
@@ -34,15 +23,15 @@ do -- project id util
     local WOW_CLASSIC_PROJECT_ORDER = evalWowClassicProjectOrder()
     local CLASSIC_RANK = WOW_CLASSIC_PROJECT_ORDER[WOW_PROJECT_ID]
 
-    ns.CLIENT_IS_CLASSIC = CLASSIC_RANK ~= nil
+    lib.CLIENT_IS_CLASSIC = CLASSIC_RANK ~= nil
 
-    function ns.ClientIsClassicBefore(projectId)
+    function lib.ClientIsClassicBefore(projectId)
         return CLASSIC_RANK
             and CLASSIC_RANK < WOW_CLASSIC_PROJECT_ORDER[projectId]
     end
 end
 
-function ns.TextureIsPortrait(texture)
+function lib.TextureIsPortrait(texture)
     return texture:GetTexture() == "RTPortrait1"
 end
 
@@ -73,7 +62,7 @@ do -- frame strata util
     local FRAME_STRATA_GREATER_THAN_ORDERING =
         evalFrameStrataGreaterThanOrdering()
 
-    function ns.LeftStrataIsAboveRight(strataLhs, strataRhs)
+    function lib.LeftStrataIsAboveRight(strataLhs, strataRhs)
         return FRAME_STRATA_GREATER_THAN_ORDERING[strataLhs][strataRhs] or false
     end
 end
@@ -96,7 +85,11 @@ do -- draw layer util
     end
     local LOWER_DRAW_LAYER = evalLowerDrawLayerMap()
 
-    function ns.LowerDrawLayer(layer)
+    function lib.LowerDrawLayer(layer)
         return LOWER_DRAW_LAYER[layer]
     end
 end
+
+local _, ns = ...
+ns.Util = lib
+return lib

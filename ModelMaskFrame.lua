@@ -11,11 +11,16 @@
 ---and thus "masked". other mask shapes may be configured similarly
 
 local _, ns = ...
+---@module "Require"
+local require = ns.require
 
--- Const
-local MaskShape = ns.import("MaskShape")
--- FrameConfig
-local MASK_MODEL_CONFIG = ns.import("MASK_MODEL_CONFIG")
+---@module "Const"
+local Const = require(ns, "Const")
+---@module "FrameConfig"
+local FrameConfig = require(ns, "FrameConfig")
+
+local MaskShape = Const.MaskShape
+local MASK_MODEL_CONFIG = FrameConfig.MASK_MODEL_CONFIG
 
 -- # NOTA BENE ON ALL THIS RANDOM FUCKING MATH
 -- ## MODEL SIZE MANIPULATION
@@ -218,3 +223,4 @@ end
 lib.UpdateAlignment = updateAlignment
 
 ns.ModelMaskFrame = lib
+return lib

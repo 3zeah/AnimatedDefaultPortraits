@@ -4,8 +4,13 @@
 ---viewport
 
 local _, ns = ...
--- Const
-local ModelFileId = ns.import("ModelFileId")
+---@module "Require"
+local require = ns.require
+
+---@module "Const"
+local Const = require(ns, "Const")
+
+local ModelFileId = Const.ModelFileId
 
 -- the playlists below are defined such that each key defines the idle-animation
 -- variation, and the value is the probability that it plays. the base
@@ -99,3 +104,4 @@ function lib.UpdateAfterModelChanged(self, model)
 end
 
 ns.AnimationVariantBlacklister = lib
+return lib

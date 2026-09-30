@@ -1,11 +1,11 @@
-local _, ns = ...
+local lib = {}
 
-ns.MaskShape = {
+lib.MaskShape = {
     CIRCLE = 0,
     MAINLINE_PLAYER_PORTRAIT = 1,
 }
 
-ns.ModelFileId = {
+lib.ModelFileId = {
     -- character/scourge/female/scourgefemale.m2
     UNDEAD_FEMALE = 121608,
     -- character/scourge/male/scourgemale.m2
@@ -38,7 +38,7 @@ ns.ModelFileId = {
     VULTURE_MOUNT = 1926505,
 }
 
-ns.TextureFileId = {
+lib.TextureFileId = {
     -- interface/characterframe/tempportraitalphamask.blp
     TEMP_PORTRAIT_ALPHA_MASK = 130924,
     -- interface/masks/circlemask.blp
@@ -48,3 +48,7 @@ ns.TextureFileId = {
     -- interface/hud/uiunitframeplayerportraitmask2x.blp
     UI_UNIT_FRAME_PLAYER_PORTRAIT_MASK_2X = 5321198,
 }
+
+local _, ns = ...
+ns.Const = lib
+return lib
