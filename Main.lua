@@ -37,16 +37,20 @@ local function refreshWhetherAnimated(portraitTexture, model)
        -- units not "visible" to the client cannot have their model loaded
        and UnitIsVisible(model.unit)
    if shouldAnimate then
-      portraitTexture:Hide()
-      model:Show()
-      return true
+      if model.disabled ~= false then
+         model.disabled = false
+         portraitTexture:Hide()
+         model:Show()
+      end
    else
       if not textureIsPortrait then
          model.unit = nil
       end
-      portraitTexture:Show()
-      model:Hide()
-      return false
+      if not model.disabled then
+         model.disabled = true
+         portraitTexture:Show()
+         model:Hide()
+      end
    end
 end
 
@@ -94,13 +98,15 @@ end
 
 local function blockAnimatedPortrait(portraitTexture, state, blocker)
    state.blockingModels[blocker] = true
-   state.model.blocked = true
-   refreshWhetherAnimated(portraitTexture, state.model)
+   if not state.model.blocked then
+      state.model.blocked = true
+      refreshWhetherAnimated(portraitTexture, state.model)
+   end
 end
 
 local function unblockAnimatedPortrait(portraitTexture, state, blocker)
    state.blockingModels[blocker] = nil
-   if next(state.blockingModels) == nil then
+   if state.model.blocked and next(state.blockingModels) == nil then
       state.model.blocked = false
       refreshWhetherAnimated(portraitTexture, state.model)
    end
@@ -127,11 +133,13 @@ end
 
 local function unblockAllPortraitModels(modelFrame)
    for portraitTexture, modelState in pairs(states) do
-      unblockAnimatedPortrait(portraitTexture, modelState, modelFrame)
+      if modelFrame ~= modelState.model then
+         unblockAnimatedPortrait(portraitTexture, modelState, modelFrame)
+      end
    end
 end
 
--- so that it is not picked up by `tryToRegisterAllNewExternalModelFrames` 
+-- so that it is not picked up by `tryToRegisterAllNewExternalModelFrames`
 local function registerInternalModel(self)
    models[self] = true
 end
@@ -151,6 +159,9 @@ local function createModel(portraitTexture, disableMasking)
       -- at load time, not all portraits have masks available, but the insets
       -- depend on those masks for alignment: refresh alignment on show
       AnimatedPortraitFrame.UpdateAlignments(self)
+      -- but even on-show, the regions may lie... see the "OnUpdate" script that
+      -- depends on this flag
+      self.doAlignOnNextUpdate = true
       blockOverlappedPortraitModels(self)
    end)
    model:SetScript("OnHide", unblockAllPortraitModels)
@@ -169,13 +180,16 @@ local function createModel(portraitTexture, disableMasking)
          self:SetPaused(UnitIsDead(self.unit))
       end
       -- this is just defensive: we already try to refresh on `SetTexture` etc
-      local isAnimated = refreshWhetherAnimated(portraitTexture, self)
+      refreshWhetherAnimated(portraitTexture, self)
       -- if using raid-style party frames, and then going into edit mode to
       -- turn raid-style off, the party frames will not have their model mask
       -- set properly, because the frame size will be incorrect during the
       -- OnShow, and no OnSizeChanged will fire, either: blizz cannot be trusted
-      AnimatedPortraitFrame.UpdateAlignments(self)
-      if isAnimated then
+      if self.doAlignOnNextUpdate then
+         self.doAlignOnNextUpdate = false
+         AnimatedPortraitFrame.UpdateAlignments(self)
+      end
+      if not self.disabled then
          blockOverlappedPortraitModels(self)
       end
    end)
