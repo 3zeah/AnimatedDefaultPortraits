@@ -1,11 +1,6 @@
 local _, ns = ...
 
--- Const
-local ModelFileId = ns.ModelFileId
-
 -- Util
-local Set = ns.Set
-local CLIENT_IS_CLASSIC = ns.CLIENT_IS_CLASSIC
 local TextureIsPortrait = ns.TextureIsPortrait
 local LeftStrataIsAboveRight = ns.LeftStrataIsAboveRight
 
@@ -128,31 +123,6 @@ local function unblockAllPortraitModels(modelFrame)
    end
 end
 
--- not necessarily exhaustive
-local SCORPION_MODELS = Set(
-   ModelFileId.SCORPION,
-   ModelFileId.HORDE_SCORPION,
-   ModelFileId.HORDE_SCORPION_MOUNT
-)
--- the dreaded scorpid hack: scorpids keep waving their fakakta claws through
--- and very close to the camera, which causes the claw to pop out of the
--- model mask, which relies on the portrait model being at a lower depth for
--- occlusion. by increasing the model scale, the depth of the portrait model
--- is arbitrarily increased without affecting the perspective. the SCORPION
--- EFFECT appears worse in mainline, presumably because the clipping plane
--- is nearer, maybe
---
--- do not apply this workaround to all models, though, because it ruins
--- particles and puts deep models at risk of getting far-clipped: verify each
--- model that is included here
-local function workAroundScorpionClipping(model)
-   if CLIENT_IS_CLASSIC or not SCORPION_MODELS[model:GetModelFileID()] then
-      return
-   end
-   model:SetModelScale(500 / model:GetEffectiveScale())
-   AnimatedPortraitFrame.UpdateCamera(model)
-end
-
 local UPDATE_PERIOD = 1 / 30
 -- create the animated model frame
 local function createModel(portraitTexture, disableMasking)
@@ -173,7 +143,6 @@ local function createModel(portraitTexture, disableMasking)
    model:SetScript("OnHide", unblockAllPortraitModels)
    model:SetScript("OnSizeChanged", function(self)
       AnimatedPortraitFrame.UpdateScale(self)
-      workAroundScorpionClipping(self)
       AnimatedPortraitFrame.UpdateAlignments(self)
    end)
    local secondsSinceUpdate = 0
@@ -243,7 +212,6 @@ local function updateModelFromUnit(portraitTexture, state)
    local model = state.model
    local unit = model.unit
    AnimatedPortraitFrame.UpdateUnit(model, portraitTexture, unit)
-   workAroundScorpionClipping(model)
    AnimationVariantBlacklister
        .UpdateAfterModelChanged(state.animationVariantBlacklister, model)
    model:SetPaused(UnitIsDead(unit))

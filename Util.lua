@@ -1,13 +1,5 @@
 local _, ns = ...
 
-function ns.Set(...)
-    local result = {}
-    for _, v in ipairs({ ... }) do
-        result[v] = true
-    end
-    return result
-end
-
 function ns.GetDistanceSquared(xA, yA, xB, yB)
     return abs(xA - xB) ^ 2 + abs(yA - yB) ^ 2
 end
