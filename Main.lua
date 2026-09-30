@@ -18,6 +18,9 @@ local ShouldNotAnimate = FrameConfig.ShouldNotAnimate
 
 -- state table of all animated model frames, indexed by each corresponding
 -- portrait texture that was replaced by that model
+local states = {}
+-- set of all models maintained by this add-on, for when the system needs to
+-- know whether a model is external
 local models = {}
 -- blacklist
 local portraitsNotToAnimate = {}
@@ -107,7 +110,7 @@ end
 -- and ensure they are not animated if so. this is laborious workaround for the
 -- issue that model frames cull higher but overlapping model frames
 local function blockOverlappedPortraitModels(blocker)
-   for otherPortraitTexture, otherState in pairs(models) do
+   for otherPortraitTexture, otherState in pairs(states) do
       local otherModel = otherState.model
       if blocker ~= otherModel then
          if otherModel:GetRect() -- region actually exists
@@ -123,16 +126,21 @@ local function blockOverlappedPortraitModels(blocker)
 end
 
 local function unblockAllPortraitModels(modelFrame)
-   for portraitTexture, modelState in pairs(models) do
+   for portraitTexture, modelState in pairs(states) do
       unblockAnimatedPortrait(portraitTexture, modelState, modelFrame)
    end
+end
+
+-- so that it is not picked up by `tryToRegisterAllNewExternalModelFrames` 
+local function registerInternalModel(self)
+   models[self] = true
 end
 
 local UPDATE_PERIOD = 1 / 30
 -- create the animated model frame
 local function createModel(portraitTexture, disableMasking)
    local model = AnimatedPortraitFrame
-       .Create(portraitTexture, not disableMasking)
+       .Create(portraitTexture, not disableMasking, registerInternalModel)
 
    model:SetScript("OnShow", function(self)
       -- this used to be required in old client, but maybe not anymore, but does
@@ -176,7 +184,7 @@ local function createModel(portraitTexture, disableMasking)
 end
 
 local function getOrCreateModelState(portraitTexture, disableMasking)
-   local extant = models[portraitTexture]
+   local extant = states[portraitTexture]
    if extant then
       return extant
    end
@@ -199,7 +207,7 @@ local function getOrCreateModelState(portraitTexture, disableMasking)
       blockingModels = {},
       animationVariantBlacklister = AnimationVariantBlacklister.Create(model)
    }
-   models[portraitTexture] = state
+   states[portraitTexture] = state
 
    -- `refreshWhetherAnimated` will see that texture is not set to portrait
    local function disablePortrait(self)
@@ -274,7 +282,8 @@ end
 -- track model frames from blizzard ui and turn off animated portraits that
 -- are blocked by those model frames
 local function registerPotentiallyBlockingExternalModelFrame(frame)
-   if not frame then
+   -- do not register models owned by this add-on, and do not register twice
+   if not frame or models[frame] or potentiallyBlockingModelFrames[frame] then
       return
    end
    if potentiallyBlockingModelFrames[frame] then
@@ -287,21 +296,47 @@ local function registerPotentiallyBlockingExternalModelFrame(frame)
    frame:HookScript("OnHide", unblockAllPortraitModels)
 end
 
+-- by hooking into the api:s for actually showing a model in a model frame, we
+-- can hope to catch all potentially-blocking external models without having to
+-- explicitly register each, especially because some are not present at load
+-- time, eg the inspect model and the transmog-preview model
+local function tryToRegisterAllNewExternalModelFrames()
+   do
+      local meta = getmetatable(CreateFrame("Model")).__index
+      hooksecurefunc(
+         meta, "SetModel", registerPotentiallyBlockingExternalModelFrame
+      )
+   end
+   do
+      local meta = getmetatable(CreateFrame("PlayerModel")).__index
+      hooksecurefunc(
+         meta, "SetUnit", registerPotentiallyBlockingExternalModelFrame
+      )
+      hooksecurefunc(
+         meta, "SetModel", registerPotentiallyBlockingExternalModelFrame
+      )
+   end
+   do
+      local meta = getmetatable(CreateFrame("ModelScene")).__index
+      hooksecurefunc(
+         meta, "CreateActor", registerPotentiallyBlockingExternalModelFrame
+      )
+   end
+end
+
 -- re-texture the frames and enable the animated portraits
 local function onEvent(_, event, ...)
    if event == "PLAYER_LOGIN" then
       enableAnimatedPortraits()
+      tryToRegisterAllNewExternalModelFrames()
       registerPotentiallyBlockingExternalModelFrame(CharacterModelFrame)
       registerPotentiallyBlockingExternalModelFrame(DressUpModelFrame)
       registerPotentiallyBlockingExternalModelFrame(SideDressUpModel)
       registerPotentiallyBlockingExternalModelFrame(CharacterModelScene)
       registerPotentiallyBlockingExternalModelFrame(DressUpFrame.ModelScene)
       registerPotentiallyBlockingExternalModelFrame(TabardModel)
-   elseif event == "INSPECT_READY" then
-      -- inspect model frame is not available before an inspect
-      registerPotentiallyBlockingExternalModelFrame(InspectModelFrame)
    elseif event == "PORTRAITS_UPDATED" then
-      for portraitTexture, state in pairs(models) do
+      for portraitTexture, state in pairs(states) do
          local unit = state.model.unit
          if unit then
             updateModelFromUnit(portraitTexture, state)
@@ -310,7 +345,7 @@ local function onEvent(_, event, ...)
       end
    elseif event == "UNIT_PORTRAIT_UPDATE" then
       local unit = ...
-      for portraitTexture, state in pairs(models) do
+      for portraitTexture, state in pairs(states) do
          if state.model.unit == unit then
             updateModelFromUnit(portraitTexture, state)
             refreshWhetherAnimated(portraitTexture, state.model)
@@ -324,7 +359,6 @@ local function init()
    f:Hide()
    f:SetScript("OnEvent", onEvent)
    f:RegisterEvent("PLAYER_LOGIN")
-   f:RegisterEvent("INSPECT_READY")
    f:RegisterEvent("PORTRAITS_UPDATED")
    f:RegisterEvent("UNIT_PORTRAIT_UPDATE")
 end

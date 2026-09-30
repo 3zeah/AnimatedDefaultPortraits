@@ -152,9 +152,10 @@ local lib = {}
 ---given portrait. even without any mask textures, portrait textures may be
 ---circular (depending on parameters to `SetPortraitTexture`), and thus this is
 ---also required input to this function
-function lib.Create(portrait, portraitTextureIsCircle)
+function lib.Create(portrait, portraitTextureIsCircle, createModelCallback)
    local parent = portrait:GetParent()
    local model = CreateFrame("PlayerModel", nil, parent)
+   if createModelCallback then createModelCallback(model) end
    model:SetAllPoints(portrait)
    model:SetUsingParentLevel(true)
    -- there is no way to set draw sub-layer on models? (haha!!!!!): since the
@@ -179,7 +180,8 @@ function lib.Create(portrait, portraitTextureIsCircle)
 
    if shape then
       local shapeRegion = maskTexture and maskTexture.texture
-      local modelMask = ModelMaskFrame.Create(model, shape, shapeRegion)
+      local modelMask = ModelMaskFrame
+          .Create(model, shape, shapeRegion, createModelCallback)
       model.shape = shape
       model.mask = modelMask
    end
