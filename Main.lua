@@ -351,9 +351,6 @@ local function registerPotentiallyBlockingExternalModelFrame(frame)
    if not frame or models[frame] or potentiallyBlockingModelFrames[frame] then
       return
    end
-   if potentiallyBlockingModelFrames[frame] then
-      return
-   end
    potentiallyBlockingModelFrames[frame] = true
    frame:HookScript("OnShow", blockOverlappedPortraitModels)
    -- check on update because the blocking frame may have moved...
