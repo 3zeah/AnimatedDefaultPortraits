@@ -54,10 +54,6 @@ Although most portrait textures are circular out of the box, they often also hav
 
 Because other UI models may overlap with user-placed unit-frame portraits, animated portraits are temporarily disabled when intersecting with other models (eg the character-frame model). But each potentially-intersecting UI model must be registered somehow. Presently, for each model widget, the system hooks onto a list of functions that must necessarily be called to display a model: add new widgets or functions if the system misses something.
 
-#### Clipping-model workaround
-
-Some animations of some models may clip out of the model-mask occlusion space, by bringing parts very close to the camera (eg scorpid waving claws). This results in parts of the portrait model rendering outside of its container. The workaround is to alter the model scale: configure new ones when encountered.
-
 #### Off-screen-animation blacklist
 
 Some animation variants of some models are blacklisted, because they bring the model off-frame (eg classic ud males when they stand upright): configure new ones when encountered.
