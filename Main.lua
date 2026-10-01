@@ -318,7 +318,6 @@ local function setAnimatedPortraitTexture(portraitTexture, unit, disableMasking)
    -- any model updates, then, and hence `isVisible` is part of the skip eval)
    if not model:IsVisible() or not state.guid or state.guid ~= guid then
       state.guid = guid
-      model.unit = unit
       updateModelFromUnit(portraitTexture, state, unit)
    end
    refreshWhetherAnimated(portraitTexture, model)
