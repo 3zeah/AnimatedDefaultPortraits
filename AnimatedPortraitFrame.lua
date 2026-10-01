@@ -239,7 +239,7 @@ end
 ---change)
 ---@param self AnimatedPortraitFrame
 ---@param portrait SimpleTexture
----@param unit string
+---@param unit UnitToken
 function lib.UpdateUnit(self, portrait, unit)
    self:SetUnit(unit)
    updateScale(self)

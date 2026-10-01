@@ -194,7 +194,7 @@ local function createModel(portraitTexture, disableMasking)
    ---one animated portrait as well as some state maintained directly by its
    ---frame-script handlers
    ---@class (exact) AnimatedPortrait: AnimatedPortraitFrame
-   ---@field unit string?
+   ---@field unit UnitToken?
    ---@field disabled boolean?
    ---@field blocked boolean?
    ---@field doAlignOnNextUpdate boolean?
@@ -282,7 +282,7 @@ end
 -- either to a new unit, or to refresh the extant unit (eg, gear change)
 ---@param portraitTexture SimpleTexture
 ---@param state AnimatedPortraitState
----@param unit string
+---@param unit UnitToken
 local function updateModelFromUnit(portraitTexture, state, unit)
    local model = state.model
    AnimatedPortraitFrame.UpdateUnit(model, portraitTexture, unit)
@@ -296,7 +296,7 @@ end
 -- "visible" to the client) or the default portrait is missing, then the model
 -- will have no texture, so in that case we fall back to default portraits
 ---@param portraitTexture SimpleTexture
----@param unit string
+---@param unit UnitToken
 ---@param disableMasking boolean?
 local function setAnimatedPortraitTexture(portraitTexture, unit, disableMasking)
    if portraitsNotToAnimate[portraitTexture] then
@@ -404,6 +404,7 @@ local function onEvent(_, event, ...)
          end
       end
    elseif event == "UNIT_PORTRAIT_UPDATE" then
+      ---@type UnitToken
       local unit = ...
       for portraitTexture, state in pairs(states) do
          if state.model.unit == unit then

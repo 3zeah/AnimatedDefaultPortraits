@@ -117,7 +117,7 @@ local function updateModelMaskCamera(mask)
 end
 
 ---@param parent Model | ModelMaskClippingContainer
----@param regionToMask Region
+---@param regionToMask ScriptRegion
 ---@param createModelCallback fun(model: Model)?
 ---@return Model
 local function createMaskModel(parent, regionToMask, createModelCallback)
@@ -144,7 +144,7 @@ local function createMaskModel(parent, regionToMask, createModelCallback)
 end
 
 ---@param parent Model | ModelMaskClippingContainer
----@param regionToMask Region
+---@param regionToMask ScriptRegion
 ---@param roll number
 ---@param createModelCallback fun(model: Model)?
 ---@return Model
@@ -218,7 +218,7 @@ local lib = {}
 ---one model-mask frame. any ui-rendered model intersecting the masking shape
 ---of this frame will be occluded, and thus effectively masked
 ---@class (exact) ModelMaskFrame
----@field package shapeRegion Region?
+---@field package shapeRegion ScriptRegion?
 ---@field package circleMaskFull ModelMaskModels
 ---@field package circleMaskTopLeft ModelMaskClippingContainer
 ---@field package circleMaskTopRight ModelMaskClippingContainer
@@ -231,7 +231,7 @@ local lib = {}
 ---50x50 circle at position (20,10) from the bottom left of the model
 ---@param modelToMask Model
 ---@param shape MaskShape
----@param shapeRegion Region?
+---@param shapeRegion ScriptRegion?
 ---@param createModelCallback fun(model: Model)?
 ---@return ModelMaskFrame
 function lib.Create(modelToMask, shape, shapeRegion, createModelCallback)
