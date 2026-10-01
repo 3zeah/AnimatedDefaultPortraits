@@ -125,6 +125,8 @@ Each is in all clients unless otherwise stated.
     - Tabard design (guild master: "I want to create a guild crest.")
     - Guild registration (guild master: "How do I form a guild?")
     - Guild-rename prompt (guild master: "I would like to rename my guild.")
+    - Garrison work order (wod)
+    - Garrison recruitment (wod) (the panel where you specify what you are looking for to the headhunter in lvl 2 inn/tavern)
 * Character-info menu button (the small button that opens the character frame)
 * Character frame corner: all tabs
 * Character-stats button in character frame (cata+)
@@ -148,9 +150,7 @@ Identified in source code but not confirmed or properly tested. Mostly or only n
 * Some "challenge-mode" party frames (via `ChallengeModeBannerPartyMemberMixin`): something about mythic+?
 * Voice activity notification? (via `VoiceActivityNotificationMixin`)
 * Party sync participants? (via `QuestSessionMemberMixin`)
-* `GarrisonRecruiterFrame.PortraitTexture`
 * `ItemInteractionFrame.PortraitContainer.portrait`
 * Party-member super-tracking??? (via `SuperTrackedFrameMixin`)
-* `GarrisonCapacitiveDisplayFrame.PortraitContainer.portrait`
 * `OrderHallTalentFrame.PortraitContainer.portrait`
 * `ProfessionsCustomerOrders.PortraitContainer.portrait`
