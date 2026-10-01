@@ -88,8 +88,8 @@ local function evalInsets(mask, shapeRegion)
     end
     -- fallback is simply to align with the model frame itself
     local frameSize, _ = mask:GetSize() -- expect square size
-    local digitalZoomInset = MASK_MODEL_CONFIG.digitalZoomFactor * frameSize
-    return digitalZoomInset, digitalZoomInset, digitalZoomInset, digitalZoomInset
+    local inset = MASK_MODEL_CONFIG.digitalZoomFactor * frameSize
+    return inset, inset, inset, inset
 end
 
 local function applyOrEvalModelMaskInsetsToContainer(
@@ -138,7 +138,7 @@ local function createMaskModel(parent, regionToMask, createModelCallback)
     -- culling behavior is optimized away if mask model is actually hidden:
     -- make it pseudo-invisible
     mask:SetIgnoreParentAlpha(true)
-    mask:SetAlpha(0.0001)      -- anything lower seems to get rounded to 0 = hide
+    mask:SetAlpha(0.0001)      -- anything lower seems to get rounded to hidden
     mask:SetModelAlpha(0.0001) -- compounds with frame alpha
     return mask
 end
@@ -156,8 +156,8 @@ local function createMaskModels(
     local model2 = createMaskModel(parent, regionToMask, createModelCallback)
     local baseRoll = roll + MASK_MODEL_CONFIG.cameraRoll
     model1:SetCameraRoll(baseRoll)
-    -- mask-model circle has 12 vertices: by adding a second model rolled by 1/24
-    -- revolution, the effective circle has 24 vertices
+    -- mask-model circle has 12 vertices: by adding a second model rolled by
+    -- 1/24 revolution, the effective circle has 24 vertices
     model2:SetCameraRoll(baseRoll + math.pi / 12)
     return model1, model2
 end

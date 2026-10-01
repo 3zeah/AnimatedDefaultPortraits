@@ -55,12 +55,12 @@ do
 
     -- by using a frame buffer, alpha can be made more accurate (otherwise,
     -- model alpha will blend with background alpha). the downside is that frame
-    -- buffering requires render-layer flattening, which makes make it impossible
-    -- to sandwich the model frame into other frames by fiddling with draw
-    -- layers. for most portrait containers, this does not actually matter, so it
-    -- is safe to enable this for any frame that has been vetted to look fine
-    -- with this enabled, but it is also only necessary if the portrait is ever
-    -- not opaque
+    -- buffering requires render-layer flattening, which makes make it
+    -- impossible to sandwich the model frame into other frames by fiddling with
+    -- draw layers. for most portrait containers, this does not actually matter,
+    -- so it is safe to enable this for any frame that has been vetted to look
+    -- fine with this enabled, but it is also only necessary if the portrait is
+    -- ever not opaque
     ---@param portrait SimpleTexture
     ---@return boolean
     function lib.ShouldRenderToFrameBuffer(portrait)
@@ -94,7 +94,8 @@ do
         if CLIENT_IS_CLASSIC then
             return {
                 omnidirectional = false,
-                -- (x+ is the back of the model, y+ the right-hand side, z+ the bottom)
+                -- (x+ is the back of the model, y+ the right-hand side, z+ the
+                -- bottom)
                 point = CreateVector3D(-0.6, 0, -0.6),
                 ambientIntensity = 1 / 3,
                 ambientColor = CreateColor(1, 1, 1),
@@ -104,7 +105,8 @@ do
         else
             return {
                 omnidirectional = false,
-                -- (x+ is the back of the model, y+ the right-hand side, z+ the bottom)
+                -- (x+ is the back of the model, y+ the right-hand side, z+ the
+                -- bottom)
                 point = CreateVector3D(-0.6, 0, -0.6),
                 ambientIntensity = 0.45,
                 ambientColor = CreateColor(1, 1, 1),
@@ -132,11 +134,13 @@ end
 -- MODEL-MASK ALIGNMENT
 do
     local function digitalZoomFactor()
-        -- untested: wrath and cata; there is no way of verifying this through videos
+        -- untested: wrath and cata; there is no way of verifying this without
+        -- a client
         if ClientIsClassicBefore(WOW_PROJECT_CATACLYSM_CLASSIC) then
-            -- do not ask me why even this apparently differs between classic and
-            -- mainline, but with the portrait background color subtly differing and the
-            -- model-frame lighting values being different as well, i am not surprised
+            -- do not ask me why even this apparently differs between classic
+            -- and mainline, but with the portrait background color subtly
+            -- differing and the model-frame lighting values being different as
+            -- well, i am not surprised
             return -134.5
         else
             return -130
@@ -153,23 +157,25 @@ do
     ---@field cameraFacing number
     ---@field cameraRoll number
     lib.MASK_MODEL_CONFIG = {
-        -- any model would do that has a sufficiently round hole: this one is available
-        -- even on classic clients
+        -- any model would do that has a sufficiently round hole: this one is
+        -- available even on classic clients
         fileId = ModelFileId.TALK_TO_ME_GEARS,
-        -- to ensure the mask model occlusion-clips all parts of all possible unit
-        -- models, the mask model must be as close to the camera as possible. lowering
-        -- the model scale allows a  nearer camera before hitting the near frustum clip
+        -- to ensure the mask model occlusion-clips all parts of all possible
+        -- unit models, the mask model must be as close to the camera as
+        -- possible. lowering the model scale allows a nearer camera before
+        -- hitting the near frustum clip
         scale = 0.6,
-        -- insets allow zooming in on the model without culling the mask from camera
-        -- distance being too low. this zoom factor is experimentally tweaked to
-        -- ensure it inscribes the circle of a circular texture mask
+        -- insets allow zooming in on the model without culling the mask from
+        -- camera distance being too low. this zoom factor is experimentally
+        -- tweaked to ensure it inscribes the circle of a circular texture mask
         digitalZoomFactor = digitalZoomFactor(),
         -- model has two gears: center one of them
         posX = 0.1118,
         posZ = -0.2837,
-        -- 1) at around camera distance 8, model 587744 stops rendering properly.
-        -- 2) at around camera distance 30, the model stops covering portrait models
-        -- that lean in (eg blood elf female sigh).
+        -- 1. at around camera distance 8, model 587744 stops rendering properly
+        -- 2. at around camera distance 30, the model stops covering portrait
+        -- models that lean in (eg blood elf female sigh)
+        --
         -- the lowest natural ui scale is 65% => 9 / 65% < 14 should be fine
         cameraDistance = 14,
         cameraFacing = math.pi / 2,
