@@ -108,6 +108,7 @@ local function applyOrEvalModelMaskInsetsToContainer(
     return left, right, top, bottom
 end
 
+---@param mask Model
 local function updateModelMaskCamera(mask)
     mask:SetModelScale(MASK_MODEL_CONFIG.scale / mask:GetEffectiveScale())
     mask:SetCameraPosition(
@@ -115,14 +116,18 @@ local function updateModelMaskCamera(mask)
     )
 end
 
-local function createMaskModel(container, frameRegion, createModelCallback)
-    local mask = CreateFrame("Model", nil, container)
+---@param parent Model | ModelMaskClippingContainer
+---@param regionToMask Region
+---@param createModelCallback fun(model: Model)?
+---@return Model
+local function createMaskModel(parent, regionToMask, createModelCallback)
+    local mask = CreateFrame("Model", nil, parent)
     if createModelCallback then createModelCallback(mask) end
     mask:SetFrameStrata("BACKGROUND") -- lowest: below any portraits
     mask:SetFixedFrameStrata(true)
     mask:SetFrameLevel(0)
     mask:SetFixedFrameLevel(true)
-    mask:SetAllPoints(frameRegion)
+    mask:SetAllPoints(regionToMask)
     mask:SetModel(MASK_MODEL_CONFIG.fileId)
     mask:SetPaused(true)
     mask:MakeCurrentCameraCustom()
@@ -138,12 +143,18 @@ local function createMaskModel(container, frameRegion, createModelCallback)
     return mask
 end
 
+---@param parent Model | ModelMaskClippingContainer
+---@param regionToMask Region
+---@param roll number
+---@param createModelCallback fun(model: Model)?
+---@return Model
+---@return Model
 local function createMaskModels(
-    container, frameRegion, roll, createModelCallback
+    parent, regionToMask, roll, createModelCallback
 )
-    local model1 = createMaskModel(container, frameRegion, createModelCallback)
-    local model2 = createMaskModel(container, frameRegion, createModelCallback)
-    local baseRoll = (roll or 0) + MASK_MODEL_CONFIG.cameraRoll
+    local model1 = createMaskModel(parent, regionToMask, createModelCallback)
+    local model2 = createMaskModel(parent, regionToMask, createModelCallback)
+    local baseRoll = roll + MASK_MODEL_CONFIG.cameraRoll
     model1:SetCameraRoll(baseRoll)
     -- mask-model circle has 12 vertices: by adding a second model rolled by 1/24
     -- revolution, the effective circle has 24 vertices
@@ -151,7 +162,14 @@ local function createMaskModels(
     return model1, model2
 end
 
-local function createMaskContainer(parent, roll, createModelCallback)
+---@param parent Model
+---@param roll number
+---@param createModelCallback fun(model: Model)?
+---@return ModelMaskClippingContainer
+local function createClippingMaskContainer(parent, roll, createModelCallback)
+    ---a clipping frame-container for a model mask, effectively cropping the
+    ---mask without altering its alignment
+    ---@class (exact) ModelMaskClippingContainer: Frame, ModelMaskModels
     local container = CreateFrame("Frame", nil, parent)
     container:SetUsingParentLevel(true)
     -- use container to crop model mask without having to re-evaluate alignment
@@ -165,6 +183,7 @@ local function createMaskContainer(parent, roll, createModelCallback)
     return container
 end
 
+---@param self ModelMaskFrame
 local function updateAlignment(self)
     local shapeRegion = self.shapeRegion
     local left, right, top, bottom
@@ -191,28 +210,45 @@ local function updateAlignment(self)
     )
 end
 
+---system responsible for creating and updating
+---[model-mask frames](lua://ModelMaskFrame)
+---@class ModelMaskFrameLib
 local lib = {}
+
+---one model-mask frame. any ui-rendered model intersecting the masking shape
+---of this frame will be occluded, and thus effectively masked
+---@class (exact) ModelMaskFrame
+---@field package shapeRegion Region?
+---@field package circleMaskFull ModelMaskModels
+---@field package circleMaskTopLeft ModelMaskClippingContainer
+---@field package circleMaskTopRight ModelMaskClippingContainer
+---@field package circleMaskBottomLeft ModelMaskClippingContainer
 
 ---create a model-mask frame for the given model. the mask will have the given
 ---shape and this shape will be aligned with the given shape region. for
 ---example, given a 100x100 model @(10,10), a circular mask shape, and a shape
 ---region of 50x50 @(30,20), the visible part of the model will be inside a
 ---50x50 circle at position (20,10) from the bottom left of the model
+---@param modelToMask Model
+---@param shape MaskShape
+---@param shapeRegion Region?
+---@param createModelCallback fun(model: Model)?
+---@return ModelMaskFrame
 function lib.Create(modelToMask, shape, shapeRegion, createModelCallback)
     local state = {}
     if shape == MaskShape.MAINLINE_PLAYER_PORTRAIT then
         -- then create special mask containers for each masked corner
-        local topLeft = createMaskContainer(
+        local topLeft = createClippingMaskContainer(
             modelToMask, 0, createModelCallback
         )
         topLeft:SetPoint("TOPLEFT", modelToMask, "TOPLEFT")
         topLeft:SetPoint("BOTTOMRIGHT", modelToMask, "CENTER")
-        local topRight = createMaskContainer(
+        local topRight = createClippingMaskContainer(
             modelToMask, math.pi / 2, createModelCallback
         )
         topRight:SetPoint("TOPRIGHT", modelToMask, "TOPRIGHT")
         topRight:SetPoint("BOTTOMLEFT", modelToMask, "CENTER")
-        local bottomLeft = createMaskContainer(
+        local bottomLeft = createClippingMaskContainer(
             modelToMask, 3 * math.pi / 4, createModelCallback
         )
         bottomLeft:SetPoint("BOTTOMLEFT", modelToMask, "BOTTOMLEFT")
@@ -224,6 +260,10 @@ function lib.Create(modelToMask, shape, shapeRegion, createModelCallback)
         local mask1, mask2 = createMaskModels(
             modelToMask, modelToMask, 0, createModelCallback
         )
+        ---the set of models comprising one model mask
+        ---@class (exact) ModelMaskModels
+        ---@field package model1 Model
+        ---@field package model2 Model
         state.circleMaskFull = { model1 = mask1, model2 = mask2 }
     end
     state.shapeRegion = shapeRegion

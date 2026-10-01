@@ -1,5 +1,12 @@
+---utility functions that abstract details of math, lua, or world of warcraft
+---@class Util
 local lib = {}
 
+---@param xA number
+---@param yA number
+---@param xB number
+---@param yB number
+---@return number
 function lib.GetDistanceSquared(xA, yA, xB, yB)
     return abs(xA - xB) ^ 2 + abs(yA - yB) ^ 2
 end
@@ -11,6 +18,7 @@ do -- project id util
         end
     end
 
+    ---@return { [integer]: integer? }
     local function evalWowClassicProjectOrder()
         local result = {}
         setIfKeyExists(result, WOW_PROJECT_CLASSIC, 0)
@@ -22,20 +30,26 @@ do -- project id util
     end
     local WOW_CLASSIC_PROJECT_ORDER = evalWowClassicProjectOrder()
     local CLASSIC_RANK = WOW_CLASSIC_PROJECT_ORDER[WOW_PROJECT_ID]
+    local CLIENT_IS_CLASSIC = CLASSIC_RANK ~= nil
 
-    lib.CLIENT_IS_CLASSIC = CLASSIC_RANK ~= nil
+    lib.CLIENT_IS_CLASSIC = CLIENT_IS_CLASSIC
 
+    ---@param projectId integer
+    ---@return boolean
     function lib.ClientIsClassicBefore(projectId)
-        return CLASSIC_RANK
+        return CLIENT_IS_CLASSIC
             and CLASSIC_RANK < WOW_CLASSIC_PROJECT_ORDER[projectId]
     end
 end
 
+---@param texture TextureBase
+---@return boolean
 function lib.TextureIsPortrait(texture)
     return texture:GetTexture() == "RTPortrait1"
 end
 
 do -- frame strata util
+    ---@type FrameStrata[]
     local FRAME_STRATA_ORDER = {
         "WORLD",
         "BACKGROUND",
@@ -48,6 +62,7 @@ do -- frame strata util
         "TOOLTIP",
     }
 
+    ---@return { [FrameStrata]: { [FrameStrata]: boolean? } }
     local function evalFrameStrataGreaterThanOrdering()
         local result = {}
         for i, strata in ipairs(FRAME_STRATA_ORDER) do
@@ -62,12 +77,16 @@ do -- frame strata util
     local FRAME_STRATA_GREATER_THAN_ORDERING =
         evalFrameStrataGreaterThanOrdering()
 
+    ---@param strataLhs FrameStrata
+    ---@param strataRhs FrameStrata
+    ---@return boolean
     function lib.LeftStrataIsAboveRight(strataLhs, strataRhs)
         return FRAME_STRATA_GREATER_THAN_ORDERING[strataLhs][strataRhs] or false
     end
 end
 
 do -- draw layer util
+    ---@type DrawLayer[]
     local DRAW_LAYER_ORDER = {
         "BACKGROUND",
         "BORDER",
@@ -76,6 +95,7 @@ do -- draw layer util
         "HIGHLIGHT",
     }
 
+    ---@return { [DrawLayer]: DrawLayer }
     local function evalLowerDrawLayerMap()
         local result = {}
         for rank, layer in ipairs(DRAW_LAYER_ORDER) do
@@ -85,6 +105,8 @@ do -- draw layer util
     end
     local LOWER_DRAW_LAYER = evalLowerDrawLayerMap()
 
+    ---@param layer DrawLayer
+    ---@return DrawLayer
     function lib.LowerDrawLayer(layer)
         return LOWER_DRAW_LAYER[layer]
     end

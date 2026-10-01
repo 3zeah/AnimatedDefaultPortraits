@@ -1,6 +1,3 @@
----responsible for creating the animated-portrait model, along with associated
----elements such as the background texture and model mask
-
 local _, ns = ...
 ---@module "Require"
 local require = ns.require
@@ -23,8 +20,15 @@ local CreateBaselinePortraitLight = FrameConfig.CreateBaselinePortraitLight
 local PORTRAIT_BACKGROUND_COLOR = FrameConfig.PORTRAIT_BACKGROUND_COLOR
 local SUPPORTED_MASK_TEXTURE_SHAPES = FrameConfig.SUPPORTED_MASK_TEXTURE_SHAPES
 
+---mask texture with a known shape
+---@class (exact) ShapedMaskTexture
+---@field texture MaskTexture
+---@field shape MaskShape
+
 ---find a mask texture, preferring one that has a supported shape, such that
 ---the model mask may mirror it
+---@param texture Texture
+---@return ShapedMaskTexture?
 local function findSupportedMaskTexture(texture)
    local maskCount = texture:GetNumMaskTextures()
    if maskCount == 0 then
@@ -34,13 +38,18 @@ local function findSupportedMaskTexture(texture)
       local mask = texture:GetMaskTexture(i)
       local shape = SUPPORTED_MASK_TEXTURE_SHAPES[mask:GetTexture()]
       if shape then
-         return mask, shape
+         return { texture = mask, shape = shape }
       end
    end
    -- portraits are usually circles: maybe it is a good idea to assume circle
-   return texture:GetMaskTexture(1), MaskShape.CIRCLE
+   return { texture = texture:GetMaskTexture(1), shape = MaskShape.CIRCLE }
 end
 
+---@param model PlayerModel
+---@param portraitTexture SimpleTexture
+---@param portraitTextureIsCircle boolean
+---@return Texture
+---@return ShapedMaskTexture?
 local function createBackground(model, portraitTexture, portraitTextureIsCircle)
    local layer, subLayer = model:GetModelDrawLayer()
    -- it APPEARS the model is always drawn above the background at same level,
@@ -69,8 +78,9 @@ local function createBackground(model, portraitTexture, portraitTextureIsCircle)
 
    -- there may also be a mask texture, even if portrait masking is disabled.
    -- in retail, both masks are typically applied, eg for the target frame
-   local maskTexture, shape = findSupportedMaskTexture(portraitTexture)
-   if maskTexture then
+   local shapedMaskTexture = findSupportedMaskTexture(portraitTexture)
+   if shapedMaskTexture then
+      local maskTexture = shapedMaskTexture.texture
       local mask = model:CreateMaskTexture()
       mask:SetAllPoints(maskTexture)
       mask:SetTexture(
@@ -79,12 +89,14 @@ local function createBackground(model, portraitTexture, portraitTextureIsCircle)
          "CLAMPTOBLACKADDITIVE"
       )
       bg:AddMaskTexture(mask)
-      return bg, { texture = maskTexture, shape = shape }
+      return bg, shapedMaskTexture
    else
       return bg
    end
 end
 
+---@param model AnimatedPortraitFrame
+---@param a number
 local function setAlpha(model, a)
    -- if the model happens to be frame buffered, setting one overall alpha works
    -- (otherwise the model and the background will blend: see `else` case)
@@ -102,6 +114,11 @@ local function setAlpha(model, a)
    end
 end
 
+---@param model AnimatedPortraitFrame
+---@param r number
+---@param g number
+---@param b number
+---@param a number?
 local function setVertexColor(model, r, g, b, a)
    local light = CreateBaselinePortraitLight()
    light.ambientColor = CreateColor(r, g, b)
@@ -115,6 +132,8 @@ local function setVertexColor(model, r, g, b, a)
 end
 
 -- post-hook the portrait coloring to also color the model
+---@param portraitTexture SimpleTexture
+---@param model AnimatedPortraitFrame
 local function mirrorPortraitVertexColor(portraitTexture, model)
    hooksecurefunc(portraitTexture, "SetVertexColor", function(_, ...)
       setVertexColor(model, ...)
@@ -124,6 +143,7 @@ local function mirrorPortraitVertexColor(portraitTexture, model)
    end)
 end
 
+---@param self AnimatedPortraitFrame
 local function updateCamera(self)
    self:RefreshCamera()
    self:SetPortraitZoom(1)
@@ -141,19 +161,35 @@ end
 -- * increasing the scale of a unit frame comprising the skeletal warhorse
 --   (creature with display id 10720), visibly alters the appearance of the
 --   particle glow (particles take some time to amass, however)
+---@param self AnimatedPortraitFrame
 local function updateScale(self)
    self:SetModelScale(1 / self:GetEffectiveScale())
    updateCamera(self)
 end
 
+---responsible for the [animated-portrait frame](lua://AnimatedPortraitFrame)
+---@class AnimatedPortraitFrameLib
 local lib = {}
 
 ---create a new animated-portrait frame, aligned with and otherwise matching the
 ---given portrait. even without any mask textures, portrait textures may be
----circular (depending on parameters to `SetPortraitTexture`), and thus this is
----also required input to this function
+---circular (depending on arguments to
+---[`SetPortraitTexture`](lua://SetPortraitTexture)), and thus this is also
+---required input to this function
+---@param portrait SimpleTexture
+---@param portraitTextureIsCircle boolean
+---@param createModelCallback fun(model: Model)?
+---@return AnimatedPortraitFrame
 function lib.Create(portrait, portraitTextureIsCircle, createModelCallback)
    local parent = portrait:GetParent()
+   ---animated portrait frame, comprising a model along with associated elements
+   ---such as the background texture and model mask, which altogether visually
+   ---emulates a baseline world of warcraft portrait (which are produced by
+   ---[`SetPortraitTexture`](lua://SetPortraitTexture))
+   ---@class (exact) AnimatedPortraitFrame: PlayerModel
+   ---@field package shape MaskShape?
+   ---@field package mask ModelMaskFrame?
+   ---@field package bgTexture Texture
    local model = CreateFrame("PlayerModel", nil, parent)
    if createModelCallback then createModelCallback(model) end
    model:SetAllPoints(portrait)
@@ -201,6 +237,9 @@ end
 
 ---update model either to a new unit, or to refresh the extant unit (eg, gear
 ---change)
+---@param self AnimatedPortraitFrame
+---@param portrait SimpleTexture
+---@param unit string
 function lib.UpdateUnit(self, portrait, unit)
    self:SetUnit(unit)
    updateScale(self)
@@ -213,6 +252,7 @@ lib.UpdateCamera = updateCamera
 
 ---update required alignments after any size change, either to the portrait
 ---itself or its mask textures, with which the model mask aligns
+---@param self AnimatedPortraitFrame
 function lib.UpdateAlignments(self)
    if self.mask then
       ModelMaskFrame.UpdateAlignment(self.mask)
@@ -232,6 +272,9 @@ local CIRCLE_INTERSECT_MARGIN = 0.99
 ---will occlude visible models, eg portrait models. thus, this function returns
 ---true exactly when some visible section of either model intersects with the
 ---bounds of the other model frame
+---@param modelA Frame | AnimatedPortraitFrame
+---@param modelB Frame | AnimatedPortraitFrame
+---@return boolean
 function lib.MayOcclude(modelA, modelB)
    local leftA, bottomA, widthA, heightA = modelA:GetScaledRect()
    -- no reported size => region is not properly loaded => region can be ignored

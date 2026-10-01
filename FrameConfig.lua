@@ -1,6 +1,3 @@
----system config for animated portrait frames, including the associated model
----mask, chiefly per-client portrait-appearance data and mask-alignment values
-
 local _, ns = ...
 ---@module "Require"
 local require = ns.require
@@ -16,6 +13,9 @@ local TextureFileId = Const.TextureFileId
 local CLIENT_IS_CLASSIC = Util.CLIENT_IS_CLASSIC
 local ClientIsClassicBefore = Util.ClientIsClassicBefore
 
+---system config for animated portrait frames, including the associated model
+---mask, chiefly per-client portrait-appearance data and mask-alignment values
+---@class AnimationVariantBlacklisterLib
 local lib = {}
 
 -- 36 comes from target-of-target being 35 in classic, but party and pet frames
@@ -24,6 +24,8 @@ local lib = {}
 lib.MIN_PORTRAIT_SIZE_TO_ANIMATE = 36
 
 ---if true for a given portrait, this add-on will effectively ignore it
+---@param portrait SimpleTexture
+---@return boolean
 function lib.ShouldNotAnimate(portrait)
     return portrait == MicroButtonPortrait
         or (
@@ -59,32 +61,35 @@ do
     -- is safe to enable this for any frame that has been vetted to look fine
     -- with this enabled, but it is also only necessary if the portrait is ever
     -- not opaque
-    function lib.ShouldRenderToFrameBuffer(portraitTexture)
-        return portraitTexture == PlayerPortrait
+    ---@param portrait SimpleTexture
+    ---@return boolean
+    function lib.ShouldRenderToFrameBuffer(portrait)
+        return portrait == PlayerPortrait
             or (
                 PlayerFrame
                 and PlayerFrame.PlayerFrameContainer
-                and portraitTexture == PlayerFrame.PlayerFrameContainer.PlayerPortrait
+                and portrait == PlayerFrame.PlayerFrameContainer.PlayerPortrait
             )
-            or portraitTexture == TargetFramePortrait
+            or portrait == TargetFramePortrait
             or (
                 TargetFrame
                 and TargetFrame.TargetFrameContainer
-                and portraitTexture == TargetFrame.TargetFrameContainer.Portrait
+                and portrait == TargetFrame.TargetFrameContainer.Portrait
             )
-            or portraitTexture == FocusFramePortrait
+            or portrait == FocusFramePortrait
             or (
                 FocusFrame
                 and FocusFrame.TargetFrameContainer
-                and portraitTexture == FocusFrame.TargetFrameContainer.Portrait
+                and portrait == FocusFrame.TargetFrameContainer.Portrait
             )
-            or findFirstNamedParent(portraitTexture) == PartyFrame
+            or findFirstNamedParent(portrait) == PartyFrame
     end
 end
 
 -- PORTRAIT APPEARANCE
 do
     -- tweaked to match baseline portraits
+    ---@return ModelLight
     function lib.CreateBaselinePortraitLight()
         if CLIENT_IS_CLASSIC then
             return {
@@ -110,6 +115,7 @@ do
     end
 
     -- sampled from baseline portraits
+    ---@return colorRGBA
     local function baselinePortraitBackgroundColor()
         if ClientIsClassicBefore(WOW_PROJECT_CATACLYSM_CLASSIC) then
             return CreateColorFromBytes(0, 14, 33, 255)
@@ -137,6 +143,15 @@ do
         end
     end
 
+    ---@class (exact) MaskModelConfig
+    ---@field fileId ModelFileId
+    ---@field scale number
+    ---@field digitalZoomFactor number
+    ---@field posX number
+    ---@field posZ number
+    ---@field cameraDistance number
+    ---@field cameraFacing number
+    ---@field cameraRoll number
     lib.MASK_MODEL_CONFIG = {
         -- any model would do that has a sufficiently round hole: this one is available
         -- even on classic clients
@@ -163,6 +178,7 @@ do
         cameraRoll = -0.17
     }
 
+    ---@type { [TextureFileId]: MaskShape? }
     lib.SUPPORTED_MASK_TEXTURE_SHAPES = {
         [TextureFileId.TEMP_PORTRAIT_ALPHA_MASK] =
             MaskShape.CIRCLE,

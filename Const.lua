@@ -1,10 +1,14 @@
+---project constants
+---@class Const
 local lib = {}
 
+---@enum MaskShape
 lib.MaskShape = {
     CIRCLE = 0,
     MAINLINE_PLAYER_PORTRAIT = 1,
 }
 
+---@enum ModelFileId
 lib.ModelFileId = {
     -- character/scourge/female/scourgefemale.m2
     UNDEAD_FEMALE = 121608,
@@ -38,6 +42,7 @@ lib.ModelFileId = {
     VULTURE_MOUNT = 1926505,
 }
 
+---@enum TextureFileId
 lib.TextureFileId = {
     -- interface/characterframe/tempportraitalphamask.blp
     TEMP_PORTRAIT_ALPHA_MASK = 130924,

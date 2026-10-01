@@ -1,8 +1,3 @@
----animated portraits play the generic idle animation, which typically cycles
----between several animation variants. this system is responsible for ensuring
----that no variation plays that places the model outside of the portrait
----viewport
-
 local _, ns = ...
 ---@module "Require"
 local require = ns.require
@@ -16,6 +11,7 @@ local ModelFileId = Const.ModelFileId
 -- variation, and the value is the probability that it plays. the base
 -- variation, 0, plays if nothing else. for example, { 2 = 5% } := animation
 -- (0,0) plays 95% of the time, (0,1) 5%
+---@alias AnimationVariantPlaylist { [integer]: number }
 
 local NO_IDLE_VARIATIONS_ANIMATION_PLAYLIST = {}
 -- observed baseline variations: 40% 0, 40% 1, 5% 2, 5% 3
@@ -31,6 +27,7 @@ local ZOMBIE_IDLE_ANIMATION_PLAYLIST = { [2] = 1 / 3 }
 
 -- the set of known model id:s where an idle variation is awkwardly off-camera,
 -- mapped to a table of whitelisted idle variations with probability of playing
+---@type { [ModelFileId]: AnimationVariantPlaylist? }
 local ANIMATION_OVERRIDES = {
     [ModelFileId.UNDEAD_MALE] = UD_MALE_IDLE_ANIMATION_PLAYLIST,
     [ModelFileId.SKELETON_MALE] = UD_MALE_IDLE_ANIMATION_PLAYLIST,
@@ -69,9 +66,25 @@ local function rollIdleAnimationVariation(playlist)
     return 0
 end
 
+---animated portraits play the generic idle animation, which typically cycles
+---between several animation variants. this system is responsible for ensuring
+---that no variation plays that places the model outside of the portrait
+---viewport
+---
+---this library is internally configured: the list of blacklisted animation
+---variants is maintained directly in this system
+---@class AnimationVariantBlacklisterLib
 local lib = {}
 
+---attach to the given player model to play its idle animation, but preventing
+---blacklisted idle-animation variants from playing. this otherwise preserves
+---the baseline idle-animation behavior of cycling between different variations
+---@param model PlayerModel
+---@return AnimationVariantBlacklister
 function lib.Create(model)
+    ---@class (exact) AnimationVariantBlacklister
+    ---@field package playlist AnimationVariantPlaylist
+    ---@field package nextVariation integer?
     local state = {}
     model:SetScript("OnAnimFinished", function(self)
         local playlist = state.playlist
@@ -88,18 +101,20 @@ function lib.Create(model)
     return state
 end
 
-function lib.UpdateAfterModelChanged(self, model)
+---@param state AnimationVariantBlacklister
+---@param model PlayerModel
+function lib.UpdateAfterModelChanged(state, model)
     local animationPlaylist = ANIMATION_OVERRIDES[model:GetModelFileID()]
     if animationPlaylist then
-        self.playlist = animationPlaylist
-        self.nextVariation = rollIdleAnimationVariation(animationPlaylist)
+        state.playlist = animationPlaylist
+        state.nextVariation = rollIdleAnimationVariation(animationPlaylist)
         -- any time the model-unit is refreshed, it appears the model
         -- unavoidably starts a new animation: immediately start a whitelisted
         -- variation instead
         model:SetAnimation(0, rollIdleAnimationVariation(animationPlaylist))
     else
-        self.playlist = nil
-        self.nextVariation = nil
+        state.playlist = nil
+        state.nextVariation = nil
     end
 end
 
