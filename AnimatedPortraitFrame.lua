@@ -222,6 +222,9 @@ end
 -- update model scale after any change to the frame scale
 lib.UpdateScale = updateScale
 
+-- 99% is just to provide some visual margin to the intersect checker
+local MARGIN = 0.99
+
 ---return whether some part of either model may occlude the other, because they
 ---visibly intersect
 ---
@@ -245,7 +248,6 @@ function lib.MayOcclude(modelA, modelB)
    local topB = bottomB + heightB
    local boundsIntersect = leftA <= rightB and leftB <= rightA
        and bottomA <= topB and bottomB <= topA
-   -- optimization
    if not boundsIntersect then
       return false
    end
@@ -265,48 +267,107 @@ function lib.MayOcclude(modelA, modelB)
        GetDistanceSquared(centerXA, centerYA, centerXB, centerYB)
    local radiusA = max(widthA, heightA) / 2
    local radiusB = max(widthB, heightB) / 2
-   -- 99% is just to provide some visual margin
-   if distanceSquared < (0.99 * (radiusA + radiusB)) ^ 2 then
+   if distanceSquared < (MARGIN * (radiusA + radiusB)) ^ 2 then
       return true
    end
-   -- finally, since the bounds intersect, but the regions are not close enough
-   -- to circle-intersect, only one corner of each region are intersecting:
-   -- check that both corners are masked and that neither are in the circle of
-   -- the other
-   local bIsToBottomRight = centerXA < centerXB and centerYB < centerYA
-   local bIsToTopLeft = centerXB < centerXA and centerYA < centerYB
+   -- since the bounds intersect, but the regions are not close enough to
+   -- circle-intersect, exactly one corner of one region is intersecting:
+   -- if both this corner and the closest corner of the other region is
+   -- un-masked, this is definitely an intersection
+   local bIsToRight = centerXA < centerXB
+   local bIsToBottom = centerYB < centerYA
+   local bIsToBottomRight = bIsToRight and bIsToBottom
+   local bIsToTopLeft = not bIsToRight and not bIsToBottom
    -- `PORTRAIT_SHAPE_PLAYER_FRAME` is the only non-circle shape: it has an
    -- un-masked lower-right corner
    if (shapeA == MaskShape.MAINLINE_PLAYER_PORTRAIT and bIsToBottomRight)
        or (shapeB == MaskShape.MAINLINE_PLAYER_PORTRAIT and bIsToTopLeft) then
       return true
    end
-   local offendingXA, offendingYA
-   local offendingXB, offendingYB
+
+   -- finally, by now, the intersecting corners must be masked: this is an
+   -- intersection exactly when either region seen as a circle intersects with
+   -- the other seen as a rectangle. check rectangle-circle-intersection in two
+   -- steps: either the circle is intersecting a line but not a corner, or just
+   -- a corner
+
+   -- corner intersections will be checked later: it suffices, therefore, to
+   -- checking for line intersections only when the circle center is within the
+   -- bounds of the line axis
+   --
+   -- check for "easy" line intersection: B as circle, A as rectangle
+   if leftA <= centerXB and centerXB <= rightA then
+      local verticalDistance
+      if bIsToBottom then
+         verticalDistance = bottomA - centerYB
+      else
+         verticalDistance = centerYB - topA
+      end
+      if verticalDistance < MARGIN * radiusB then
+         return true
+      end
+   end
+   if bottomA <= centerYB and centerYB <= topA then
+      local horizontalDistance
+      if bIsToRight then
+         horizontalDistance = centerXB - rightA
+      else
+         horizontalDistance = leftA - centerXB
+      end
+      if horizontalDistance < MARGIN * radiusB then
+         return true
+      end
+   end
+   -- ditto, but vice versa: A as circle, B as rectangle
+   if leftB <= centerXA and centerXA <= rightB then
+      local verticalDistance
+      if bIsToBottom then
+         verticalDistance = centerYA - topB
+      else
+         verticalDistance = bottomB - centerYA
+      end
+      if verticalDistance < MARGIN * radiusA then
+         return true
+      end
+   end
+   if bottomB <= centerYA and centerYA <= topB then
+      local horizontalDistance
+      if bIsToRight then
+         horizontalDistance = leftB - centerXA
+      else
+         horizontalDistance = centerXA - rightB
+      end
+      if horizontalDistance < MARGIN * radiusA then
+         return true
+      end
+   end
+
+   local cornerXA, cornerYA
+   local cornerXB, cornerYB
    if bIsToBottomRight then
-      offendingXA, offendingYA = rightA, bottomA
-      offendingXB, offendingYB = leftB, topB
+      cornerXA, cornerYA = rightA, bottomA
+      cornerXB, cornerYB = leftB, topB
    elseif bIsToTopLeft then
-      offendingXA, offendingYA = leftA, topA
-      offendingXB, offendingYB = rightB, bottomB
-   elseif centerXA < centerXB and centerYA < centerYB then
+      cornerXA, cornerYA = leftA, topA
+      cornerXB, cornerYB = rightB, bottomB
+   elseif bIsToRight and not bIsToBottom then
       -- B is to top right
-      offendingXA, offendingYA = rightA, topA
-      offendingXB, offendingYB = leftB, bottomB
+      cornerXA, cornerYA = rightA, topA
+      cornerXB, cornerYB = leftB, bottomB
    else
       -- B is to bottom left
-      offendingXA, offendingYA = leftA, bottomA
-      offendingXB, offendingYB = rightB, topB
+      cornerXA, cornerYA = leftA, bottomA
+      cornerXB, cornerYB = rightB, topB
    end
    -- are the intersecting corners inside the circle shape?
    local cornerDistanceSquaredA =
-       GetDistanceSquared(offendingXA, offendingYA, centerXB, centerYB)
-   if cornerDistanceSquaredA < (0.99 * radiusB) ^ 2 then
+       GetDistanceSquared(cornerXA, cornerYA, centerXB, centerYB)
+   if cornerDistanceSquaredA < (MARGIN * radiusB) ^ 2 then
       return true
    end
    local cornerDistanceSquaredB =
-       GetDistanceSquared(offendingXB, offendingYB, centerXA, centerYA)
-   return cornerDistanceSquaredB < (0.99 * radiusA) ^ 2
+       GetDistanceSquared(cornerXB, cornerYB, centerXA, centerYA)
+   return cornerDistanceSquaredB < (MARGIN * radiusA) ^ 2
 end
 
 ns.AnimatedPortraitFrame = lib
