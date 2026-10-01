@@ -222,8 +222,8 @@ end
 -- update model scale after any change to the frame scale
 lib.UpdateScale = updateScale
 
--- 99% is just to provide some visual margin to the intersect checker
-local MARGIN = 0.99
+-- just to provide some visual margin to the occlusion checker
+local CIRCLE_INTERSECT_MARGIN = 0.99
 
 ---return whether some part of either model may occlude the other, because they
 ---visibly intersect
@@ -265,9 +265,9 @@ function lib.MayOcclude(modelA, modelB)
    -- and check whether the circles intersect
    local distanceSquared =
        GetDistanceSquared(centerXA, centerYA, centerXB, centerYB)
-   local radiusA = max(widthA, heightA) / 2
-   local radiusB = max(widthB, heightB) / 2
-   if distanceSquared < (MARGIN * (radiusA + radiusB)) ^ 2 then
+   local radiusA = CIRCLE_INTERSECT_MARGIN * max(widthA, heightA) / 2
+   local radiusB = CIRCLE_INTERSECT_MARGIN * max(widthB, heightB) / 2
+   if distanceSquared < (radiusA + radiusB) ^ 2 then
       return true
    end
    -- since the bounds intersect, but the regions are not close enough to
@@ -303,7 +303,7 @@ function lib.MayOcclude(modelA, modelB)
       else
          verticalDistance = centerYB - topA
       end
-      if verticalDistance < MARGIN * radiusB then
+      if verticalDistance < radiusB then
          return true
       end
    end
@@ -314,7 +314,7 @@ function lib.MayOcclude(modelA, modelB)
       else
          horizontalDistance = leftA - centerXB
       end
-      if horizontalDistance < MARGIN * radiusB then
+      if horizontalDistance < radiusB then
          return true
       end
    end
@@ -326,7 +326,7 @@ function lib.MayOcclude(modelA, modelB)
       else
          verticalDistance = bottomB - centerYA
       end
-      if verticalDistance < MARGIN * radiusA then
+      if verticalDistance < radiusA then
          return true
       end
    end
@@ -337,7 +337,7 @@ function lib.MayOcclude(modelA, modelB)
       else
          horizontalDistance = centerXA - rightB
       end
-      if horizontalDistance < MARGIN * radiusA then
+      if horizontalDistance < radiusA then
          return true
       end
    end
@@ -362,12 +362,12 @@ function lib.MayOcclude(modelA, modelB)
    -- are the intersecting corners inside the circle shape?
    local cornerDistanceSquaredA =
        GetDistanceSquared(cornerXA, cornerYA, centerXB, centerYB)
-   if cornerDistanceSquaredA < (MARGIN * radiusB) ^ 2 then
+   if cornerDistanceSquaredA < radiusB ^ 2 then
       return true
    end
    local cornerDistanceSquaredB =
        GetDistanceSquared(cornerXB, cornerYB, centerXA, centerYA)
-   return cornerDistanceSquaredB < (MARGIN * radiusA) ^ 2
+   return cornerDistanceSquaredB < radiusA ^ 2
 end
 
 ns.AnimatedPortraitFrame = lib
