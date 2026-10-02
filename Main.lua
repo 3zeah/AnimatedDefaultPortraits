@@ -214,7 +214,7 @@ local function createModel(portraitTexture, disableMasking)
    ---@field doAlignOnNextUpdate boolean?
    local model = AnimatedPortraitFrame
        .Create(portraitTexture, not disableMasking, registerInternalModel)
-   model.textureIsPortrait = true
+   model.textureIsPortrait = false
    model.hasModel = false
 
    model:SetScript("OnShow", onShowModel)
