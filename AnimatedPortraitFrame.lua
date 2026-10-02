@@ -241,10 +241,17 @@ end
 ---@param portrait SimpleTexture
 ---@param unit UnitToken
 function lib.UpdateUnit(self, portrait, unit)
-   self:SetUnit(unit)
-   updateScale(self)
-   setVertexColor(self, portrait:GetVertexColor())
-   setAlpha(self, portrait:GetAlpha())
+   -- units not "visible" to the client cannot have their model loaded
+   if not UnitIsVisible(unit) then
+      return false
+   end
+   local success = self:SetUnit(unit)
+   if success then
+      updateScale(self)
+      setVertexColor(self, portrait:GetVertexColor())
+      setAlpha(self, portrait:GetAlpha())
+   end
+   return success
 end
 
 ---update camera after any size change to the frame, or other model manipulation
