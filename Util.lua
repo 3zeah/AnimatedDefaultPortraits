@@ -42,6 +42,23 @@ do -- project id util
     end
 end
 
+---throttles the given function such that it only runs every `period` seconds
+---@generic T
+---@param period number
+---@param onUpdate fun(self: T)
+---@return fun(self: T, elapsed: number)
+function lib.ThrottledOnUpdate(period, onUpdate)
+    local secondsSinceUpdate = 0
+    return function(self, elapsed)
+        secondsSinceUpdate = secondsSinceUpdate + elapsed
+        if secondsSinceUpdate <= period then
+            return
+        end
+        secondsSinceUpdate = 0
+        onUpdate(self)
+    end
+end
+
 ---@param texture TextureBase
 ---@return boolean
 function lib.TextureIsPortrait(texture)
