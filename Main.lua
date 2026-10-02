@@ -196,12 +196,6 @@ local function onShowModel(self)
    blockOverlappedPortraitModels(self)
 end
 
----@param self AnimatedPortraitFrame
-local function onSizeChangedModel(self)
-   AnimatedPortraitFrame.UpdateScale(self)
-   AnimatedPortraitFrame.UpdateAlignments(self)
-end
-
 local UPDATE_PERIOD = 1 / 15
 -- create the animated model frame
 ---@param portraitTexture SimpleTexture
@@ -225,7 +219,6 @@ local function createModel(portraitTexture, disableMasking)
 
    model:SetScript("OnShow", onShowModel)
    model:SetScript("OnHide", unblockAllPortraitModels)
-   model:SetScript("OnSizeChanged", onSizeChangedModel)
    local secondsSinceUpdate = 0
    ---@param self AnimatedPortrait
    ---@param elapsed number

@@ -143,28 +143,46 @@ local function mirrorPortraitVertexColor(portraitTexture, model)
    end)
 end
 
+---update camera after any size change to the frame, or other model manipulation
 ---@param self AnimatedPortraitFrame
 local function updateCamera(self)
    self:RefreshCamera()
    self:SetPortraitZoom(1)
 end
 
--- increasing the frame scale (appears to) effectively increases the model
--- scale, which makes portrait-model particles appear different, because they
--- are not properly scaled with the model. additionally, scaling the model also
--- causes the camera distance to scale, to preserve perspective, which may run
--- into frustum clipping at extreme ui scales
---
--- backing observations:
--- * decreasing the scale of a unit frame to something crazy low, like 0.2,
---   induces near-clipping if this function is disabled
--- * increasing the scale of a unit frame comprising the skeletal warhorse
---   (creature with display id 10720), visibly alters the appearance of the
---   particle glow (particles take some time to amass, however)
+---update required alignments after any size change, either to the portrait
+---itself or its mask textures, with which the model mask aligns
+---@param self AnimatedPortraitFrame
+local function updateAlignments(self)
+   if self.mask then
+      ModelMaskFrame.UpdateAlignment(self.mask)
+   end
+end
+
+---update model scale after any change to the frame scale
+---
+---increasing the frame scale (appears to) effectively increases the model
+---scale, which makes portrait-model particles appear different, because they
+---are not properly scaled with the model. additionally, scaling the model also
+---causes the camera distance to scale, to preserve perspective, which may run
+---into frustum clipping at extreme ui scales
+---
+---backing observations:
+---* decreasing the scale of a unit frame to something crazy low, like 0.2,
+---  induces near-clipping if this function is disabled
+---* increasing the scale of a unit frame comprising the skeletal warhorse
+---  (creature with display id 10720), visibly alters the appearance of the
+---  particle glow (particles take some time to amass, however)
 ---@param self AnimatedPortraitFrame
 local function updateScale(self)
    self:SetModelScale(1 / self:GetEffectiveScale())
    updateCamera(self)
+end
+
+---@param self AnimatedPortraitFrame
+local function onSizeChanged(self)
+   updateScale(self)
+   updateAlignments(self)
 end
 
 ---responsible for the [animated-portrait frame](lua://AnimatedPortraitFrame)
@@ -230,6 +248,7 @@ function lib.Create(portrait, portraitTextureIsCircle, createModelCallback)
 
    model.bgTexture = bgTexture
 
+   model:SetScript("OnSizeChanged", onSizeChanged)
    mirrorPortraitVertexColor(portrait, model)
 
    return model
@@ -254,20 +273,9 @@ function lib.UpdateUnit(self, portrait, unit)
    return success
 end
 
----update camera after any size change to the frame, or other model manipulation
 lib.UpdateCamera = updateCamera
 
----update required alignments after any size change, either to the portrait
----itself or its mask textures, with which the model mask aligns
----@param self AnimatedPortraitFrame
-function lib.UpdateAlignments(self)
-   if self.mask then
-      ModelMaskFrame.UpdateAlignment(self.mask)
-   end
-end
-
--- update model scale after any change to the frame scale
-lib.UpdateScale = updateScale
+lib.UpdateAlignments = updateAlignments
 
 -- just to provide some visual margin to the occlusion checker
 local CIRCLE_INTERSECT_MARGIN = 0.99
