@@ -16,21 +16,23 @@ local LeftStrataIsAboveRight = Util.LeftStrataIsAboveRight
 local MIN_PORTRAIT_SIZE_TO_ANIMATE = FrameConfig.MIN_PORTRAIT_SIZE_TO_ANIMATE
 local ShouldNotAnimate = FrameConfig.ShouldNotAnimate
 
--- state table of all animated model frames, indexed by each corresponding
--- portrait texture that was replaced by that model
+---state table of all animated model frames, indexed by each corresponding
+---portrait texture that was replaced by that model
 ---@type { [SimpleTexture]: AnimatedPortraitState }
 local states = {}
--- set of all models maintained by this add-on, for when the system needs to
--- know whether a model is external
----@type { [Model]: boolean }
-local models = {}
--- blacklist
+---optimization: when a portrait is not animated for whatever reason, recall to
+---skip it for next time
 ---@type { [SimpleTexture]: boolean? }
 local portraitsNotToAnimate = {}
--- state set of all registered potentially-blocking model frames, such that they
--- are only hooked once (see function `registerPotentiallyBlockingModelFrame`)
+---set of all models maintained by this add-on, for when the system needs to
+---know whether a model is external
+---@type { [Model]: boolean }
+local internalModels = {}
+---set of all other models in the interface, such that the system can prevent
+---occlusion between these and the animated portraits (see function
+---`preventExternalModelOcclusion`)
 ---@type { [Frame]: true? }
-local potentiallyBlockingModelFrames = {}
+local externalModels = {}
 
 -- call whenever an independent variable is updated, eg `model.blocked`
 ---@param portraitTexture SimpleTexture
@@ -149,7 +151,7 @@ end
 -- and ensure they are not animated if so. this is laborious workaround for the
 -- issue that model frames cull higher but overlapping model frames
 ---@param blocker Frame | AnimatedPortraitFrame
-local function blockOverlappedPortraitModels(blocker)
+local function blockOccludedPortraitModels(blocker)
    for otherPortraitTexture, otherState in pairs(states) do
       local otherModel = otherState.model
       if blocker ~= otherModel then
@@ -174,10 +176,10 @@ local function unblockAllPortraitModels(blocker)
    end
 end
 
--- so that it is not picked up by `tryToRegisterAllNewExternalModelFrames`
+-- so that it is not picked up by `preventExternalModelOcclusion`
 ---@param self Model
 local function registerInternalModel(self)
-   models[self] = true
+   internalModels[self] = true
 end
 
 ---@param self AnimatedPortrait
@@ -193,7 +195,7 @@ local function onShowModel(self)
    -- but even on-show, the regions may lie... see the "OnUpdate" script that
    -- depends on this flag
    self.doAlignOnNextUpdate = true
-   blockOverlappedPortraitModels(self)
+   blockOccludedPortraitModels(self)
 end
 
 local UPDATE_PERIOD = 1 / 15
@@ -245,7 +247,7 @@ local function createModel(portraitTexture, disableMasking)
       end
       -- portrait may have been disabled during this update
       if not self.disabled then
-         blockOverlappedPortraitModels(self)
+         blockOccludedPortraitModels(self)
       end
    end
    model:SetScript("OnUpdate", onUpdate)
@@ -358,31 +360,31 @@ end
 
 local BLOCK_CHECK_UPDATE_PERIOD = 1 / 15
 local secondsSinceBlockCheck = {}
----@param modelFrame Frame
+---@param model Frame
 ---@param elapsed number
-local function updatePotentiallyBlockingExternalModelFrame(modelFrame, elapsed)
+local function checkForNewOccludedPortraitModels(model, elapsed)
    if elapsed then
-      local t = (secondsSinceBlockCheck[modelFrame] or 0) + elapsed
+      local t = (secondsSinceBlockCheck[model] or 0) + elapsed
       if t < BLOCK_CHECK_UPDATE_PERIOD then
-         secondsSinceBlockCheck[modelFrame] = t
+         secondsSinceBlockCheck[model] = t
          return
       end
    end
-   secondsSinceBlockCheck[modelFrame] = 0
-   blockOverlappedPortraitModels(modelFrame)
+   secondsSinceBlockCheck[model] = 0
+   blockOccludedPortraitModels(model)
 end
 
----@param frame Frame
-local function registerPotentiallyBlockingExternalModelFrame(frame)
+---@param model Frame
+local function registerExternalModel(model)
    -- do not register models owned by this add-on, and do not register twice
-   if not frame or models[frame] or potentiallyBlockingModelFrames[frame] then
+   if not model or internalModels[model] or externalModels[model] then
       return
    end
-   potentiallyBlockingModelFrames[frame] = true
-   frame:HookScript("OnShow", blockOverlappedPortraitModels)
+   externalModels[model] = true
+   model:HookScript("OnShow", blockOccludedPortraitModels)
    -- check on update because the blocking frame may have moved...
-   frame:HookScript("OnUpdate", updatePotentiallyBlockingExternalModelFrame)
-   frame:HookScript("OnHide", unblockAllPortraitModels)
+   model:HookScript("OnUpdate", checkForNewOccludedPortraitModels)
+   model:HookScript("OnHide", unblockAllPortraitModels)
 end
 
 local METHODS_TO_HOOK_PER_MODEL_WIDGET = {
@@ -406,13 +408,11 @@ local METHODS_TO_HOOK_PER_MODEL_WIDGET = {
 -- can hope to catch all potentially-blocking external models without having to
 -- explicitly register each, especially because some are not present at load
 -- time, eg the inspect model and the transmog-preview model
-local function preventIntersectingModelOcclusion()
+local function preventExternalModelOcclusion()
    for widgetType, methods in pairs(METHODS_TO_HOOK_PER_MODEL_WIDGET) do
       local meta = getmetatable(CreateFrame(widgetType)).__index
       for _, method in ipairs(methods) do
-         hooksecurefunc(
-            meta, method, registerPotentiallyBlockingExternalModelFrame
-         )
+         hooksecurefunc(meta, method, registerExternalModel)
       end
    end
 end
@@ -421,7 +421,7 @@ end
 local function onEvent(_, event, ...)
    if event == "PLAYER_LOGIN" then
       enableAnimatedPortraits()
-      preventIntersectingModelOcclusion()
+      preventExternalModelOcclusion()
    elseif event == "PORTRAITS_UPDATED" then
       for portraitTexture, state in pairs(states) do
          if state.model.unit then
