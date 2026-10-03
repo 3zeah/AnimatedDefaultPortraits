@@ -71,6 +71,11 @@ Unfortunately, "blacklisting" animation variants actually requires simulating th
 
 This is unfortunately a necessarily opinionated stylistic judgement, but there are, to me, some obvious examples of portraits that should not be animated, chiefly the "micro button", which opens the character frame (eg target-of-target portraits are not animated because they are relatively visually insignificant).
 
+### Release
+
+* Ensure on main
+* Only package production code: eg, skip _.gitignore_  and the readme
+
 ### Testing
 
 Use the `dev` branch and ensure it is rebased on main, or on whatever changes you are testing. The `dev` branch comprises dev functions as well as some debug printing. In particular, a typical appearance test will first run `AdpPose()` to freeze the animated portraits to their baseline pose, followed by `AdpToggle()` repeatedly to toggle the animated portraits with the baseline ones. Another useful call is `Adp()` which returns the animated target-frame model, for comfortable in-game scripting experiments.
