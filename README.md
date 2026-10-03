@@ -1,6 +1,6 @@
 # Animated Default Portraits
 
-World of Warcraft add-on. Animate the default unit-frame portraits with minimal side effects and without user configuration. The animated portraits are otherwise indistinguishable from the baseline portraits. Supports all clients: both mainline and classic.
+World of Warcraft add-on. Animate the default unit-frame portraits with minimal side effects and without user configuration. The animated portraits are otherwise indistinguishable from the baseline portraits. Supports both mainline and classic, but I do not have access to Forever yet.
 
 ## Limitations
 
