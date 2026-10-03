@@ -73,6 +73,20 @@ local function refreshWhetherDisabled(self)
    end
 end
 
+---@param self AnimatedPortraitState
+local function refreshWhetherDead(self)
+   local unit = self.unit
+   if not unit then
+      return
+   end
+   if UnitIsDead(unit) then
+      self:SetPaused(true)
+      self:SetAnimation(0, 0)
+   else
+      self:SetPaused(false)
+   end
+end
+
 ---the portrait texture that the animated portrait is replacing may not be a
 ---portrait at all, at least temporarily, because its texture was set explicitly
 ---to an image. mark changes to that state via this function
@@ -261,9 +275,7 @@ end
 
 ---@param self AnimatedPortraitState
 local function onUpdateAnimatedPortrait(self)
-   if self.unit then
-      self:SetPaused(UnitIsDead(self.unit))
-   end
+   refreshWhetherDead(self)
    -- we already try to track this via `SetTexture` etc, but there are
    -- myriad weird globals to override textures that we may be missing
    local isPortrait = TextureIsPortrait(self.portraitTexture)
@@ -361,7 +373,7 @@ local function updateUnitModel(self)
    if success then
       AnimationVariantBlacklister
           .UpdateAfterModelChanged(self.animationVariantBlacklister, self)
-      self:SetPaused(UnitIsDead(self.unit))
+      refreshWhetherDead(self)
    end
    self.hasModel = success
    refreshWhetherDisabled(self)
