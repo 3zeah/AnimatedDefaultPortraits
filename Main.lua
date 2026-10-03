@@ -486,20 +486,25 @@ local function onEvent(_, event, ...)
    end
 end
 
+-- re-use this to prevent memory from fluctuating by allocating new arrays every
+-- update
+local PORTRAIT_ARRAY_BUFFER = {}
+
 -- unfortunately, since frames can move freely without event, model
 -- intersections must be re-evaluated periodically
 ---@param _ Frame just the virtual-frame script handler
 local function onUpdateAddOn(_)
-   local portraitArray = {}
+   -- just write to the start of the buffer: because each animated portrait
+   -- lives forever, trailing elements from last update will not stop any gc
    local n = 0
    for portrait, _ in pairs(activePortraits) do
-      table.insert(portraitArray, portrait)
       n = n + 1
+      PORTRAIT_ARRAY_BUFFER[n] = portrait
    end
    for i = 1, n do
-      local portrait = portraitArray[i]
+      local portrait = PORTRAIT_ARRAY_BUFFER[i]
       for j = i + 1, n do
-         local otherPortrait = portraitArray[j]
+         local otherPortrait = PORTRAIT_ARRAY_BUFFER[j]
          -- in my testing, `ScriptRegion:Intersects` is faster even than just
          -- querying the bounds of both frames, and it also handles regions with
          -- nil "rect"s: very optimal early guard
