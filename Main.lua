@@ -536,14 +536,12 @@ end
 
 local function init()
    local f = CreateFrame("Frame")
-   f:Hide()
 
    f:SetScript("OnEvent", onEvent)
    f:RegisterEvent("PLAYER_LOGIN")
    f:RegisterEvent("PORTRAITS_UPDATED")
    f:RegisterEvent("UNIT_PORTRAIT_UPDATE")
 
-   f:SetOnUpdateMode(Enum.OnUpdateMode.RunAlways)
    local onUpdate = ThrottledOnUpdate(UPDATE_PERIOD, onUpdateAddOn)
    f:SetScript("OnUpdate", onUpdate)
 end
