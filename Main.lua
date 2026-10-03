@@ -209,7 +209,10 @@ end
 local function registerInactivePortrait(self)
    activePortraits[self] = nil
    self.blocked = nil
-   self.blockingModels = {}
+   local blockingModels = self.blockingModels
+   for k, _ in pairs(self.blockingModels) do
+      blockingModels[k] = nil
+   end
    unblockAllPortraitModels(self)
 end
 
