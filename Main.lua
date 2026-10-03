@@ -77,7 +77,7 @@ end
 ---portrait at all, at least temporarily, because its texture was set explicitly
 ---to an image. mark changes to that state via this function
 ---@param self AnimatedPortraitState
----@param isPortrait boolean
+---@param isPortrait true?
 local function setWhetherTextureIsPortrait(self, isPortrait)
    self.textureIsPortrait = isPortrait
    if not isPortrait then
@@ -100,7 +100,7 @@ end
 local function setTextureIsNotAPortrait(self)
    local animatedPortrait = animatedPortraits[self]
    if animatedPortrait then
-      setWhetherTextureIsPortrait(animatedPortrait, false)
+      setWhetherTextureIsPortrait(animatedPortrait, nil)
    end
 end
 
@@ -270,7 +270,7 @@ local function onUpdateAnimatedPortrait(self)
    -- set properly, because the frame size will be incorrect during the
    -- OnShow, and no OnSizeChanged will not fire: blizz cannot be trusted
    if self.doAlignOnNextUpdate then
-      self.doAlignOnNextUpdate = false
+      self.doAlignOnNextUpdate = nil
       AnimatedPortraitFrame.UpdateAlignments(self)
    end
 end
@@ -317,19 +317,18 @@ local function getOrCreateAnimatedPortrait(portraitTexture, disableMasking)
    ---one animated portrait along with all state required to maintain it
    ---@class (exact) AnimatedPortraitState: AnimatedPortraitFrame
    ---@field portraitTexture Texture the replaced baseline portrait
-   ---@field textureIsPortrait boolean
+   ---@field textureIsPortrait true?
    ---@field unit UnitToken? the unit that is expected to be in the portrait
    ---@field guid WOWGUID? the guid of the portrait unit
    ---@field disabled boolean? when disabled, the baseline portrait is shown
    ---@field blocked boolean? whether the portrait is occluded by other models
    ---@field hasModel boolean whether the up-to-date model was successfully set
-   ---@field doAlignOnNextUpdate boolean?
+   ---@field doAlignOnNextUpdate true?
    ---@field blockingModels { [Frame]: boolean? }
    ---@field animationVariantBlacklister AnimationVariantBlacklister
    local state = AnimatedPortraitFrame
        .Create(portraitTexture, not disableMasking, registerInternalModel)
    state.portraitTexture = portraitTexture
-   state.textureIsPortrait = false
    state.hasModel = false
    state.blockingModels = {}
    state.animationVariantBlacklister = AnimationVariantBlacklister.Create(state)
