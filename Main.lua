@@ -124,7 +124,7 @@ local function leftFrameShouldBlockRight(frameLhs, frameRhs)
    -- within a strata, significantly larger portraits win
    local sizeLhs = getEffectiveArea(frameLhs)
    local sizeRhs = getEffectiveArea(frameRhs)
-   if max(sizeLhs, sizeRhs) / min(sizeLhs, sizeRhs) > 1.1 then
+   if max(sizeLhs, sizeRhs) / min(sizeLhs, sizeRhs) > 1.2 then
       return sizeLhs > sizeRhs
    end
    -- otherwise, check which is higher
