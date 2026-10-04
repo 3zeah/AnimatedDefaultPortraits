@@ -24,6 +24,8 @@ lib.ModelFileId = {
     CRACK_ELF_MALE = 123299,
     -- creature/scorpion/scorpion.m2
     SCORPION = 125815,
+    -- creature/superzombie/superzombie.m2
+    SUPER_ZOMBIE = 126101,
     -- creature/zombie/zombie.m2
     ZOMBIE = 126570,
     -- creature/zombie/zombiearm.m2

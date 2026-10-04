@@ -49,6 +49,8 @@ local ANIMATION_OVERRIDES = {
     [ModelFileId.SCORPION] = NO_IDLE_VARIATIONS_ANIMATION_PLAYLIST,
     [ModelFileId.HORDE_SCORPION] = NO_IDLE_VARIATIONS_ANIMATION_PLAYLIST,
     [ModelFileId.HORDE_SCORPION_MOUNT] = NO_IDLE_VARIATIONS_ANIMATION_PLAYLIST,
+    -- this guy is all over the fucking place
+    [ModelFileId.SUPER_ZOMBIE] = NO_IDLE_VARIATIONS_ANIMATION_PLAYLIST,
 }
 
 local function rollIdleAnimationVariation(playlist)
