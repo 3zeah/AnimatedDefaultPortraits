@@ -2,6 +2,17 @@
 ---@class Util
 local lib = {}
 
+---@generic T
+---@param ... T
+---@return { [T]: true? }
+function lib.Set(...)
+    local result = {}
+    for _, v in ipairs({ ... }) do
+        result[v] = true
+    end
+    return result
+end
+
 ---@param xA number
 ---@param yA number
 ---@param xB number

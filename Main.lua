@@ -15,7 +15,8 @@ local ThrottledOnUpdate = Util.ThrottledOnUpdate
 local TextureIsPortrait = Util.TextureIsPortrait
 local LeftStrataIsAboveRight = Util.LeftStrataIsAboveRight
 local MIN_PORTRAIT_SIZE_TO_ANIMATE = FrameConfig.MIN_PORTRAIT_SIZE_TO_ANIMATE
-local ShouldNotAnimate = FrameConfig.ShouldNotAnimate
+local ShouldDisableFor = FrameConfig.ShouldDisableFor
+local IsInanimate = FrameConfig.IsInanimate
 
 ---the update period in seconds
 ---
@@ -52,7 +53,7 @@ local externalModels = {}
 ---@type { [Frame]: true? }
 local visibleExternalModels = {}
 
--- call whenever an independent variable is updated, eg `model.blocked`
+---call whenever an independent variable is updated, eg `model.blocked`
 ---@param self AnimatedPortraitState
 local function refreshWhetherDisabled(self)
    local shouldAnimate = not self.blocked
@@ -73,13 +74,14 @@ local function refreshWhetherDisabled(self)
    end
 end
 
+---call whenever an independent variable is updated, eg whether unit is dead
 ---@param self AnimatedPortraitState
-local function refreshWhetherDead(self)
+local function refreshWhetherPaused(self)
    local unit = self.unit
    if not unit then
       return
    end
-   if UnitIsDead(unit) then
+   if self.isInanimate or UnitIsDead(unit) then
       self:SetPaused(true)
       self:SetAnimation(0, 0)
    else
@@ -275,7 +277,7 @@ end
 
 ---@param self AnimatedPortraitState
 local function onUpdateAnimatedPortrait(self)
-   refreshWhetherDead(self)
+   refreshWhetherPaused(self)
    -- we already try to track this via `SetTexture` etc, but there are
    -- myriad weird globals to override textures that we may be missing
    local isPortrait = TextureIsPortrait(self.portraitTexture)
@@ -317,7 +319,7 @@ local function getOrCreateAnimatedPortrait(portraitTexture, disableMasking)
       return extant
    end
 
-   if ShouldNotAnimate(portraitTexture) then
+   if ShouldDisableFor(portraitTexture) then
       return nil
    end
    local w, h = portraitTexture:GetSize()
@@ -338,6 +340,7 @@ local function getOrCreateAnimatedPortrait(portraitTexture, disableMasking)
    ---@field disabled boolean? when disabled, the baseline portrait is shown
    ---@field blocked boolean? whether the portrait is occluded by other models
    ---@field hasModel boolean whether the up-to-date model was successfully set
+   ---@field isInanimate true? if the portrait model should not be animated
    ---@field doAlignOnNextUpdate true?
    ---@field blockingModels { [Frame]: boolean? }
    ---@field animationVariantBlacklister AnimationVariantBlacklister
@@ -376,7 +379,8 @@ local function updateUnitModel(self)
    if success then
       AnimationVariantBlacklister
           .UpdateAfterModelChanged(self.animationVariantBlacklister, self)
-      refreshWhetherDead(self)
+      self.isInanimate = IsInanimate(self.unit) or nil
+      refreshWhetherPaused(self)
    end
    self.hasModel = success
    refreshWhetherDisabled(self)

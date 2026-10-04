@@ -53,6 +53,10 @@ By observation 3, there is no known way to circumvent that two models may interf
 
 Look to configure one of these extant systems if something looks off. Otherwise, the issue is novel.
 
+#### Inanimate mannequins
+
+Mainline has introduced a bunch of different fake NPC:s that are actually inanimate dressing dolls for equipment, for example around the trading post. The portrait of these units should not be animated, because the units themselves are not animated. For now, I see no way of identifying whether a unit is inanimate other than finding and listing them all: configure new ones when encountered.
+
 #### Portrait-mask support
 
 Although most portrait textures are circular out of the box, they often also have texture masks. Support must be explicitly configured for each type of mask texture (eg the main-line player portrait, which has one rectangular corner but is otherwise circular): configure new ones when encountered.

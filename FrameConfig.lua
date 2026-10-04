@@ -10,6 +10,8 @@ local Util = require(ns, "Util")
 local MaskShape = Const.MaskShape
 local ModelFileId = Const.ModelFileId
 local TextureFileId = Const.TextureFileId
+local CreatureId = Const.CreatureId
+local Set = Util.Set
 local CLIENT_IS_CLASSIC = Util.CLIENT_IS_CLASSIC
 local ClientIsClassicBefore = Util.ClientIsClassicBefore
 
@@ -26,7 +28,7 @@ lib.MIN_PORTRAIT_SIZE_TO_ANIMATE = 36
 ---if true for a given portrait, this add-on will effectively ignore it
 ---@param portrait SimpleTexture
 ---@return boolean
-function lib.ShouldNotAnimate(portrait)
+function lib.ShouldDisableFor(portrait)
     return portrait == MicroButtonPortrait
         or (
             CharacterMicroButton
@@ -42,6 +44,35 @@ function lib.ShouldNotAnimate(portrait)
         or portrait == FocusFrameToTPortrait
         or (FocusFrameToT and portrait == FocusFrameToT.Portrait)
         or portrait == AchievementFrameComparisonHeaderPortrait
+end
+
+do
+    local INANIMATE_CREATURES = Set(
+        CreatureId.MANNEQUIN,
+        CreatureId.LIFELIKE_DOLL,
+        CreatureId.MANNEQUIN_IN_DORNOGAL,
+        CreatureId.MANNEQUIN_IN_DORNOGAL_2,
+        CreatureId.MANNEQUIN_IN_DORNOGAL_3,
+        CreatureId.MANNEQUIN_IN_DORNOGAL_4,
+        CreatureId.MANNEQUIN_IN_DUN_MOROGH,
+        CreatureId.MANNEQUIN_IN_DUROTAR,
+        CreatureId.MIDSUMMER_MANNEQUIN,
+        CreatureId.MANNEQUIN_IN_SILVERMOON_CITY,
+        CreatureId.MANNEQUIN_IN_SILVERMOON_CITY_2,
+        CreatureId.MANNEQUIN_IN_SILVERMOON_CITY_3
+    )
+
+    ---whether the given unit is actually an inanimate object, and thus should
+    ---not be animated. archetypical example: mannequins
+    ---@param unit UnitToken
+    ---@return boolean
+    function lib.IsInanimate(unit)
+        local creatureId = UnitCreatureID(unit)
+        if not creatureId then
+            return false
+        end
+        return INANIMATE_CREATURES[creatureId] or false
+    end
 end
 
 do
