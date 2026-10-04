@@ -79,6 +79,7 @@ This is unfortunately a necessarily opinionated stylistic judgement, but there a
 
 * Ensure on main
 * Only package production code: eg, skip _.gitignore_  and the readme
+    - But do not forget the _LICENSE_
 
 ### Testing
 
