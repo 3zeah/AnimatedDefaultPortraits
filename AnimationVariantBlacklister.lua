@@ -22,6 +22,10 @@ local UD_MALE_IDLE_ANIMATION_PLAYLIST = {
     [2] = 0.075,
     [3] = 0.075,
 }
+-- observed baseline variations: 90% 0, 5% 1, 5% 2
+-- bad variation is 1: undead female crouches
+-- roll variation 1 into 2, as they are both "rare variations"
+local UNDEAD_FEMALE_IDLE_ANIMATION_PLAYLIST = { [2] = 0.1 }
 -- zombies have a 1/3 of each of 3 variation: just remove the bad one
 local ZOMBIE_IDLE_ANIMATION_PLAYLIST = { [2] = 1 / 3 }
 
@@ -32,10 +36,8 @@ local ANIMATION_OVERRIDES = {
     [ModelFileId.UNDEAD_MALE] = UD_MALE_IDLE_ANIMATION_PLAYLIST,
     [ModelFileId.SKELETON_MALE] = UD_MALE_IDLE_ANIMATION_PLAYLIST,
     [ModelFileId.CRACK_ELF_MALE] = UD_MALE_IDLE_ANIMATION_PLAYLIST,
-    -- observed baseline variations: 90% 0, 5% 1, 5% 2
-    -- bad variation is 1: undead female crouches
-    -- roll variation 1 into 2, as they are both "rare variations"
-    [ModelFileId.UNDEAD_FEMALE] = { [2] = 0.1 },
+    [ModelFileId.UNDEAD_FEMALE] = UNDEAD_FEMALE_IDLE_ANIMATION_PLAYLIST,
+    [ModelFileId.UNDEAD_FEMALE_HD] = UNDEAD_FEMALE_IDLE_ANIMATION_PLAYLIST,
     -- carrion birds fly far up
     [ModelFileId.CARRION_BIRD] = NO_IDLE_VARIATIONS_ANIMATION_PLAYLIST,
     [ModelFileId.CARRION_BIRD_OUTLAND] = NO_IDLE_VARIATIONS_ANIMATION_PLAYLIST,

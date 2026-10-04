@@ -36,6 +36,8 @@ lib.ModelFileId = {
     HORDE_SCORPION_MOUNT = 463776,
     -- Interface/Buttons/TalkToMe_Gears.M2
     TALK_TO_ME_GEARS = 587744,
+    -- character/scourge/female/scourgefemale_hd.m2
+    UNDEAD_FEMALE_HD = 997378,
     -- creature/vulture/vulture.m2
     VULTURE = 1661349,
     -- creature/zombie2/zombie2.m2
