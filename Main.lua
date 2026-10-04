@@ -354,6 +354,9 @@ local function getOrCreateAnimatedPortrait(portraitTexture, disableMasking)
    state:SetScript("OnUpdate", onUpdate)
 
    animatedPortraits[portraitTexture] = state
+   if state:IsVisible() or portraitTexture:IsVisible() then
+      registerActivePortrait(state)
+   end
 
    portraitTexture:HookScript("OnShow", onShowPortraitTexture)
    portraitTexture:HookScript("OnHide", onHidePortraitTexture)
