@@ -14,6 +14,7 @@ local CreatureId = Const.CreatureId
 local Set = Util.Set
 local CLIENT_IS_CLASSIC = Util.CLIENT_IS_CLASSIC
 local ClientIsClassicBefore = Util.ClientIsClassicBefore
+local NilIfSecretValue = Util.NilIfSecretValue
 
 ---system config for animated portrait frames, including the associated model
 ---mask, chiefly per-client portrait-appearance data and mask-alignment values
@@ -67,7 +68,7 @@ do
     ---@param unit UnitToken
     ---@return boolean
     function lib.IsInanimate(unit)
-        local creatureId = UnitCreatureID(unit)
+        local creatureId = NilIfSecretValue(UnitCreatureID(unit))
         if not creatureId then
             return false
         end
