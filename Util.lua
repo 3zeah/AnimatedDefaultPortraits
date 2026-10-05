@@ -70,6 +70,17 @@ function lib.ThrottledOnUpdate(period, onUpdate)
     end
 end
 
+---@generic T
+---@param value T?
+---@return T?
+function lib.NilIfSecretValue(value)
+    if issecretvalue(value) then
+        return nil
+    else
+        return value
+    end
+end
+
 ---@param texture TextureBase
 ---@return boolean
 function lib.TextureIsPortrait(texture)

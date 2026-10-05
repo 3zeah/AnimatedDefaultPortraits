@@ -12,6 +12,7 @@ local AnimationVariantBlacklister = require(ns, "AnimationVariantBlacklister")
 local AnimatedPortraitFrame = require(ns, "AnimatedPortraitFrame")
 
 local ThrottledOnUpdate = Util.ThrottledOnUpdate
+local NilIfSecretValue = Util.NilIfSecretValue
 local TextureIsPortrait = Util.TextureIsPortrait
 local LeftStrataIsAboveRight = Util.LeftStrataIsAboveRight
 local MIN_PORTRAIT_SIZE_TO_ANIMATE = FrameConfig.MIN_PORTRAIT_SIZE_TO_ANIMATE
@@ -412,8 +413,8 @@ local function setAnimatedPortraitTexture(portraitTexture, unit, disableMasking)
    -- target), then we can no longer rely on `UNIT_PORTRAIT_UPDATE`: it is
    -- imperative that we do not skip any model updates then: the portrait is
    -- inactive if the animated portrait is not visible but also not disabled
-   local guid = UnitGUID(unit)
-   if not state.guid or not state.hasModel or state.guid ~= guid
+   local guid = NilIfSecretValue(UnitGUID(unit))
+   if not guid or not state.guid or not state.hasModel or state.guid ~= guid
        or (state:IsShown() and not state:IsVisible()) then
       state.guid = guid
       updateUnitModel(state)

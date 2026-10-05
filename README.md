@@ -11,6 +11,7 @@ World of Warcraft add-on. Animate the default unit-frame portraits with minimal 
 
 ## Limitations
 
+* In mainline (retail), instance mobs are considered "secret", and thus their portraits are not animated. Trying to see if I can do something about this...
 * Only one portrait is animated if two are very close together. Custom UI layouts may have to be adapted for optimal results
     - Technical limitation by Blizzard: UI models occlude each other when intersecting
 * Compatibility not guaranteed (but possible) with add-ons that alter unit frames or other portrait frames
