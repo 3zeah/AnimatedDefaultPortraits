@@ -79,8 +79,12 @@ This is unfortunately a necessarily opinionated stylistic judgement, but there a
 ### Release
 
 * Ensure on main
-* Only package production code: eg, skip _.gitignore_  and the readme
-    - But do not forget the _LICENSE_
+* Push a version tag, eg `1.1.2`
+* Write a release-note description for the draft release that was created automatically
+* Publish
+* Copy-paste to [CurseForge](https://www.curseforge.com/wow/addons/animated-default-portraits)
+    - Zip file
+    - Release description
 
 ### Testing
 

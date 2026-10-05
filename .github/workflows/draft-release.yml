@@ -1,0 +1,85 @@
+name: Draft release
+
+on:
+  push:
+    tags:
+      - "[0-9]+.[0-9]+.[0-9]+"
+
+jobs:
+  draft-release:
+    name: Draft release
+    runs-on: ubuntu-slim
+    permissions:
+      contents: write # create release
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Prepare package directory
+        env:
+          addon_name: ${{ github.event.repository.name }}
+        run: |
+          addon_dir=".release/$addon_name/"
+          mkdir -p "$addon_dir"
+          echo "moving production files to $addon_dir"
+          shopt -s globstar
+          cp -v LICENSE "$addon_dir"
+          cp -v --parents **/*.lua "$addon_dir"
+          cp -v --parents **/*.toc "$addon_dir"
+
+      - name: Set TOC version
+        env:
+          addon_version: ${{ github.ref_name }} # tag name
+        run: |
+          cd .release
+          ../.github/scripts/set-toc-version.sh "$addon_version"
+
+      - name: Package ZIP
+        id: package-zip
+        env:
+          addon_name: ${{ github.event.repository.name }}
+          addon_version: ${{ github.ref_name }} # tag name
+        run: |
+          package_name="$addon_name-$addon_version.zip"
+          echo "packaging add-on as $package_name"
+          pushd .release && zip -r ../"$package_name" . && popd
+          ls -lsh "$package_name" 
+          echo "package_name=$package_name" >> "$GITHUB_OUTPUT"
+
+      - name: Release
+        env:
+          package_name: ${{ steps.package-zip.outputs.package_name }}
+        run: |
+          set -x
+          response=$(curl --location \
+          --no-progress-meter --fail-with-body --retry 5 \
+          --url https://api.github.com/repos/${{ github.repository }}/releases \
+          --header "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+          --header "Accept: application/vnd.github+json" \
+          --header "X-GitHub-Api-Version: 2026-03-10" \
+          --data '{
+            "tag_name": "${{ github.ref_name }}",
+            "draft": true,
+            "generate_release_notes": true
+          }') \
+          || (echo "request fail"; echo "$response"; exit 1)
+          set +x
+
+          echo "$response" | jq
+          release_html_url=$(echo $response | jq -r '.html_url')
+          echo "release_html_url=$release_html_url"
+          release_id=$(echo $response | jq -r '.id')
+          echo "release_id=$release_id"
+
+          set -x
+          response=$(curl --location \
+          --no-progress-meter --fail-with-body --retry 5 \
+          --url "https://uploads.github.com/repos/${{ github.repository }}/releases/$release_id/assets?name=$package_name" \
+          --header "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+          --header "Accept: application/vnd.github+json" \
+          --header "X-GitHub-Api-Version: 2026-03-10" \
+          --header "Content-Type: application/zip" \
+          --data-binary @"$package_name") \
+          || (echo "request fail"; echo "$response"; exit 1)
+          set +x
+
+          echo "release draft done: $release_html_url"

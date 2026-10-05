@@ -1,7 +1,7 @@
 ## Interface: 11509 20506 50504 120100
 ## Title: Animated Default Portraits
 ## Notes: Animate the default unit-frame portraits with minimal side effects
-## Version: 1.1.1
+## Version: @project-version@
 ## IconTexture: Interface/ICONS/Achievement_Character_Dwarf_Male.PNG
 Require.lua
 Const.lua
