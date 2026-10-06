@@ -82,9 +82,7 @@ This is unfortunately a necessarily opinionated stylistic judgement, but there a
 * Push a version tag, eg `1.1.2`
 * Write a release-note description for the draft release that was created automatically
 * Publish
-* Copy-paste to [CurseForge](https://www.curseforge.com/wow/addons/animated-default-portraits)
-    - Zip file
-    - Release description
+* Approve the file in [CurseForge](https://www.curseforge.com/wow/addons/animated-default-portraits/files/all) deployed automatically
 
 ### Testing
 

@@ -1,0 +1,115 @@
+name: Deploy
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  deploy:
+    name: Deploy to CurseForge
+    runs-on: ubuntu-slim
+    permissions:
+      contents: read # download release asset
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: ".github"
+          sparse-checkout-cone-mode: false
+
+      - name: Resolve asset
+        id: resolve-asset
+        env:
+          addon_name: ${{ github.event.repository.name }}
+          addon_version: ${{ github.ref_name }} # tag name
+          assets: ${{ toJson(github.event.release.assets) }}
+        run: |
+          echo "assets payload: $assets"
+          package_name="$addon_name-$addon_version.zip"
+          echo "expecting asset $package_name"
+          package_url=$(echo "$assets" | jq -c '.[]' | while read -r asset; do
+              name=$(echo "$asset" | jq -r '.name')
+              if [[ "$name" == "$package_name" ]]; then
+                  >&2 echo "found expected asset"
+                  >&2 echo "$asset" | jq
+                  package_url=$(echo "$asset" | jq -r '.url')
+                  echo "package_name=$package_name" >> "$GITHUB_OUTPUT"
+                  echo "package_url=$package_url" >> "$GITHUB_OUTPUT"
+                  echo "$package_url"
+                  exit 0
+              else
+                  >&2 echo "skipping asset $name due to unexpected name"
+              fi
+          done)
+          if [ -z "$package_url" ]; then
+              >&2 echo "ERROR: $package_name" not found in assets
+              exit 1
+          fi
+          echo "found $package_name at $package_url"
+
+      - name: Download
+        env:
+          package_name: ${{ steps.resolve-asset.outputs.package_name }}
+          package_url: ${{ steps.resolve-asset.outputs.package_url }}
+        run: |
+          echo "downloading $package_name from $package_url"
+
+          set -x
+          curl --location \
+              --no-progress-meter --fail-with-body --retry 5 \
+              --url "$package_url" \
+              --header "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+              --header "Accept: application/octet-stream" \
+              --header "X-GitHub-Api-Version: 2026-03-10" \
+              --output "$package_name" \
+            || (echo "request fail"; cat "$package_name"; exit 1)
+          set +x
+
+          ls -lsh "$package_name"
+
+      - name: Verify
+        env:
+          addon_name: ${{ github.event.repository.name }}
+          package_name: ${{ steps.resolve-asset.outputs.package_name }}
+        run: |
+          echo "trying unzip"
+          unzip "$package_name"
+          echo "ensuring add-on name is root"
+          ls -lshR "$addon_name"
+          if [ -z "$( ls -A $addon_name )" ]; then
+            echo "package was empty"
+            exit 1
+          fi
+
+      - name: Resolve game versions
+        id: resolve-game-versions
+        run: |
+          game_versions=$( \
+            ./.github/scripts/resolve-curseforge-game-versions.sh \
+              ${{ secrets.CURSEFORGE_API_TOKEN }} \
+          )
+          echo 'game versions:' $game_versions
+          echo "game_versions=$game_versions" >> "$GITHUB_OUTPUT"
+
+      - name: Upload
+        env:
+          release_name: ${{ github.event.release.name }}
+          release_notes: ${{ github.event.release.body }}
+          game_versions: ${{ steps.resolve-game-versions.outputs.game_versions }}
+          package_name: ${{ steps.resolve-asset.outputs.package_name }}
+        run: |
+          metadata=$( \
+            ./.github/scripts/eval-curseforge-upload-metadata.sh \
+              "$release_name" "$release_notes" "$game_versions" "$package_name" \
+            )
+          set -x
+          response=$(curl --location \
+                --no-progress-meter --fail-with-body --retry 5 \
+                --url https://wow.curseforge.com/api/projects/1725075/upload-file \
+                --header "X-Api-Token: ${{ secrets.CURSEFORGE_API_TOKEN }}" \
+                --header "Accept: application/json" \
+                --form "metadata=$metadata" \
+                --form "file=@$package_name" \
+            ) || (echo "request fail"; echo "$response"; exit 1)
+          set +x
+          echo "success response:"
+          echo "$response" | jq
