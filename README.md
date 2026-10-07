@@ -73,6 +73,11 @@ Some animation variants of some models are blacklisted, because they bring the m
 
 Unfortunately, "blacklisting" animation variants actually requires simulating the Blizzard animation-variant system, by rolling for a new, whitelisted animation variant whenever the previous finished. Thus, the probability must be estimated of each whitelisted animation variant, based on observations of baseline behavior.
 
+To facilitate measuring the probabilities of each animation variant, the `dev` branch has two methods.
+
+* Use `AdpAnimPre(<model-file-id>, <variation>)`, or `nil` as `<model-file-id>` to use the model of the current target, to begin measuring the duration of, and rendering, the given idle-animation variation. Start from `0` and work up until a variation repeats: this means that that variation does not actually exist. Use `AdpAnimPre()` (no arguments) to stop, and note the durations of each variation for the next step.
+* Use `AdpAnim(<model-count>, <duration-precision>, <model-file-id>)` to start compiling and printing the probabilities of observing an idle-animation duration. Skip `<model-file-id>` to use the model of the current target. Using a large `<model-count>` speeds up the process, but introduces lag and therefore inaccuracy to the duration measurements. Therefore, ue the largest `<duration-precision>` possible without losing the ability to discriminate each animation variation, and use the largest `<model-count>` possible that respects that `<duration-precision>`. Use `AdpAnim(0)` to stop.
+
 #### Disabling animations per portrait
 
 This is unfortunately a necessarily opinionated stylistic judgement, but there are, to me, some obvious examples of portraits that should not be animated, chiefly the "micro button", which opens the character frame (eg target-of-target portraits are not animated because they are relatively visually insignificant).
