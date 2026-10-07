@@ -22,10 +22,14 @@ lib.ModelFileId = {
     CARRION_BIRD_OUTLAND = 123148,
     -- creature/crackelf/crackelfmale.m2
     CRACK_ELF_MALE = 123299,
+    -- creature/eagle/eagle.m2
+    EAGLE = 123715,
     -- creature/scorpion/scorpion.m2
     SCORPION = 125815,
     -- creature/superzombie/superzombie.m2
     SUPER_ZOMBIE = 126101,
+    -- creature/undead_eagle/undead_eagle.m2
+    UNDEAD_EAGLE = 126300,
     -- creature/zombie/zombie.m2
     ZOMBIE = 126570,
     -- creature/zombie/zombiearm.m2
@@ -38,12 +42,20 @@ lib.ModelFileId = {
     TALK_TO_ME_GEARS = 587744,
     -- character/scourge/female/scourgefemale_hd.m2
     UNDEAD_FEMALE_HD = 997378,
+    -- creature/eagle2/eagle2.m2
+    EAGLE2 = 1100483,
+    -- creature/eagle2/eaglepet.m2
+    EAGLE_PET = 1100485,
+    -- creature/gianteagle/gianteagle.m2
+    GIANT_EAGLE = 1375465,
     -- creature/vulture/vulture.m2
     VULTURE = 1661349,
     -- creature/zombie2/zombie2.m2
     ZOMBIE2 = 1888300,
     -- creature/vulturemount/vulturemount.m2
     VULTURE_MOUNT = 1926505,
+    -- creature/spottingeagle/spottingeagle.m2
+    SPOTTING_EAGLE = 6367105,
 }
 
 ---@enum TextureFileId
