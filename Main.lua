@@ -567,3 +567,17 @@ local function init()
 end
 
 init()
+
+-------------------------------------------------------------------------------
+-- DEV EXPORTS
+-------------------------------------------------------------------------------
+
+---@class Main
+local lib = {
+   AnimatedPortraits = animatedPortraits,
+   BlockAnimatedPortrait = blockAnimatedPortrait,
+   UnblockAnimatedPortrait = unblockAnimatedPortrait,
+   RegisterInternalModel = registerInternalModel,
+}
+ns.Main = lib
+return lib
