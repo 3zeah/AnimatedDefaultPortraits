@@ -57,10 +57,10 @@ local visibleExternalModels = {}
 ---call whenever an independent variable is updated, eg `model.blocked`
 ---@param self AnimatedPortraitState
 local function refreshWhetherDisabled(self)
-   local shouldAnimate = not self.blocked
+   local shouldBeEnabled = not self.blocked
        and self.textureIsPortrait
        and self.hasModel
-   if shouldAnimate then
+   if shouldBeEnabled then
       if self.disabled ~= false then
          self.disabled = false
          self.portraitTexture:Hide()
@@ -293,6 +293,18 @@ local function onUpdateAnimatedPortrait(self)
    end
 end
 
+---@param self AnimatedPortraitState
+local function ohModelLoadedAnimatedPortrait(self)
+   self.hasModel = true
+   -- setting an idle-animation variation does not work before model is loaded:
+   -- any system that needs to set one needs to try both when the model is
+   -- loaded, or immediately when the model was changed, in case it was already
+   -- loaded
+   AnimationVariantBlacklister
+       .UpdateAfterModelChanged(self.animationVariantBlacklister, self)
+   refreshWhetherDisabled(self)
+end
+
 ---@param self Texture
 local function onShowPortraitTexture(self)
    local animatedPortrait = animatedPortraits[self]
@@ -356,6 +368,7 @@ local function getOrCreateAnimatedPortrait(portraitTexture, disableMasking)
    state:SetScript("OnHide", onHideAnimatedPortrait)
    local onUpdate = ThrottledOnUpdate(UPDATE_PERIOD, onUpdateAnimatedPortrait)
    state:SetScript("OnUpdate", onUpdate)
+   state:SetScript("OnModelLoaded", ohModelLoadedAnimatedPortrait)
 
    animatedPortraits[portraitTexture] = state
    if state:IsVisible() or portraitTexture:IsVisible() then
@@ -378,12 +391,16 @@ local function updateUnitModel(self)
    local success = AnimatedPortraitFrame
        .UpdateUnit(self, self.portraitTexture, self.unit)
    if success then
+      -- setting animation requires model to be loaded, but i have observed that
+      -- we must try early as well, to be sure
       AnimationVariantBlacklister
           .UpdateAfterModelChanged(self.animationVariantBlacklister, self)
       self.isInanimate = IsInanimate(self.unit) or nil
+      -- setting pause does not require model to be loaded
       refreshWhetherPaused(self)
+   else
+      self.hasModel = false
    end
-   self.hasModel = success
    refreshWhetherDisabled(self)
 end
 
