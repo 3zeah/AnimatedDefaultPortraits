@@ -28,6 +28,10 @@ local UD_MALE_IDLE_ANIMATION_PLAYLIST = {
 local UNDEAD_FEMALE_IDLE_ANIMATION_PLAYLIST = { [2] = 0.1 }
 -- zombies have a 1/3 of each of 3 variation: just remove the bad one
 local ZOMBIE_IDLE_ANIMATION_PLAYLIST = { [2] = 1 / 3 }
+-- baseline variations: 90% 0, 5% 1, 2.5% 2, 2.5% 3
+-- variations 1 and 2 are bad: very extended periods with head somewhere else
+-- (add some probability to 3 to make up for removal of other variations)
+local HEX_EAGLE_ANIMATION_PLAYLIST = { [3] = 0.05 }
 
 -- the set of known model id:s where an idle variation is awkwardly off-camera,
 -- mapped to a table of whitelisted idle variations with probability of playing
@@ -59,6 +63,8 @@ local ANIMATION_OVERRIDES = {
     [ModelFileId.HORDE_SCORPION_MOUNT] = NO_IDLE_VARIATIONS_ANIMATION_PLAYLIST,
     -- this guy is all over the fucking place
     [ModelFileId.SUPER_ZOMBIE] = NO_IDLE_VARIATIONS_ANIMATION_PLAYLIST,
+    [ModelFileId.MYTHIC_HEX_EAGLE_MOUNT] = HEX_EAGLE_ANIMATION_PLAYLIST,
+    [ModelFileId.HEX_EAGLE] = HEX_EAGLE_ANIMATION_PLAYLIST,
 }
 
 local function rollIdleAnimationVariation(playlist)

@@ -56,6 +56,10 @@ lib.ModelFileId = {
     VULTURE_MOUNT = 1926505,
     -- creature/spottingeagle/spottingeagle.m2
     SPOTTING_EAGLE = 6367105,
+    -- creature/mythichexeaglemount/mythichexeaglemount.m2
+    MYTHIC_HEX_EAGLE_MOUNT = 7136769,
+    -- creature/hexeagle/hexeagle.m2
+    HEX_EAGLE = 7197176,
 }
 
 ---@enum TextureFileId
