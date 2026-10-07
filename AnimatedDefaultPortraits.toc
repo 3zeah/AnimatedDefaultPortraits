@@ -3,6 +3,7 @@
 ## Notes: Animate the default unit-frame portraits with minimal side effects
 ## Version: @project-version@
 ## IconTexture: Interface/ICONS/Achievement_Character_Dwarf_Male.PNG
+## OptionalDeps: !!FunctionProfiler
 Require.lua
 Const.lua
 Util.lua

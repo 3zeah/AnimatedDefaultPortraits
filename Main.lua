@@ -11,6 +11,11 @@ local AnimationVariantBlacklister = require(ns, "AnimationVariantBlacklister")
 ---@module "AnimatedPortraitFrame"
 local AnimatedPortraitFrame = require(ns, "AnimatedPortraitFrame")
 
+if NumyFunctionProfiler then
+   NumyFunctionProfiler:WrapModules("ADP", "AnimationVariantBlacklister", AnimationVariantBlacklister, 2)
+   NumyFunctionProfiler:WrapModules("ADP", "AnimatedPortraitFrame", AnimatedPortraitFrame, 2)
+end
+
 local ThrottledOnUpdate = Util.ThrottledOnUpdate
 local NilIfSecretValue = Util.NilIfSecretValue
 local TextureIsPortrait = Util.TextureIsPortrait
@@ -73,6 +78,10 @@ local function refreshWhetherDisabled(self)
          self:Hide()
       end
    end
+end
+if NumyFunctionProfiler then
+   refreshWhetherDisabled = NumyFunctionProfiler:Wrap("ADP", "Main", "refreshWhetherDisabled",
+      refreshWhetherDisabled)
 end
 
 ---call whenever an independent variable is updated, eg whether unit is dead
@@ -166,6 +175,10 @@ local function leftFrameShouldBlockRight(frameLhs, frameRhs)
    end
    return frameLhs:GetBottom() < frameRhs:GetBottom()
 end
+if NumyFunctionProfiler then
+   leftFrameShouldBlockRight = NumyFunctionProfiler:Wrap("ADP", "Main", "leftFrameShouldBlockRight",
+      leftFrameShouldBlockRight)
+end
 
 ---@param self AnimatedPortraitState
 ---@param blocker Frame
@@ -209,6 +222,11 @@ local function updateOcclusionBlocksForNewlyActivePortrait(self)
       end
    end
 end
+if NumyFunctionProfiler then
+   updateOcclusionBlocksForNewlyActivePortrait = NumyFunctionProfiler:Wrap("ADP", "Main",
+      "updateOcclusionBlocksForNewlyActivePortrait",
+      updateOcclusionBlocksForNewlyActivePortrait)
+end
 
 ---@param blocker Frame
 local function unblockAllPortraitModels(blocker)
@@ -217,6 +235,10 @@ local function unblockAllPortraitModels(blocker)
          unblockAnimatedPortrait(portrait, blocker)
       end
    end
+end
+if NumyFunctionProfiler then
+   unblockAllPortraitModels = NumyFunctionProfiler:Wrap("ADP", "Main", "unblockAllPortraitModels",
+      unblockAllPortraitModels)
 end
 
 ---mark that the given portrait is not active and thus does not need to be
@@ -232,6 +254,11 @@ local function registerInactivePortrait(self)
    end
    unblockAllPortraitModels(self)
 end
+if NumyFunctionProfiler then
+   registerInactivePortrait = NumyFunctionProfiler:Wrap("ADP", "Main", "registerInactivePortrait",
+      registerInactivePortrait)
+end
+
 
 ---mark that the portrait is active. if it was not already, the
 ---occlusion-blocking system will have to check whether this new portrait
@@ -244,6 +271,10 @@ local function registerActivePortrait(self)
    updateOcclusionBlocksForNewlyActivePortrait(self)
    refreshWhetherDisabled(self)
 end
+if NumyFunctionProfiler then
+   registerActivePortrait = NumyFunctionProfiler:Wrap("ADP", "Main", "registerActivePortrait", registerActivePortrait)
+end
+
 
 -- so that it is not picked up by `preventExternalModelOcclusion`
 ---@param self Model
@@ -388,6 +419,10 @@ local function getOrCreateAnimatedPortrait(portraitTexture, disableMasking)
 
    return state
 end
+if NumyFunctionProfiler then
+   getOrCreateAnimatedPortrait = NumyFunctionProfiler:Wrap("ADP", "Main", "getOrCreateAnimatedPortrait",
+      getOrCreateAnimatedPortrait)
+end
 
 ---update portrait model either to a new unit, or to refresh the extant unit
 ---(eg, gear change)
@@ -438,6 +473,10 @@ local function setAnimatedPortraitTexture(portraitTexture, unit, disableMasking)
       updateUnitModel(state)
    end
 end
+if NumyFunctionProfiler then
+   setAnimatedPortraitTexture = NumyFunctionProfiler:Wrap("ADP", "Main", "setAnimatedPortraitTexture",
+      setAnimatedPortraitTexture)
+end
 
 -- post-hook the global portrait texturing function with our animated variant
 local function enableAnimatedPortraits()
@@ -453,11 +492,17 @@ local function onShowExternalModel(self)
       end
    end
 end
+if NumyFunctionProfiler then
+   onShowExternalModel = NumyFunctionProfiler:Wrap("ADP", "Main", "onShowExternalModel", onShowExternalModel)
+end
 
 ---@param self Frame
 local function onHideExternalModel(self)
    visibleExternalModels[self] = nil
    unblockAllPortraitModels(self)
+end
+if NumyFunctionProfiler then
+   onHideExternalModel = NumyFunctionProfiler:Wrap("ADP", "Main", "onHideExternalModel", onHideExternalModel)
 end
 
 ---@param model Frame
@@ -575,6 +620,9 @@ local function onUpdateAddOn(_)
          end
       end
    end
+end
+if NumyFunctionProfiler then
+   onUpdateAddOn = NumyFunctionProfiler:Wrap("ADP", "Main", "onUpdateAddOn", onUpdateAddOn)
 end
 
 local function init()
