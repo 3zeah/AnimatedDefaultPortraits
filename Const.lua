@@ -60,6 +60,34 @@ lib.ModelFileId = {
     MYTHIC_HEX_EAGLE_MOUNT = 7136769,
     -- creature/hexeagle/hexeagle.m2
     HEX_EAGLE = 7197176,
+    -- creature/felbat/batrider.m2
+    BAT_RIDER = 123821,
+    -- creature/felbat/battaxi.m2
+    BAT_TAXI = 123830,
+    -- creature/felbat/felbat.m2
+    FEL_BAT = 123831,
+    -- creature/bat/bat.m2
+    BAT = 804504,
+    -- creature/bat/batmount.m2
+    BAT_MOUNT = 804506,
+    -- creature/bat/epicbatmount.m2
+    EPIC_BAT_MOUNT = 804508,
+    -- creature/giantvampirebat/giantvampirebat.m2
+    GIANT_VAMPIRE_BAT = 2966279,
+    -- creature/giantvampirebatmount/giantvampirebatmount.m2
+    GIANT_VAMPIRE_BAT_MOUNT = 3087298,
+    -- creature/batpetrevendreth/batpetrevendreth.m2
+    BAT_PET_REVENDRETH = 3730952,
+    -- creature/batpetmaldraxxus/batpetmaldraxxus.m2
+    BAT_PET_MALDRAXXUS = 3730960,
+    -- creature/30thbatmount/30thbatmount.m2
+    THIRTIETH_BAT_MOUNT = 5930363,
+    -- creature/batpetrevendreth2/batpetrevendreth2.m2
+    BAT_PET_REVENDRETH_2 = 7569446,
+    -- creature/30thbatmountclassic/30thbatmountclassic.m2
+    THIRTIETH_BAT_MOUNT_CLASSIC = 6036383,
+    -- creature/batpetrevendreth2_classic/batpetrevendreth2_classic.m2
+    BAT_PET_REVENDRETH_2_CLASSIC = 7651317,
 }
 
 ---@enum TextureFileId
