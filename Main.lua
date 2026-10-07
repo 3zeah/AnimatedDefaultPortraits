@@ -321,6 +321,11 @@ local function getOrCreateAnimatedPortrait(portraitTexture, disableMasking)
    end
 
    if ShouldDisableFor(portraitTexture) then
+      print(
+         "|cffffd100 *** animated-portrait blacklist",
+         AdpId(portraitTexture),
+         "|r"
+      )
       return nil
    end
    local w, h = portraitTexture:GetSize()
@@ -329,8 +334,21 @@ local function getOrCreateAnimatedPortrait(portraitTexture, disableMasking)
    -- (the only non-square portraits i am aware of are the micro button and the
    -- the character-stats button in the post-cata character frame)
    if abs(w - h) > 0.5 or w < MIN_PORTRAIT_SIZE_TO_ANIMATE - 0.5 then
+      print(
+         "|cffffd100 *** skipping due to size:",
+         AdpId(portraitTexture),
+         "|r"
+      )
       return nil
    end
+
+   print(
+      "first visit to",
+      AdpId(portraitTexture),
+      portraitTexture,
+      w, h,
+      portraitTexture:GetDrawLayer()
+   )
 
    ---one animated portrait along with all state required to maintain it
    ---@class (exact) AnimatedPortraitState: AnimatedPortraitFrame
@@ -448,6 +466,11 @@ local function registerExternalModel(model)
    if not model or internalModels[model] or externalModels[model] then
       return
    end
+   print(
+      "|cff10ffffINFO: REGISTERED EXTERNAL MODEL:",
+      (model:GetName() or "<anon>"), "(" .. model:GetObjectType() .. ")", "in",
+      AdpNamedParent(model):GetName(), "|r"
+   )
    externalModels[model] = true
    model:HookScript("OnShow", onShowExternalModel)
    model:HookScript("OnHide", onHideExternalModel)
