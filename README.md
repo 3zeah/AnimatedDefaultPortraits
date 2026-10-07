@@ -17,7 +17,11 @@ World of Warcraft add-on. Animate the default unit-frame portraits with minimal 
     - Technical limitation by Blizzard: UI models occlude each other when intersecting
 * Compatibility not guaranteed (but possible) with add-ons that alter unit frames or other portrait frames
 
+---
+
 ## Dev
+
+The rest of this README, below, is technical development information.
 
 ### Technical details
 
