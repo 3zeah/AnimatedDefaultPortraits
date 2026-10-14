@@ -41,6 +41,7 @@ metadata_template=$(echo '{
     "changelog": $changelog,
     "changelogType": "markdown",
     "gameVersions": $gameVersions,
+    "releaseType": "release",
     "isMarkedForManualRelease": true
 }')
 metadata=$(jq -nc \
