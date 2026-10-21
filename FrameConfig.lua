@@ -13,6 +13,7 @@ local TextureFileId = Const.TextureFileId
 local CreatureId = Const.CreatureId
 local Set = Util.Set
 local CLIENT_IS_CLASSIC = Util.CLIENT_IS_CLASSIC
+local CLIENT_IS_FOREVER = Util.CLIENT_IS_FOREVER
 local ClientIsClassicBefore = Util.ClientIsClassicBefore
 local NilIfSecretValue = Util.NilIfSecretValue
 
@@ -155,6 +156,8 @@ do
             return CreateColorFromBytes(0, 14, 33, 255)
         elseif CLIENT_IS_CLASSIC then
             return CreateColorFromBytes(13, 47, 74, 255)
+        elseif CLIENT_IS_FOREVER then
+            return CreateColorFromBytes(0, 0, 0, 255)
         else -- mainline
             return CreateColorFromBytes(4, 12, 31, 255)
         end

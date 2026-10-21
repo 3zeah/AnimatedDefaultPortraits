@@ -42,8 +42,10 @@ do -- project id util
     local WOW_CLASSIC_PROJECT_ORDER = evalWowClassicProjectOrder()
     local CLASSIC_RANK = WOW_CLASSIC_PROJECT_ORDER[WOW_PROJECT_ID]
     local CLIENT_IS_CLASSIC = CLASSIC_RANK ~= nil
+    local CLIENT_IS_FOREVER = WOW_PROJECT_ID == WOW_PROJECT_CAMELOT
 
     lib.CLIENT_IS_CLASSIC = CLIENT_IS_CLASSIC
+    lib.CLIENT_IS_FOREVER = CLIENT_IS_FOREVER
 
     ---@param projectId integer
     ---@return boolean
