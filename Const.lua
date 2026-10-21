@@ -33,6 +33,8 @@ lib.ModelFileId = {
     EAGLE = 123715,
     -- creature/scorpion/scorpion.m2
     SCORPION = 125815,
+    -- creature/skeletonnaked/skeletonnaked.m2
+    SKELETON_NAKED = 125948,
     -- creature/superzombie/superzombie.m2
     SUPER_ZOMBIE = 126101,
     -- creature/undead_eagle/undead_eagle.m2

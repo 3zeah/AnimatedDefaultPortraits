@@ -4,6 +4,8 @@ local require = ns.require
 
 ---@module "Const"
 local Const = require(ns, "Const")
+---@module "Util"
+local Util = require(ns, "Util")
 
 local ModelFileId = Const.ModelFileId
 
@@ -37,9 +39,8 @@ local HEX_EAGLE_ANIMATION_PLAYLIST = { [3] = 0.05 }
 -- mapped to a table of whitelisted idle variations with probability of playing
 ---@type { [ModelFileId]: AnimationVariantPlaylist? }
 local ANIMATION_OVERRIDES = {
-    [ModelFileId.UNDEAD_MALE] = UD_MALE_IDLE_ANIMATION_PLAYLIST,
-    [ModelFileId.SKELETON_MALE] = UD_MALE_IDLE_ANIMATION_PLAYLIST,
     [ModelFileId.CRACK_ELF_MALE] = UD_MALE_IDLE_ANIMATION_PLAYLIST,
+    [ModelFileId.SKELETON_NAKED] = UD_MALE_IDLE_ANIMATION_PLAYLIST,
     [ModelFileId.UNDEAD_FEMALE] = UNDEAD_FEMALE_IDLE_ANIMATION_PLAYLIST,
     [ModelFileId.UNDEAD_FEMALE_HD] = UNDEAD_FEMALE_IDLE_ANIMATION_PLAYLIST,
     -- birds fly far up
@@ -80,6 +81,13 @@ local ANIMATION_OVERRIDES = {
     [ModelFileId.MYTHIC_HEX_EAGLE_MOUNT] = HEX_EAGLE_ANIMATION_PLAYLIST,
     [ModelFileId.HEX_EAGLE] = HEX_EAGLE_ANIMATION_PLAYLIST,
 }
+
+if Util.CLIENT_IS_CLASSIC then
+    ANIMATION_OVERRIDES[ModelFileId.UNDEAD_MALE] =
+        UD_MALE_IDLE_ANIMATION_PLAYLIST
+    ANIMATION_OVERRIDES[ModelFileId.SKELETON_MALE] =
+        UD_MALE_IDLE_ANIMATION_PLAYLIST
+end
 
 local function rollIdleAnimationVariation(playlist)
     if next(playlist) == nil then
