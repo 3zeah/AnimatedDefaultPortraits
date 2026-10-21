@@ -5,7 +5,7 @@ World of Warcraft add-on. Animate the default unit-frame portraits with minimal 
 * Indistinguishable from baseline portraits (apart from being animated, of course)
 * Simple: no user configuration
 * Lightweight
-* Supports both Mainline and Classic (but I do not have access to Forever yet)
+* Supports all clients: Retail, Forever, and Classic
 
 ![Image with portraits before and after](image.jpg)
 
