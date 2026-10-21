@@ -1,4 +1,4 @@
-## Interface: 11509 20506 50504 120105
+## Interface: 11509 16001 20506 50504 120105
 ## Title: Animated Default Portraits
 ## Notes: Animate the default unit-frame portraits with minimal side effects
 ## Version: @project-version@
