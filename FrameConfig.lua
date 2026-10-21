@@ -224,12 +224,24 @@ do
     lib.SUPPORTED_MASK_TEXTURE_SHAPES = {
         [TextureFileId.TEMP_PORTRAIT_ALPHA_MASK] =
             MaskShape.CIRCLE,
+        [TextureFileId.TEMP_PORTRAIT_ALPHA_MASK_SMALL] =
+            MaskShape.CIRCLE,
         [TextureFileId.CIRCLE_MASK] =
+            MaskShape.CIRCLE,
+        [TextureFileId.CIRCLE_MASK_SCALABLE] =
+            MaskShape.SMALLER_CIRCLE,
+        [TextureFileId.TALENTS_MASK_NODE_CIRCLE] =
             MaskShape.CIRCLE,
         [TextureFileId.UI_UNIT_FRAME_PLAYER_PORTRAIT_MASK] =
             MaskShape.MAINLINE_PLAYER_PORTRAIT,
         [TextureFileId.UI_UNIT_FRAME_PLAYER_PORTRAIT_MASK_2X] =
             MaskShape.MAINLINE_PLAYER_PORTRAIT,
+        [TextureFileId.COMMON_MASK_CIRCLE] =
+            MaskShape.CIRCLE,
+        [TextureFileId.UI_UNIT_FRAME_PLAYER_PORTRAIT_MASK_2X_C60] =
+            MaskShape.SMALLER_CIRCLE,
+        [TextureFileId.UI_UNIT_FRAME_PLAYER_PORTRAIT_MASK_C60] =
+            MaskShape.SMALLER_CIRCLE,
     }
 end
 

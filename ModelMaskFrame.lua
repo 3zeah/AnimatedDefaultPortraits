@@ -41,7 +41,7 @@ local MASK_MODEL_CONFIG = FrameConfig.MASK_MODEL_CONFIG
 -- simply shift the model to the right by `x` frame-space units, equivalent
 -- to adding `x` to the x of the model frame, wrt to the position of the
 -- rasterized model
-local function tryToAlignModelMaskWithRegion(mask, region)
+local function tryToAlignModelMaskWithRegion(mask, region, shapeZoom)
     local leftSrc, bottomSrc, sizeSrc, _ = mask:GetRect() -- expect square size
     -- but this is only possible if the positions have been initialized
     if not leftSrc then
@@ -59,7 +59,7 @@ local function tryToAlignModelMaskWithRegion(mask, region)
     local sizeInset = (sizeSrc - minSizeDst) / 2
     -- zoom in as if the frame were the size of the destination region, but
     -- leave margin accounting for the size of the actual source region
-    local digitalZoomInset = MASK_MODEL_CONFIG.digitalZoomFactor
+    local digitalZoomInset = shapeZoom * MASK_MODEL_CONFIG.digitalZoomFactor
         * minSizeDst + sizeInset
     -- a lot of terms here... given that the zoom inset effectively resizes
     -- the mask with respect to the center, the size inset must be subtracted
@@ -78,22 +78,24 @@ local function tryToAlignModelMaskWithRegion(mask, region)
         digitalZoomInset + bottomMargin
 end
 
-local function evalInsets(mask, shapeRegion)
+local function evalInsets(mask, shape, shapeRegion)
+    local shapeZoom = shape == MaskShape.SMALLER_CIRCLE and 0.96 or 1
     if shapeRegion then
         local left, right, top, bottom =
-            tryToAlignModelMaskWithRegion(mask, shapeRegion)
+            tryToAlignModelMaskWithRegion(mask, shapeRegion, shapeZoom)
         if left then
             return left, right, top, bottom
         end
     end
     -- fallback is simply to align with the model frame itself
     local frameSize, _ = mask:GetSize() -- expect square size
-    local inset = MASK_MODEL_CONFIG.digitalZoomFactor * frameSize
+    local inset = shapeZoom * MASK_MODEL_CONFIG.digitalZoomFactor * frameSize
     return inset, inset, inset, inset
 end
 
 local function applyOrEvalModelMaskInsetsToContainer(
     container,
+    shape,
     shapeRegion,
     left, right, top, bottom
 )
@@ -101,7 +103,7 @@ local function applyOrEvalModelMaskInsetsToContainer(
         return nil
     end
     if not left then
-        left, right, top, bottom = evalInsets(container.model1, shapeRegion)
+        left, right, top, bottom = evalInsets(container.model1, shape, shapeRegion)
     end
     container.model1:SetViewInsets(left, right, top, bottom)
     container.model2:SetViewInsets(left, right, top, bottom)
@@ -185,26 +187,31 @@ end
 
 ---@param self ModelMaskFrame
 local function updateAlignment(self)
+    local shape = self.shape
     local shapeRegion = self.shapeRegion
     local left, right, top, bottom
     -- all masks share the same region rect: eval insets only once
     left, right, top, bottom = applyOrEvalModelMaskInsetsToContainer(
         self.circleMaskFull,
+        shape,
         shapeRegion,
         left, right, top, bottom
     )
     left, right, top, bottom = applyOrEvalModelMaskInsetsToContainer(
         self.circleMaskTopLeft,
+        shape,
         shapeRegion,
         left, right, top, bottom
     )
     applyOrEvalModelMaskInsetsToContainer(
         self.circleMaskTopRight,
+        shape,
         shapeRegion,
         left, right, top, bottom
     )
     applyOrEvalModelMaskInsetsToContainer(
         self.circleMaskBottomLeft,
+        shape,
         shapeRegion,
         left, right, top, bottom
     )
@@ -218,6 +225,7 @@ local lib = {}
 ---one model-mask frame. any ui-rendered model intersecting the masking shape
 ---of this frame will be occluded, and thus effectively masked
 ---@class (exact) ModelMaskFrame
+---@field package shape MaskShape
 ---@field package shapeRegion ScriptRegion?
 ---@field package circleMaskFull ModelMaskModels
 ---@field package circleMaskTopLeft ModelMaskClippingContainer
@@ -256,7 +264,7 @@ function lib.Create(modelToMask, shape, shapeRegion, createModelCallback)
         state.circleMaskTopLeft = topLeft
         state.circleMaskTopRight = topRight
         state.circleMaskBottomLeft = bottomLeft
-    else -- `MaskShape.CIRCLE`
+    else -- `MaskShape.CIRCLE` or `MaskShape.SMALLER_CIRCLE`
         local mask1, mask2 = createMaskModels(
             modelToMask, modelToMask, 0, createModelCallback
         )
@@ -266,6 +274,7 @@ function lib.Create(modelToMask, shape, shapeRegion, createModelCallback)
         ---@field package model2 Model
         state.circleMaskFull = { model1 = mask1, model2 = mask2 }
     end
+    state.shape = shape
     state.shapeRegion = shapeRegion
     updateAlignment(state)
     return state

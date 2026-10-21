@@ -4,8 +4,15 @@ local lib = {}
 
 ---@enum MaskShape
 lib.MaskShape = {
+    -- reference texture: 130924
+    -- ([`TEMP_PORTRAIT_ALPHA_MASK`](lua://TextureFileId.TEMP_PORTRAIT_ALPHA_MASK))
     CIRCLE = 0,
-    MAINLINE_PLAYER_PORTRAIT = 1,
+    -- reference texture: 3605349
+    -- ([`CIRCLE_MASK_SCALABLE`](lua://TextureFileId.CIRCLE_MASK_SCALABLE))
+    SMALLER_CIRCLE = 1,
+    -- reference texture: 4682541
+    -- ([`UI_UNIT_FRAME_PLAYER_PORTRAIT_MASK`](lua://TextureFileId.UI_UNIT_FRAME_PLAYER_PORTRAIT_MASK))
+    MAINLINE_PLAYER_PORTRAIT = 2,
 }
 
 ---@enum ModelFileId
@@ -94,12 +101,24 @@ lib.ModelFileId = {
 lib.TextureFileId = {
     -- interface/characterframe/tempportraitalphamask.blp
     TEMP_PORTRAIT_ALPHA_MASK = 130924,
+    -- interface/characterframe/tempportraitalphamasksmall.blp
+    TEMP_PORTRAIT_ALPHA_MASK_SMALL = 130925,
     -- interface/masks/circlemask.blp
     CIRCLE_MASK = 3528314,
+    -- interface/masks/circlemaskscalable.blp
+    CIRCLE_MASK_SCALABLE = 3605349,
+    -- interface/talentframe/talentsmasknodecircle.blp
+    TALENTS_MASK_NODE_CIRCLE = 4633068,
     -- interface/hud/uiunitframeplayerportraitmask.blp
     UI_UNIT_FRAME_PLAYER_PORTRAIT_MASK = 4682541,
     -- interface/hud/uiunitframeplayerportraitmask2x.blp
     UI_UNIT_FRAME_PLAYER_PORTRAIT_MASK_2X = 5321198,
+    -- interface/common/commonmaskcircle.blp
+    COMMON_MASK_CIRCLE = 5757702,
+    -- interface/hud/uiunitframeplayerportraitmask2xc60.blp
+    UI_UNIT_FRAME_PLAYER_PORTRAIT_MASK_2X_C60 = 8524951,
+    -- interface/hud/uiunitframeplayerportraitmaskc60.blp
+    UI_UNIT_FRAME_PLAYER_PORTRAIT_MASK_C60 = 8524953,
 }
 
 ---@enum NpcId
