@@ -2,7 +2,9 @@ use std::collections::HashMap;
 use std::time::{Duration, Instant};
 
 use animation_blacklister::resource::{ModelId, Resources};
-use animation_blacklister::skeleton::{AnimatedBone, Animation, PosedBone, mean_skeleton_error};
+use animation_blacklister::skeleton::{
+    AnimatedBone, Animation, PosedBone, mean_error, mean_skeleton_error,
+};
 use animation_blacklister::{SkeletonDefinition, log};
 use anyhow::{Context, Result, anyhow, bail};
 use kiss3d::glamx::Vec4Swizzles;
@@ -79,6 +81,8 @@ async fn main() {
             r#"comparing skeleton {i} ({}) with master ({})"#,
             comparison.model_id, animation_master.model_id,
         );
+        let bind_error = mean_error(&animation_master.bind_pose, &comparison.bind_pose);
+        info!(" * bind-pose similarity error was {}", bind_error);
         if comparison.duration != animation_master.duration {
             info!(
                 " * durations were not the same ({} vs master {})",
@@ -306,7 +310,7 @@ fn load_animation<'a>(res: &'a Resources, def: AnimationDefinition) -> Result<Re
                 animation.keys().collect::<Vec<_>>()
             )
         })?;
-        RenderSkeleton::from_animation(model_id, def, variation)
+        RenderSkeleton::from_animation(model_id, def, animated_skeleton.bind_pose, variation)
     } else {
         let skeleton_def = SkeletonDefinition::parse_for_idle(&storage, def.fdid)
             .context("failed to parse skeleton from model in storage, to get bind pose")?;
@@ -347,6 +351,8 @@ struct RenderSkeleton<'a> {
     pub duration: usize,
     pub bones: HashMap<u32, RenderBone>,
     pub color: kiss3d::color::Color,
+    // for debugging comparison
+    bind_pose: HashMap<u32, PosedBone>,
 }
 
 struct RenderBone {
@@ -362,6 +368,7 @@ impl<'a> RenderSkeleton<'a> {
     fn from_animation(
         model_id: ModelId<'a>,
         definition: AnimationDefinition,
+        bind_pose: HashMap<u32, PosedBone>,
         animation: Animation,
     ) -> Self {
         let bones = animation
@@ -374,6 +381,7 @@ impl<'a> RenderSkeleton<'a> {
             duration: animation.duration.into(),
             bones,
             color: (&definition.color).into(),
+            bind_pose,
         }
     }
 
@@ -383,6 +391,7 @@ impl<'a> RenderSkeleton<'a> {
         pose: HashMap<u32, PosedBone>,
     ) -> Self {
         let bones = pose
+            .clone()
             .into_iter()
             .map(|(k, bone)| (k, RenderBone::from_posed_bone(bone)))
             .collect();
@@ -391,6 +400,7 @@ impl<'a> RenderSkeleton<'a> {
             duration: 1,
             color: (&definition.color).into(),
             bones,
+            bind_pose: pose,
         }
     }
 }

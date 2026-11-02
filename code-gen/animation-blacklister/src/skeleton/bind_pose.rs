@@ -4,7 +4,7 @@ use super::Vec3;
 use super::algebra::*;
 use crate::skeleton::similarity::mean_skeleton_error;
 
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 pub struct PosedBone {
     pub parent_id: Option<u32>,
     pub position: Vec3,
