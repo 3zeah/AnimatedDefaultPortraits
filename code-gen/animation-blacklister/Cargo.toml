@@ -1,0 +1,43 @@
+[workspace]
+members = ["crates/*"]
+
+[package]
+name = "animation-blacklister"
+version = "0.1.0"
+edition = "2024"
+description = """
+generates animation-playlist overrides per model, for the Animated Default \
+Portraits add-on
+
+this system takes a list of hand-crafted blacklisted animation variations, \
+and, for each blacklisted variation, applies it to all other models that also \
+have the same animation, via data mining animated model skeletons. \
+finally, this system generates animation playlists from those blacklisted \
+animation variations: because add-ons cannot directly blacklist animation \
+variations for interface model frames, blacklisting is simulated by explicitly \
+playing the other variations, which requires knowing the probabilities of \
+each variation, which is encoded only in the model data files
+"""
+
+[workspace.dependencies]
+anyhow = "1.0.104"
+log = "0.4.34"
+ron = "0.12.3"
+serde = { version = "1.0.229", features = ["derive"] }
+thiserror = "2.0.21"
+wow-parse = { path = "crates/wow-parse" }
+
+[dependencies]
+anyhow.workspace = true
+casc-lib = { path = "crates/casc-lib" }
+glam = "0.34.1"
+log.workspace = true
+log4rs = "1.4.0"
+regex = "1.13.1"
+reqwest = { version = "0.13.5", features = ["blocking"] }
+ron.workspace = true
+scoped-thread-pool = "1.0.4"
+serde.workspace = true
+thiserror.workspace = true
+wow-model-data = { path = "crates/wow-model-data" }
+wow-parse.workspace = true

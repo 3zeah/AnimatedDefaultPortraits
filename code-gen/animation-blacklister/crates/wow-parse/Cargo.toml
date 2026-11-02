@@ -1,0 +1,11 @@
+[package]
+name = "wow-parse"
+version = "0.1.0"
+edition = "2024"
+description = """
+reader that knows of, and how to parse, data types from world of warcraft files\
+"""
+
+[dependencies]
+log.workspace = true
+thiserror.workspace = true

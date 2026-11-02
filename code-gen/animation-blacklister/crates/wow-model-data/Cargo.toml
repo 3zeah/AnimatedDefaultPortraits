@@ -1,0 +1,9 @@
+[package]
+name = "wow-model-data"
+version = "0.1.0"
+edition = "2024"
+description = "data mines models from world of warcraft storage"
+
+[dependencies]
+log.workspace = true
+wow-parse.workspace = true

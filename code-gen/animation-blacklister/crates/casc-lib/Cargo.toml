@@ -1,0 +1,10 @@
+[package]
+name = "casc-lib"
+version = "0.1.0"
+edition = "2024"
+description = """
+idiomatic rust wrapper around CascLib: finds and reads files from CASC storage\
+"""
+
+[build-dependencies]
+bindgen = "0.73.2"

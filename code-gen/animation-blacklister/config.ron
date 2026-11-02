@@ -1,0 +1,141 @@
+(
+    resource: (
+        listfile_path: "resource/cache/listfile.csv",
+        encryption_keys_path: "resource/cache/TactKeys",
+        model_file_data_dir: "resource/cache/ModelFileData",
+        products: [
+            ProductDefinition (
+                name: "wow",
+                game_type: "Standard",
+                game_type_family: "Mainline",
+                path: "D:/temp/wow storage archive",
+            ),
+            ProductDefinition (
+                name: "wowf",
+                game_type: "Forever",
+                game_type_family: "Mainline",
+                path: "D:/temp/wow storage archive",
+            ),
+            ProductDefinition (
+                name: "wow_classic",
+                game_type: "Mists",
+                game_type_family: "Classic",
+                path: "D:/temp/wow storage archive",
+            ),
+            ProductDefinition (
+                name: "wow_anniversary",
+                game_type: "TBC",
+                game_type_family: "Classic",
+                path: "D:/temp/wow storage archive",
+            ),
+            ProductDefinition (
+                name: "wow_classic_era",
+                game_type: "Vanilla",
+                game_type_family: "Classic",
+                path: "D:/temp/wow storage archive",
+            ),
+        ],
+    ),
+    lua_gen: (
+        addon_path: "../..",
+        addon_name: "AnimatedDefaultPortraits",
+        generated_dir: "Generated",
+        generated_file_base_name: "AnimationBlacklisterConfig",
+        generated_table_name: "ANIMATION_OVERRIDES",
+    ),
+    // fdid -> [game type] -> [variation id]
+    blacklist: {
+        121768: {["Mists"]: [1]},    // classic ud male stands up straight
+        126137: {["Standard", "Mists", "TBC", "Vanilla"]: [1]}, // ^ud male npc: same shit
+        125948: {["Vanilla"]: [1]},  // ^naked skeleton
+        126131: {["Standard", "TBC", "Vanilla"]: [1]}, // ^death guard
+        121608: {["Mists"]: [1]},    // classic ud female crouches
+        997378: {["Standard"]: [1]}, // modern ud female also crouches
+        126570: {["Mists"]: [1]},    // zombie looks away
+        // ---------------------------------------------------------------------------------------
+        // begin BIRDS: bird flaps up off frame in variation 1, and have a million different
+        // models...
+        123137: {["Vanilla", "TBC", "Mists", "Standard"]: [1]}, // carrion bird
+        123148: {["TBC", "Mists", "Standard"]: [1]}, // carrion bird outland
+        123715: {["TBC", "Mists", "Standard"]: [1]}, // eagle
+        126300: {["Mists", "Standard"]: [1]}, // undead eagle
+        1100483: {["Standard"]: [1]}, // eagle 2
+        1661349: {["Standard"]: [1]}, // vulture
+        1926505: {["Standard"]: [1]}, // vulture mount
+        6367105: {["Standard"]: [1]}, // spotting eagle
+        126077: {["Mists", "Standard"]: [1]},     // storm crow druid
+        125378: {["Vanilla", "TBC", "Mists", "Standard"]: [1]}, // owl
+        523669: {["Standard"]: [1]}, // owl ghost green
+        126075: {["Standard", "Vanilla"]: [1]}, // storm crow
+        357812: {["Standard", "Mists"]: [1]}, // seagull
+        357810: {["Standard"]: [1]}, // raven
+        357810: {["Mists"]: [1]},    // raven
+        651121: {["Standard", "Mists"]: [1]}, // raven low 01
+        925511: {["Standard"]: [1]},  // toucan!!
+        1255609: {["Standard"]: [1]}, // raven 2
+        1998298: {["Standard"]: [1]}, // redbird
+        2490776: {["Standard"]: [1]}, // mechanical parrot pet
+        3672162: {["Standard"]: [1]}, // progenitor bird
+        4870605: {["Standard"]: [1]}, // cave swallow
+        123766: {["TBC", "Mists"]: [1]},       // EpicDruidFlightAlliance
+        123767: {["TBC", "Mists"]: [1]}, // EpicDruidFlightHorde
+        468264: {["Standard"]: [1]}, // EpicDruidFlightTroll
+        467905: {["Mists", "Standard"]: [1]}, // EpicDruidFlightWorgen
+        901138: {["Mists"]: [1]},    // StormCrowMount
+        123831: {["Vanilla", "TBC", "Standard"]: [1]},  // fel bat: bats are birds too!!
+        123830: {["Vanilla", "TBC", "Mists", "Standard"]: [1]}, // bat taxi
+        804506: {["Mists", "Standard"]: [1]}, // bat mount
+        804508: {["Mists", "Standard"]: [1]}, // EPIC bat mount
+        3087298: {["Standard"]: [1]}, // GIANT vampire bat MOUNT
+        6036383: {["Mists"]: [1]},    // 30th bat mount classic
+        126530: {["Vanilla", "TBC", "Mists", "Standard"]: [1]},   // wyverns are ALSO birds..
+        // end BIRDS
+        // ---------------------------------------------------------------------------------------
+        125815: {["Vanilla", "Mists"]: [1]}, // scorpion clips into camera, shouting
+        126101: {["Mists"]: [1, 2, 3]}, // "super zombie": this guy is all over the fucking place
+        // "dragon man hulk": same as super zombie, but does not have a lower body past classic
+        430968: {["Standard"]: [1]},
+        7197176: {["Standard"]: [1, 2]}, // "hex eagle": very extended periods of head adhd
+    },
+    // fdid -> [game types], or all game types if empty
+    whitelist: {
+        119563: [],
+        116921: [],
+        123847: [],
+        123856: [],
+        124437: [],
+        124440: [],
+        124442: [],
+        124444: [],
+        124448: [],
+        124452: [],
+        124468: [],
+        124472: [],
+        124475: [],
+        124478: [],
+        234501: [],
+        234701: [],
+        337875: [],
+        437089: [],
+        575104: [],
+        575208: [],
+        646095: [],
+        1000764: [],
+        1067804: [],
+        1697869: [],
+        1717164: [],
+        1838572: [],
+        1842700: [],
+        2123279: [],
+        2123284: [],
+        2173913: [],
+        2997555: [],
+        3483612: [],
+        4220448: [],
+        4222579: [],
+        5680838: [],
+        124463: [],
+        124467: [],
+        123081: [],
+    },
+)

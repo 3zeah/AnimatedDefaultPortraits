@@ -1,0 +1,18 @@
+[package]
+name = "wow-skeleton-render"
+version = "0.1.0"
+edition = "2024"
+description = """
+renders and compares animated model skeletons
+
+the purpose of this system is to debug and compare animations that are \
+identified as similar by the animation-blacklister system, as well as confirm \
+that the data-mined skeletons are actually correct
+"""
+
+[dependencies]
+animation-blacklister = { path = "../.." }
+anyhow.workspace = true
+kiss3d = "0.47.0"
+ron.workspace = true
+serde.workspace = true
