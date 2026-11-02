@@ -55,8 +55,8 @@
         // ---------------------------------------------------------------------------------------
         // begin BIRDS: bird flaps up off frame in variation 1, and have a million different
         // models...
-        123137: {["Vanilla", "TBC", "Mists", "Standard"]: [1]}, // carrion bird
-        123148: {["TBC", "Mists", "Standard"]: [1]}, // carrion bird outland
+        123137: {["Vanilla", "TBC", "Mists", "Standard"]: [1, 2]}, // carrion bird
+        123148: {["TBC", "Mists", "Standard"]: [1, 2]}, // carrion bird outland
         123715: {["TBC", "Mists", "Standard"]: [1]}, // eagle
         126300: {["Mists", "Standard"]: [1]}, // undead eagle
         1100483: {["Standard"]: [1]}, // eagle 2
@@ -64,9 +64,9 @@
         1926505: {["Standard"]: [1]}, // vulture mount
         6367105: {["Standard"]: [1]}, // spotting eagle
         126077: {["Mists", "Standard"]: [1]},     // storm crow druid
-        125378: {["Vanilla", "TBC", "Mists", "Standard"]: [1]}, // owl
-        523669: {["Standard"]: [1]}, // owl ghost green
-        126075: {["Standard", "Vanilla"]: [1]}, // storm crow
+        125378: {["Vanilla", "TBC", "Mists", "Standard"]: [1, 2]}, // owl
+        523669: {["Standard"]: [1, 2]}, // owl ghost green
+        126075: {["Standard", "Vanilla"]: [1, 2]}, // storm crow
         357812: {["Standard", "Mists"]: [1]}, // seagull
         357810: {["Standard"]: [1]}, // raven
         357810: {["Mists"]: [1]},    // raven
