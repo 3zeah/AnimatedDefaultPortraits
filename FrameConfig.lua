@@ -19,7 +19,7 @@ local NilIfSecretValue = Util.NilIfSecretValue
 
 ---system config for animated portrait frames, including the associated model
 ---mask, chiefly per-client portrait-appearance data and mask-alignment values
----@class AnimationVariantBlacklisterLib
+---@class AnimationBlacklisterLib
 local lib = {}
 
 -- 36 comes from target-of-target being 35 in classic, but party and pet frames

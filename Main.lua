@@ -6,8 +6,8 @@ local require = ns.require
 local Util = require(ns, "Util")
 ---@module "FrameConfig"
 local FrameConfig = require(ns, "FrameConfig")
----@module "AnimationVariantBlacklister"
-local AnimationVariantBlacklister = require(ns, "AnimationVariantBlacklister")
+---@module "AnimationBlacklister"
+local AnimationBlacklister = require(ns, "AnimationBlacklister")
 ---@module "AnimatedPortraitFrame"
 local AnimatedPortraitFrame = require(ns, "AnimatedPortraitFrame")
 
@@ -300,8 +300,8 @@ local function ohModelLoadedAnimatedPortrait(self)
    -- any system that needs to set one needs to try both when the model is
    -- loaded, or immediately when the model was changed, in case it was already
    -- loaded
-   AnimationVariantBlacklister
-       .UpdateAfterModelChanged(self.animationVariantBlacklister, self)
+   AnimationBlacklister
+       .UpdateAfterModelChanged(self.animationBlacklister, self)
    refreshWhetherDisabled(self)
 end
 
@@ -356,13 +356,13 @@ local function getOrCreateAnimatedPortrait(portraitTexture, disableMasking)
    ---@field isInanimate true? if the portrait model should not be animated
    ---@field doAlignOnNextUpdate true?
    ---@field blockingModels { [Frame]: boolean? }
-   ---@field animationVariantBlacklister AnimationVariantBlacklister
+   ---@field animationBlacklister AnimationBlacklister
    local state = AnimatedPortraitFrame
        .Create(portraitTexture, not disableMasking, registerInternalModel)
    state.portraitTexture = portraitTexture
    state.hasModel = false
    state.blockingModels = {}
-   state.animationVariantBlacklister = AnimationVariantBlacklister.Create(state)
+   state.animationBlacklister = AnimationBlacklister.Create(state)
 
    state:SetScript("OnShow", onShowAnimatedPortrait)
    state:SetScript("OnHide", onHideAnimatedPortrait)
@@ -393,8 +393,8 @@ local function updateUnitModel(self)
    if success then
       -- setting animation requires model to be loaded, but i have observed that
       -- we must try early as well, to be sure
-      AnimationVariantBlacklister
-          .UpdateAfterModelChanged(self.animationVariantBlacklister, self)
+      AnimationBlacklister
+          .UpdateAfterModelChanged(self.animationBlacklister, self)
       self.isInanimate = IsInanimate(self.unit) or nil
       -- setting pause does not require model to be loaded
       refreshWhetherPaused(self)
