@@ -5,7 +5,7 @@
 ## IconTexture: Interface/ICONS/Achievement_Character_Dwarf_Male.PNG
 Generated/AnimationBlacklisterConfig.lua
 Generated/AnimationBlacklisterConfig_Classic.lua [AllowLoadGameType classic]
-Generated/AnimationBlacklisterConfig_Forever.lua [AllowLoadGameType forever]
+Generated/AnimationBlacklisterConfig_Forever.lua [AllowLoadGameType forever][ExcludeLoadGameType standard classic]
 Generated/AnimationBlacklisterConfig_Mainline.lua [AllowLoadGameType mainline]
 Generated/AnimationBlacklisterConfig_Mists.lua [AllowLoadGameType mists]
 Generated/AnimationBlacklisterConfig_Standard.lua [AllowLoadGameType standard]
