@@ -6,6 +6,14 @@ t[123831]=u--Creature/FelBat/FelBat.m2
 t[804504]=u--Creature/Bat/Bat.m2
 end
 do
+local u={[1]=0.5}
+t[123719]=u--Creature/EAGLEGOD/EagleGod.M2
+end
+do
+local u={[1]=0.67}
+t[794489]=u--Creature/SandTrollCouncilor/SandTrollCouncilor.M2
+end
+do
 local u={[2]=0.05,[3]=0.05}
 t[125948]=u--Creature/SkeletonNaked/SkeletonNaked.M2
 end

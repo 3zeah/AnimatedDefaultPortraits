@@ -5,6 +5,10 @@ local u={}
 t[123831]=u--Creature/FelBat/FelBat.m2
 end
 do
+local u={[1]=0.02}
+t[124001]=u--Creature/ForestTroll/ForestTroll.M2
+end
+do
 local u={[2]=0.09,[3]=0.09}
 t[121768]=u--Character/Scourge/Male/ScourgeMale.m2
 end

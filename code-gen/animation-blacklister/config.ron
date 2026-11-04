@@ -51,7 +51,44 @@
         126131: {["Standard", "TBC", "Vanilla"]: [1]}, // ^death guard
         121608: {["Mists"]: [1]},    // classic ud female crouches
         997378: {["Standard"]: [1]}, // modern ud female also crouches
+        119563: {["Vanilla", "Mists"]: [2]}, // classic human female DAINTILY tip toes off frame
+        119563: {["Standard"]: []}, // but modern woman lost tip-toe animation: no daint
+        122560: {["Standard", "Vanilla"]: [2]}, // troll male crouches and thinks about life
+        118798: {["Standard", "Mists"]: [2]}, // ^forest troll
+        6225159: {["Standard"]: [2]}, // ^zuljan
+        // ^darkspear troll: similar but not same!!! (as with many other player models)
+        3058486: {["Standard"]: [2]},
         126570: {["Mists"]: [1]},    // zombie looks away
+        124437: {["Vanilla"]: [1]}, // low-res ass human female looks away
+        124566: {["Standard"]: [1]}, // "huml" citizen mid (bunch of these fat human npcs)
+        // TODO these blacklists are accurate but lead to a million false positives with every
+        // human-like model in the game, because the animations are so similar to idle, i think
+        // 124448: {["Standard"]: [1]}, // ^(low-res?) human f caster
+        // 124472: {["Standard"]: [1]}, // ^(low-res?) human f warrior heavy
+        // 124541: {["Standard"]: [1]}, // "human male warrior heavy ghost", but has woman animations? TODO
+        // 124540: {["Standard", "Mists"]: [1]}, // ^human male warrior
+        // 124485: {["Standard"]: [1]}, // ^human male caster: i guess all the "low res" human males do
+        // 124490: {["Standard"]: [1]}, // ^human male farmer
+        124444: {["Standard"]: []}, // ^human f blacksmith looks ok tho
+        124506: {["Standard", "Mists"]: [2]}, // human m noble: this guy is doing the candy cane
+        337875: {["Standard"]: [2]}, // jaina is no better than a regular classic woman
+        646095: {["Standard"]: [2]}, // ^jaina 2
+        437089: {["Standard"]: []}, // whitelist similarity: ysera: covers elves who appear human-y
+        1100258: {["Standard"]: []}, // ^belf female hd: belves are not human either
+        5159886: {["Standard"]: []}, // ^xalatath is no better than an elf but skeleton slightly off
+        123852: {["Standard"]: []}, // ^fel elf caster male is whatever
+        124377: {["Standard"]: []}, // ^high elf is whatever
+        124378: {["Mists"]: []}, // ^high elf mage
+        123081: {["Standard"]: []}, // ^belf male guard is ok
+        124652: {["Standard"]: []}, // ^kael'thas is also just an elf!!! (god this system sucks)
+        234885: {["Standard"]: []}, // ^vampyr blood prince implicated via kael'thas
+        124656: {["Standard"]: []}, // ^BROKEN kael'thas implicated via kael'thas
+        117170: {["Mists"]: []}, // ^classic belf male implicated via kael'thas
+        2198642: {["Mists"]: []}, // ^classic orc female implicated via kael'thas, of all things
+        124507: {["Standard"]: [1]}, // some human male peasants bang a hammer or something
+        124509: {["Standard"]: []}, // human peasant carrying a sack is fine tho
+        124515: {["Standard"]: []}, // ^carrying wood
+        658184: {["Standard"]: []}, // this is an ORC, but is clocked as similar to some human
         // ---------------------------------------------------------------------------------------
         // begin BIRDS: bird flaps up off frame in variation 1, and have a million different
         // models...
@@ -96,46 +133,19 @@
         // "dragon man hulk": same as super zombie, but does not have a lower body past classic
         430968: {["Standard"]: [1]},
         7197176: {["Standard"]: [1, 2]}, // "hex eagle": very extended periods of head adhd
+        125234: {["Standard"]: [1]}, // northrend geists: they do the ud fem look around on ground
+        // teron gorefiend gets captured by HumanMaleWarriorHeavy_Ghost, because the blacklisted
+        // animation is essentially just leaning somewhat, which is similar to teron just standing
+        // 126143: {["Standard"]: []}, TODO
     },
     // fdid -> [game types], or all game types if empty
+    // completely skip processing the given model
+    // (use this if the system claims the model is similar to a blacklist, but it is not, either to
+    // shut up the "beware these animations are similar" spam, or to resolve false positives)
+    // BEWARE: usually, it is better to add an empty blacklist than a whitelist, since the blacklist
+    // system will propagate the empty playlist to other models that are similar, but this is an
+    // easier way of eliminating noise
     whitelist: {
-        119563: [],
-        116921: [],
-        123847: [],
-        123856: [],
-        124437: [],
-        124440: [],
-        124442: [],
-        124444: [],
-        124448: [],
-        124452: [],
-        124468: [],
-        124472: [],
-        124475: [],
-        124478: [],
-        234501: [],
-        234701: [],
-        337875: [],
-        437089: [],
-        575104: [],
-        575208: [],
-        646095: [],
-        1000764: [],
-        1067804: [],
-        1697869: [],
-        1717164: [],
-        1838572: [],
-        1842700: [],
-        2123279: [],
-        2123284: [],
-        2173913: [],
-        2997555: [],
-        3483612: [],
-        4220448: [],
-        4222579: [],
-        5680838: [],
-        124463: [],
-        124467: [],
-        123081: [],
+        1331506: [], // dragon custom tail
     },
 )
