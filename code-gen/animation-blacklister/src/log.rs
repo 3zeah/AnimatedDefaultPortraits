@@ -4,10 +4,10 @@ use std::sync::{LazyLock, RwLock};
 pub use log::{Level, debug, error, info, trace, warn};
 use log::{LevelFilter, Record};
 use log4rs::append::console::{ConsoleAppender, Target};
-use log4rs::append::file::FileAppender;
 use log4rs::append::rolling_file::RollingFileAppender;
 use log4rs::append::rolling_file::policy::compound::CompoundPolicy;
 use log4rs::append::rolling_file::policy::compound::roll::fixed_window::FixedWindowRoller;
+use log4rs::append::rolling_file::policy::compound::trigger::onstartup::OnStartUpTrigger;
 use log4rs::append::rolling_file::policy::compound::trigger::size::SizeTrigger;
 use log4rs::config::{Appender, Config, Root};
 use log4rs::encode::pattern::PatternEncoder;
@@ -32,25 +32,37 @@ impl FilterHandle {
 }
 
 /// * print `Info` to stderr
-/// * _info.log_ holds `Info` of previous session
+/// * _info.log_ holds `Info` of previous session, and previous previous in _info.0.log_, to access
+/// the previous session even while current session is logging
 /// * _trace.log_ is continually appended with everything (`Trace`), and keeps archive files (each
 /// log file needs to be small to facilitate fast loads and tooling support)
 pub fn init<P: AsRef<Path>>(log_dir: P) {
     const INFO_PATTERN: &str = "{d(%Y-%m-%d %H:%M:%S)} {h({l:>5} {t})} - {m}{n}";
     const TRACE_PATTERN: &str = "{d(%Y-%m-%dT%H:%M:%S%.f):0<29}{d(%:z)} {l:>5} {t} - {m}{n}";
     const MAX_FILE_SIZE: u64 = 1024 * 1024;
-    const LOG_FILE_COUNT: u32 = 10;
+    const TRACE_FILE_COUNT: u32 = 10;
 
     let log_path = log_dir.as_ref();
 
     let _ = LazyLock::force(&DYNAMIC_FILTERS);
 
-    let policy = {
+    // rotate info file each start
+    let info_policy = {
+        let trigger = OnStartUpTrigger::new(0);
+        let archive_path_pattern = Path::join(log_path, "info.{}.log");
+        let archive_path_pattern_str = archive_path_pattern.to_str().expect("path pattern error");
+        let roller = FixedWindowRoller::builder()
+            .build(archive_path_pattern_str, 1)
+            .expect("log init error");
+        CompoundPolicy::new(Box::new(trigger), Box::new(roller))
+    };
+    // rotate trace files when too big
+    let trace_policy = {
         let trigger = SizeTrigger::new(MAX_FILE_SIZE);
         let archive_path_pattern = Path::join(log_path, "trace.{}.log");
         let archive_path_pattern_str = archive_path_pattern.to_str().expect("path pattern error");
         let roller = FixedWindowRoller::builder()
-            .build(archive_path_pattern_str, LOG_FILE_COUNT)
+            .build(archive_path_pattern_str, TRACE_FILE_COUNT)
             .expect("log init error");
         CompoundPolicy::new(Box::new(trigger), Box::new(roller))
     };
@@ -59,14 +71,13 @@ pub fn init<P: AsRef<Path>>(log_dir: P) {
         .encoder(Box::new(PatternEncoder::new(INFO_PATTERN)))
         .target(Target::Stderr)
         .build();
-    let info_file_appender = FileAppender::builder()
+    let info_file_appender = RollingFileAppender::builder()
         .encoder(Box::new(PatternEncoder::new(INFO_PATTERN)))
-        .append(false)
-        .build(Path::join(log_path, "info.log"))
+        .build(Path::join(log_path, "info.log"), Box::new(info_policy))
         .expect("log init error");
     let trace_file_appender = RollingFileAppender::builder()
         .encoder(Box::new(PatternEncoder::new(TRACE_PATTERN)))
-        .build(Path::join(log_path, "trace.log"), Box::new(policy))
+        .build(Path::join(log_path, "trace.log"), Box::new(trace_policy))
         .expect("log init error");
 
     let config = Config::builder()

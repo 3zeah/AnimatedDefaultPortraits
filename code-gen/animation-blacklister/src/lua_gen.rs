@@ -371,8 +371,20 @@ fn filter_map_from_variation_data(
     if variation_id == 0 {
         None
     } else {
+        let AnimationVariation {
+            probability_per_mille,
+            // ignore replay range: replay ranges are actually seemingly bugged for player-model
+            // frames, in that they have no effect. this may be confirmed eg by having a blood elf
+            // male dance, and seeing that that the "PELVIS FAN" maneuver, which is normally
+            // repeated at least like six times, is usually executed only once in a player model
+            //
+            // it would probably actually be better for this system to simulate replay ranges
+            // properly, even if blizzard cannot, but it is only a very small subset of models that
+            // are subject to this blacklisting system. thus, do not rock the boat
+            replay_range: _,
+        } = playlist;
         let data = AnimationVariationData {
-            probability_per_mille: playlist.probability_per_mille,
+            probability_per_mille,
         };
         Some((variation_id, data))
     }

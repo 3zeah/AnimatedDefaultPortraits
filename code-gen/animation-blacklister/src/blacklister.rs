@@ -134,32 +134,89 @@ impl<'a> AnimationBlacklister<'a> {
         let animated_skeleton = skeleton_def.evaluate_into_animated_skeleton()?;
         let mut animation_similarity_report = Vec::new();
         let mut report_has_beware_info = false;
+        // check each blacklisted model that had the same skeleton as this whether a blacklisted
+        // animation is shared between them
         for (reference_index, bind_pose_error) in skeleton_matches {
             let reference = &self.references[reference_index];
             let mut sub_report = Vec::new();
             let reference_animation = &reference.skeleton().animation;
-            for (&variation_id, variation) in &animated_skeleton.animation {
-                if variation_id == 0 {
+            let reference_blacklist = &reference.variation_blacklist;
+            // an empty blacklist entry for a model means that nothing is supposed to be blacklisted
+            // for that model. if this model has all the same animations as that model, then this
+            // model must not be blacklisted either
+            if reference_blacklist.is_empty() {
+                let reference_variations = reference_animation.keys().collect::<HashSet<_>>();
+                let animation_variations =
+                    animated_skeleton.animation.keys().collect::<HashSet<_>>();
+                if reference_variations != animation_variations {
                     continue;
                 }
-                for reference_variation_id in &reference.variation_blacklist {
-                    let reference_variation = &reference_animation[reference_variation_id];
-                    let variation_error = Animation::mean_error(variation, reference_variation);
+                let mut all_variations_same = true;
+                let mut all_variations_similar = true;
+                for &variation_id in &animation_variations {
+                    let reference_variation = &reference_animation[variation_id];
+                    let variation = &animated_skeleton.animation[variation_id];
+                    if reference_variation.duration != variation.duration {
+                        all_variations_same = false;
+                        all_variations_similar = false;
+                        break;
+                    }
+                    let variation_error = Animation::mean_error(reference_variation, variation);
                     if variation_error < Self::ANIMATION_ERROR_MARGIN {
+                        continue;
+                    }
+                    all_variations_same = false;
+                    if variation_error < Self::INFO_ANIMATION_ERROR_MARGIN {
                         sub_report.push(format!(
-                            "   > new blacklist: variation {} = blacklisted reference {} \
-                            (similarity error of {})",
-                            variation_id, reference_variation_id, variation_error,
+                            "   > BEWARE: the reference was actually a whitelist, but will not \
+                                whitelist, because variations {variation_id} are only similar (but \
+                                not the same): similarity error of {variation_error}",
                         ));
-                        variation_blacklist.insert(variation_id);
-                        references.insert(reference.model_id());
-                    } else if variation_error < Self::INFO_ANIMATION_ERROR_MARGIN {
-                        report_has_beware_info = true;
-                        sub_report.push(format!(
+                    } else {
+                        all_variations_similar = false;
+                        break;
+                    }
+                }
+                if all_variations_similar {
+                    report_has_beware_info = true;
+                }
+                if all_variations_same {
+                    debug!(
+                        "{} was the same as whitelisted reference {}: propagating whitelist",
+                        model_id,
+                        reference.model_id()
+                    );
+                    references.clear();
+                    references.insert(reference.model_id());
+                    break;
+                }
+            } else {
+                // otherwise, if there is a set of blacklisted variations, check each to see whether
+                // this model shares one of those blacklisted variations, and propagate the
+                // blacklist to that one if so
+                for (&variation_id, variation) in &animated_skeleton.animation {
+                    if variation_id == 0 {
+                        continue;
+                    }
+                    for reference_variation_id in reference_blacklist {
+                        let reference_variation = &reference_animation[reference_variation_id];
+                        let variation_error = Animation::mean_error(variation, reference_variation);
+                        if variation_error < Self::ANIMATION_ERROR_MARGIN {
+                            sub_report.push(format!(
+                                "   > new blacklist: variation {} = blacklisted reference {} \
+                                (similarity error of {})",
+                                variation_id, reference_variation_id, variation_error,
+                            ));
+                            variation_blacklist.insert(variation_id);
+                            references.insert(reference.model_id());
+                        } else if variation_error < Self::INFO_ANIMATION_ERROR_MARGIN {
+                            report_has_beware_info = true;
+                            sub_report.push(format!(
                             "   > BEWARE: will not blacklist variation {}, but it is similar to \
                             blacklisted reference {} (similarity error of {})",
                             variation_id, reference_variation_id, variation_error,
                         ));
+                        }
                     }
                 }
             }
@@ -173,13 +230,13 @@ impl<'a> AnimationBlacklister<'a> {
                 animation_similarity_report.extend(sub_report.into_iter());
             }
         }
-        if variation_blacklist.is_empty() {
+        if references.is_empty() {
             if report_has_beware_info {
                 animation_similarity_report.insert(
                     0,
                     format!(
                         "BEWARE: {model_id} was not blacklisted, but was similar to at least one \
-                    blacklisted animation"
+                        blacklisted animation"
                     ),
                 );
                 info!("{}", animation_similarity_report.join("\n"));

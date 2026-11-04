@@ -196,12 +196,17 @@ fn group_unique_playlists<'a>(
         HashMap<Option<AnimationPlaylist>, BTreeSet<&Product>>,
     > = BTreeMap::new();
     for (model_id, playlist) in playlists {
-        data_per_model
-            .entry(model_id.fdid)
-            .or_default()
-            .entry(Some(AnimationPlaylistData::from(&playlist)))
-            .or_default()
-            .insert(model_id.product);
+        // no reason to generate a playlist that simply simulates the default animation behavior.
+        // the only reason they are retained all the way here is for the report, to clarify which
+        // models have been effectively whitelisted and why
+        if !playlist.blacklist.is_empty() {
+            data_per_model
+                .entry(model_id.fdid)
+                .or_default()
+                .entry(Some(AnimationPlaylistData::from(&playlist)))
+                .or_default()
+                .insert(model_id.product);
+        }
         report_per_model
             .entry(model_id.fdid)
             .or_default()
