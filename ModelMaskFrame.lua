@@ -115,7 +115,6 @@ local baseFov = 72
 
 ---@param mask Model
 local function updateModelMaskCamera(mask)
-    mask:SetModelScale(MASK_MODEL_CONFIG.scale / mask:GetEffectiveScale())
     local uiHeight = select(3, UIParent:GetScaledRect())
     -- previous alignment only worked for 16:9. it appears that changing aspect
     -- ratio changes the fov or something of interface models. i am not at all
@@ -140,11 +139,17 @@ local function updateModelMaskCamera(mask)
     -- 960	1.224717568	1.22383744	0.999281362
     -- 1024	1.276066774	1.274208531	0.9985437726
     -- 1300	1.463377431	1.453443356	0.9932115429
-    local aspectRatioAdjustment = 2
+    local aspectRatioScale = 2
         * atan(baseWidth / uiHeight * tan(baseFov / 2))
         / (2 * atan(tan(baseFov / 2)))
+    -- also, it appears that the near clipping gets worse with different aspect
+    -- rations... so perform the aspect-ratio adjustment via scale, rather than
+    -- camera distance
+    mask:SetModelScale(
+        MASK_MODEL_CONFIG.scale / aspectRatioScale / mask:GetEffectiveScale()
+    )
     mask:SetCameraPosition(
-        0, MASK_MODEL_CONFIG.cameraDistance * MASK_MODEL_CONFIG.scale * aspectRatioAdjustment, 0
+        0, MASK_MODEL_CONFIG.cameraDistance * MASK_MODEL_CONFIG.scale, 0
     )
 end
 
