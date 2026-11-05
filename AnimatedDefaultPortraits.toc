@@ -3,6 +3,7 @@
 ## Notes: Animate the default unit-frame portraits with minimal side effects
 ## Version: @project-version@
 ## IconTexture: Interface/ICONS/Achievement_Character_Dwarf_Male.PNG
+## OptionalDeps: !!FunctionProfiler
 Generated/AnimationBlacklisterConfig.lua
 Generated/AnimationBlacklisterConfig_Classic.lua [AllowLoadGameType classic]
 Generated/AnimationBlacklisterConfig_Forever.lua [AllowLoadGameType forever][ExcludeLoadGameType standard classic]
