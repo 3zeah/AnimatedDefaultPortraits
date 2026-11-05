@@ -507,7 +507,7 @@ end
 local function onEvent(_, event, ...)
    if event == "PLAYER_LOGIN" then
       enableAnimatedPortraits()
-      preventExternalModelOcclusion()
+      C_Timer.After(5, preventExternalModelOcclusion)
    elseif event == "PORTRAITS_UPDATED" then
       for _, state in pairs(animatedPortraits) do
          if state.unit then
