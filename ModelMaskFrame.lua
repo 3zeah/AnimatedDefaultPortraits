@@ -115,38 +115,43 @@ local baseFov = 72
 
 ---@param mask Model
 local function updateModelMaskCamera(mask)
-    local uiHeight = select(3, UIParent:GetScaledRect())
+    local uiWidth = select(3, UIParent:GetScaledRect())
     -- previous alignment only worked for 16:9. it appears that changing aspect
     -- ratio changes the fov or something of interface models. i am not at all
     -- certain about this formula, because i am not even sure what the
     -- underlying mechanic is, but this is definitely a lot better than nothing
-    -- and appears to work even for extreme aspect ratios
+    -- and appears to work even for extreme aspect ratios. the intuition behind
+    -- the formula is to calculate the quotient of the horizontal fov change
+    -- induced by the change in ui width, and scale the camera distance by that
+    -- factor. the `baseWidth` is the width of `UIParent` for 16:9 resolutions,
+    -- and `baseFov` is the assumed starting horizontal fov for the 16:9
+    -- baseline, set to whatever value seemed to give the best fit
     --
     -- one way to test theories here is to query the camera position of a
-    -- a `PlayerModel`. a `PlayerModel` with a portrait camera set retain its
-    -- perspective even across aspect ratios. thus, by querying the camera
+    -- a `PlayerModel`. a `PlayerModel` with a portrait camera set retains its
+    -- perspective even across aspect ratios. thus, after querying the camera
     -- position before and after an aspect ratio change, the actual required
     -- aspect-ratio adjustment is the quotient of the camera distances
     --
     -- starting at 720p, and adjusting the height, i got the below values, where
-    -- "expect" is the distance factor queried from `PlayerModel`, and "actual"
-    -- is the value returned by this formula
+    -- "expect" is the camera-distance quotient queried from `PlayerModel`, and
+    -- "actual" is the factor returned by this formula
     --
     -- h    actual      expect      diff factor
     -- 720	1	        1  	        1
     -- 768	1.049303381	1.049430698	1.000121334
     -- 800	1.080913302	1.081054214	1.000130364
     -- 960	1.224717568	1.22383744	0.999281362
-    -- 1024	1.276066774	1.274208531	0.9985437726
-    -- 1300	1.463377431	1.453443356	0.9932115429
-    local aspectRatioScale = 2
-        * atan(baseWidth / uiHeight * tan(baseFov / 2))
-        / (2 * atan(tan(baseFov / 2)))
-    -- also, it appears that the near clipping gets worse with different aspect
-    -- rations... so perform the aspect-ratio adjustment via scale, rather than
-    -- camera distance
+    -- 1024	1.276066774	1.274208531	0.998543773
+    -- 1300	1.463377431	1.453443356	0.993211543
+    -- 500	0.743692434 0.742156413	0.997934602
+    local fovFactor = 2 * atan(baseWidth / uiWidth * tan(baseFov / 2))
+        / baseFov -- = (new_fov/2) / (old_fov/2) = 2*atan(...)/old_fov
+    -- also, it appears that the clipping-plane distances vary in the same way
+    -- for different aspect ratios... so perform the aspect-ratio adjustment via
+    -- scale, rather than via camera distance
     mask:SetModelScale(
-        MASK_MODEL_CONFIG.scale / aspectRatioScale / mask:GetEffectiveScale()
+        MASK_MODEL_CONFIG.scale / fovFactor / mask:GetEffectiveScale()
     )
     mask:SetCameraPosition(
         0, MASK_MODEL_CONFIG.cameraDistance * MASK_MODEL_CONFIG.scale, 0
