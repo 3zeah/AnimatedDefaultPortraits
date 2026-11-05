@@ -507,6 +507,12 @@ end
 local function onEvent(_, event, ...)
    if event == "PLAYER_LOGIN" then
       enableAnimatedPortraits()
+      -- this is an emergency fix that i do not fully understand: on forever
+      -- release, my machine crash-looped when trying to log in, although
+      -- enabling the add-on after logging in was fine. the culprit somehow is
+      -- this function post-hooking the metatable of model-frame types while a
+      -- the game is still performing initial loading or something. this delay
+      -- needs to be significant, empirically
       C_Timer.After(5, preventExternalModelOcclusion)
    elseif event == "PORTRAITS_UPDATED" then
       for _, state in pairs(animatedPortraits) do
