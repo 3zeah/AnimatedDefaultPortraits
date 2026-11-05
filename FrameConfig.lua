@@ -98,6 +98,11 @@ do
     ---@param portrait SimpleTexture
     ---@return boolean
     function lib.ShouldRenderToFrameBuffer(portrait)
+        -- dont ask me why, but setting `Frame:SetIsFrameBuffer`, at least for
+        -- model frames, makes the frame disappear in wow forever...
+        if CLIENT_IS_FOREVER then
+            return false
+        end
         return portrait == PlayerPortrait
             or (
                 PlayerFrame
