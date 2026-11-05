@@ -503,7 +503,6 @@ local function preventExternalModelOcclusion()
    end
 end
 
--- re-texture the frames and enable the animated portraits
 local function onEvent(_, event, ...)
    if event == "PLAYER_LOGIN" then
       enableAnimatedPortraits()
