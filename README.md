@@ -9,6 +9,11 @@ World of Warcraft add-on. Animate the default unit-frame portraits with minimal 
 
 ![Image with portraits before and after](image.jpg)
 
+## Known issues
+
+* (?) Forever: POSSIBLE hitches or crashes when using render scales other than 100%
+    - Merely creating several interface models causes these issues, apparently, and thus I am hoping for a Blizzard fix
+
 ## Limitations
 
 * In mainline (retail and Forever), portraits are not animated for mobs in instances (eg dungeons or raids)
