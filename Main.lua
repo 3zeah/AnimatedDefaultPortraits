@@ -11,6 +11,7 @@ local AnimationBlacklister = require(ns, "AnimationBlacklister")
 ---@module "AnimatedPortraitFrame"
 local AnimatedPortraitFrame = require(ns, "AnimatedPortraitFrame")
 
+local CLIENT_IS_FOREVER = Util.CLIENT_IS_FOREVER
 local ThrottledOnUpdate = Util.ThrottledOnUpdate
 local NilIfSecretValue = Util.NilIfSecretValue
 local TextureIsPortrait = Util.TextureIsPortrait
@@ -510,9 +511,22 @@ local function onEvent(_, event, ...)
       -- release, my machine crash-looped when trying to log in, although
       -- enabling the add-on after logging in was fine. the culprit somehow is
       -- this function post-hooking the metatable of model-frame types while a
-      -- the game is still performing initial loading or something. this delay
-      -- needs to be significant, empirically
-      C_Timer.After(5, preventExternalModelOcclusion)
+      -- the game is still performing initial loading or something, including
+      -- sometimes when changing render scale. solution: register external
+      -- models manually...
+      if CLIENT_IS_FOREVER then
+         registerExternalModel(CharacterModelScene)
+         if DressUpFrame then registerExternalModel(DressUpFrame.ModelScene) end
+         registerExternalModel(TabardModel)
+      else
+         preventExternalModelOcclusion()
+      end
+   elseif event == "INSPECT_READY" then
+      registerExternalModel(InspectModelFrame)
+   elseif event == "VIEWED_TRANSMOG_OUTFIT_CHANGED" then
+      if TransmogFrame and TransmogFrame.CharacterPreview then
+         registerExternalModel(TransmogFrame.CharacterPreview.ModelScene)
+      end
    elseif event == "PORTRAITS_UPDATED" then
       for _, state in pairs(animatedPortraits) do
          if state.unit then
@@ -583,6 +597,10 @@ local function init()
    f:RegisterEvent("PLAYER_LOGIN")
    f:RegisterEvent("PORTRAITS_UPDATED")
    f:RegisterEvent("UNIT_PORTRAIT_UPDATE")
+   if CLIENT_IS_FOREVER then
+      f:RegisterEvent("INSPECT_READY")
+      f:RegisterEvent("VIEWED_TRANSMOG_OUTFIT_CHANGED")
+   end
 
    local onUpdate = ThrottledOnUpdate(UPDATE_PERIOD, onUpdateAddOn)
    f:SetScript("OnUpdate", onUpdate)
