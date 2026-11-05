@@ -41,6 +41,12 @@ local function findSupportedMaskTexture(texture)
          return { texture = mask, shape = shape }
       end
    end
+   print(
+      "|cffff1010 >>> PORTRAIT HAD TEXTURE MASK, BUT IT IS UNSUPPORTED:",
+      texture:GetMaskTexture(1):GetTexture(),
+      AdpId(texture),
+      "|r"
+   )
    -- portraits are usually circles: maybe it is a good idea to assume circle
    return { texture = texture:GetMaskTexture(1), shape = MaskShape.CIRCLE }
 end
@@ -222,6 +228,16 @@ function lib.Create(portrait, portraitTextureIsCircle, createModelCallback)
    else
       model:SetModelDrawLayer(LowerDrawLayer(drawLayer))
    end
+   if subLevel ~= 0 then
+      print(
+         "|cff00ff10WARNING: drawing model at",
+         select(1, model:GetModelDrawLayer()),
+         select(2, model:GetModelDrawLayer()),
+         "because tex was",
+         drawLayer, subLevel,
+         "|r"
+      )
+   end
 
    local light = CreateBaselinePortraitLight()
    model:SetLight(true, light)
@@ -241,6 +257,7 @@ function lib.Create(portrait, portraitTextureIsCircle, createModelCallback)
    end
 
    if ShouldRenderToFrameBuffer(portrait) then
+      print("|cffff10ffINFO: flattening", AdpId(portrait), "|r")
       model:SetFlattensRenderLayers(true)
       model:SetIsFrameBuffer(true)
       bgTexture:SetIgnoreParentAlpha(true)
@@ -264,11 +281,14 @@ function lib.UpdateUnit(self, portrait, unit)
    if not UnitIsVisible(unit) then
       return false
    end
-   local success = self:SetUnit(unit)
+   local success, error = self:SetUnit(unit)
    if success then
       updateScale(self)
       setVertexColor(self, portrait:GetVertexColor())
       setAlpha(self, portrait:GetAlpha())
+   else
+      print("|cffff1010WARNING: failed to set model for", unit, "in",
+         AdpId(portrait) .. ":", error, "|r")
    end
    return success
 end

@@ -68,6 +68,22 @@ end
 function lib.UpdateAfterModelChanged(state, model)
     local animationPlaylist = ANIMATION_OVERRIDES[model:GetModelFileID()]
     if animationPlaylist then
+        if animationPlaylist ~= state.playlist then
+            if next(animationPlaylist) == nil then
+                print(
+                    "info: AnimationBlacklister: setting empty playlist for model",
+                    AdpNamedParent(model):GetName()
+                )
+            else
+                print(
+                    "info: AnimationBlacklister: setting playlist for model",
+                    AdpNamedParent(model):GetName() .. ":"
+                )
+                for variation_id, probability in pairs(animationPlaylist) do
+                    print(" *", variation_id .. ":", tostring(probability * 100) .. "%")
+                end
+            end
+        end
         state.playlist = animationPlaylist
         state.nextVariation = rollIdleAnimationVariation(animationPlaylist)
         -- any time the model-unit is refreshed, it appears the model
