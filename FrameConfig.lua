@@ -42,6 +42,7 @@ function lib.ShouldDisableFor(portrait)
             and portrait == PaperDollSidebarTab1.Icon
         )
         or CharacterFrameModeTab1 and portrait == CharacterFrameModeTab1.Icon
+        or InspectFrameModeTab1 and portrait == InspectFrameModeTab1.Icon
         or portrait == TargetFrameToTPortrait
         or TargetFrameToT and portrait == TargetFrameToT.Portrait
         or portrait == FocusFrameToTPortrait
