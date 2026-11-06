@@ -110,48 +110,47 @@ local function applyOrEvalModelMaskInsetsToContainer(
     return left, right, top, bottom
 end
 
-local baseWidth = 768 / 9 * 16
-local baseFov = 72
+-- the aspect ratio for which the mask model is aligned without considering fov
+local baselineAspectRatio = 16 / 9
+local baselineFovDivisor = sqrt(1 + baselineAspectRatio ^ 2)
 
 ---@param mask Model
 local function updateModelMaskCamera(mask)
-    local uiWidth = select(3, UIParent:GetScaledRect())
-    -- previous alignment only worked for 16:9. it appears that changing aspect
-    -- ratio changes the fov or something of interface models. i am not at all
-    -- certain about this formula, because i am not even sure what the
-    -- underlying mechanic is, but this is definitely a lot better than nothing
-    -- and appears to work even for extreme aspect ratios. the intuition behind
-    -- the formula is to calculate the quotient of the horizontal fov change
-    -- induced by the change in ui width, and scale the camera distance by that
-    -- factor. the `baseWidth` is the width of `UIParent` for 16:9 resolutions,
-    -- and `baseFov` is the assumed starting horizontal fov for the 16:9
-    -- baseline, set to whatever value seemed to give the best fit
+    -- interface model cameras apparently use diagonal fov, and the actual fov
+    -- is thus a function of the aspect ratio. in order to maintain the
+    -- alignment of the mask model wrt the viewport, the camera distance must be
+    -- scaled by the factor by which the fov changed from "baseline". in this
+    -- case, all alignment values were tweaked for 16:9: `baselineAspectRatio`
     --
-    -- one way to test theories here is to query the camera position of a
-    -- a `PlayerModel`. a `PlayerModel` with a portrait camera set retains its
-    -- perspective even across aspect ratios. thus, after querying the camera
-    -- position before and after an aspect ratio change, the actual required
-    -- aspect-ratio adjustment is the quotient of the camera distances
+    -- the formula used by the client to evaluate the actual fov from the
+    -- diagonal fov, according to https://wowdev.wiki/M2#Cameras, is
+    -- `vertical_fov = diagonal_fov / sqrt(1 + aspect_ratio^2)`. this holds
+    -- empirically: a `PlayerModel` widget with a pre-defined camera set looks
+    -- the same regardless of aspect ratio, and therefore its camera distance
+    -- must automatically change to account for the fov change. this camera
+    -- distance can be measured with `GetCameraTarget` and `GetCameraPosition`.
+    -- the quotient of the camera distances before and after an aspect ratio
+    -- change is the expected real change in fov. the following table lists such
+    -- values ("expect") compared to the "actual" values resulting from assuming
+    -- the above formula:
+    -- `fov_base / fov = sqrt(1 + (16/9)^2) / sqrt(1 + aspect_ratio^2)`
     --
-    -- starting at 720p, and adjusting the height, i got the below values, where
-    -- "expect" is the camera-distance quotient queried from `PlayerModel`, and
-    -- "actual" is the factor returned by this formula
-    --
-    -- h    actual      expect      diff factor
-    -- 720	1	        1  	        1
-    -- 768	1.049303381	1.049430698	1.000121334
-    -- 800	1.080913302	1.081054214	1.000130364
-    -- 960	1.224717568	1.22383744	0.999281362
-    -- 1024	1.276066774	1.274208531	0.998543773
-    -- 1300	1.463377431	1.453443356	0.993211543
-    -- 500	0.743692434 0.742156413	0.997934602
-    local fovFactor = 2 * atan(baseWidth / uiWidth * tan(baseFov / 2))
-        / baseFov -- = (new_fov/2) / (old_fov/2) = 2*atan(...)/old_fov
+    -- height   aspect ratio	actual	    expect	    error
+    -- (pixels) (width=1280)    (formula)   (measured)  (expect/actual)
+    -- 720      16/9	        1	        1	        1
+    -- 768      1.666666667 	1.049431841	1.049430698	0.9999989101
+    -- 800      1.6	            1.081054134	1.081054214	1.000000074
+    -- 960      1.333333333	    1.223837317	1.22383744	1.0000001
+    -- 1024     1.25	        1.274208518	1.274208531	1.00000001
+    -- 1300     0.9846153846	1.453443107	1.453443356	1.000000171
+    -- 500      2.56     	    0.742156421	0.742156413	0.9999999882
+    local _, _, uiWidth, uiHeight = UIParent:GetScaledRect()
+    local fovScale = sqrt(1 + (uiWidth / uiHeight) ^ 2) / baselineFovDivisor
     -- also, it appears that the clipping-plane distances vary in the same way
     -- for different aspect ratios... so perform the aspect-ratio adjustment via
     -- scale, rather than via camera distance
     mask:SetModelScale(
-        MASK_MODEL_CONFIG.scale / fovFactor / mask:GetEffectiveScale()
+        MASK_MODEL_CONFIG.scale * fovScale / mask:GetEffectiveScale()
     )
     mask:SetCameraPosition(
         0, MASK_MODEL_CONFIG.cameraDistance * MASK_MODEL_CONFIG.scale, 0
