@@ -1,7 +1,7 @@
 use std::collections::{HashMap, HashSet};
 
 use super::Vec3;
-use super::algebra::*;
+use crate::algebra::*;
 use crate::skeleton::similarity::mean_skeleton_error;
 
 #[derive(Clone, Copy, Debug)]

@@ -1,4 +1,3 @@
-mod algebra;
 mod animation;
 mod bind_pose;
 mod lerp;

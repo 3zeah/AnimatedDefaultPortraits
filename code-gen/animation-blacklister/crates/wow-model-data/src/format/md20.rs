@@ -8,6 +8,7 @@ use wow_parse::*;
 use super::r#type::*;
 use super::{BoneAnimations, Bones, Sequence};
 use crate::format::bone::parse_bone_data;
+use crate::format::camera::{CameraAnimation, Cameras, parse_camera_data};
 
 #[derive(Debug)]
 pub struct Chunk {
@@ -18,6 +19,9 @@ pub struct Chunk {
     pub bones: Bones,
     /// animation variation to pair of sequence index and bone animations
     pub loaded_animations: Option<HashMap<u16, (u16, BoneAnimations)>>,
+    pub cameras: Cameras,
+    pub portrait_camera: Option<CameraAnimation>,
+    pub character_info_camera: Option<CameraAnimation>,
 }
 
 #[derive(Debug)]
@@ -27,6 +31,7 @@ struct Header {
     sequences: ArrayHeader,
     animation_id_map: ArrayHeader,
     bones: ArrayHeader,
+    cameras: ArrayHeader,
 }
 
 impl Chunk {
@@ -90,6 +95,9 @@ impl Chunk {
             None
         };
 
+        let (cameras, portrait_camera, character_info_camera) =
+            parse_camera_data(r, header.cameras)?;
+
         Ok(Chunk {
             name,
             flags: header.flags,
@@ -97,6 +105,9 @@ impl Chunk {
             animation_id_map,
             bones,
             loaded_animations,
+            cameras,
+            portrait_camera,
+            character_info_camera,
         })
     }
 }
@@ -112,68 +123,79 @@ impl Header {
 
         let flags = Flags(r.parse_u32()?);
 
+        // push each array along with a name, to debug the layout
+        let mut all_arrays: Vec<(ArrayHeader, String)> = Vec::new();
+
         // global loops/sequences/animations not relevant to character animations
-        let _global_loops = r.parse_array_header()?;
+        all_arrays.push((r.parse_array_header()?, "global_loops".to_owned()));
         let sequences = r.parse_array_header()?;
         let animation_id_map = r.parse_array_header()?;
         let bones = r.parse_array_header()?;
 
-        name.validate_all_data_is_ahead(r)?;
-        sequences.validate_all_data_is_ahead(r)?;
-        animation_id_map.validate_all_data_is_ahead(r)?;
-        bones.validate_all_data_is_ahead(r)?;
+        for i in 0..2 {
+            all_arrays.push((r.parse_array_header()?, format!("a{i}")));
+        }
+        trace!("num_skin_profiles = {}", r.parse_u32()?);
+        for i in 0..11 {
+            all_arrays.push((r.parse_array_header()?, format!("b{i}")));
+        }
+        trace!("bounding_box = {:?}", parse_aabb(r)?);
+        trace!("bounding_sphere_radius = {:?}", r.parse_f32()?);
+        trace!("collision_box = {:?}", parse_aabb(r)?);
+        trace!("collision_sphere_radius = {:?}", r.parse_f32()?);
+        for i in 0..7 {
+            all_arrays.push((r.parse_array_header()?, format!("c{i}")));
+        }
+        let cameras = r.parse_array_header()?;
+        for i in 0..3 {
+            all_arrays.push((r.parse_array_header()?, format!("d{i}")));
+        }
 
-        // skip rest: not relevant to animations
         trace!("finished parsing md20 header at {}", r.offset_in_chunk());
 
         // dump layout: md20 is miserably big: this is useful to confirm the format is correct
         {
-            // push each array along with a name, to debug the layout
-            let mut all_arrays: Vec<(ArrayHeader, String)> = Vec::new();
-            for i in 0..2 {
-                all_arrays.push((r.parse_array_header()?, format!("a{i}")));
-            }
-            trace!("num_skin_profiles = {}", r.parse_u32()?);
-            for i in 0..11 {
-                all_arrays.push((r.parse_array_header()?, format!("b{i}")));
-            }
-            trace!("bounding_box = {:?}", parse_aabb(r)?);
-            trace!("bounding_sphere_radius = {:?}", r.parse_f32()?);
-            trace!("collision_box = {:?}", parse_aabb(r)?);
-            trace!("collision_sphere_radius = {:?}", r.parse_f32()?);
-            for i in 0..11 {
-                all_arrays.push((r.parse_array_header()?, format!("b{i}")));
-            }
-
             all_arrays.push((name, "name".to_owned()));
-            all_arrays.push((_global_loops, "global_loops".to_owned()));
             all_arrays.push((sequences, "sequences".to_owned()));
             all_arrays.push((animation_id_map, "animation_map".to_owned()));
             all_arrays.push((bones, "bones".to_owned()));
-
-            all_arrays.sort_by_key(|a| a.0.offset());
+            all_arrays.push((cameras, "cameras".to_owned()));
 
             trace!("dumping md20 chunk layout defined by header:");
+            all_arrays.sort_by_key(|a| a.0.offset());
             let header_end = r.offset_in_chunk();
             trace!("  * {} <- end of header", header_end);
-            let mut prev = header_end;
-            let mut prev_len = 1;
-            for (array, name) in all_arrays {
+            let mut next_offset = r.chunk_end()?;
+            let mut layout_report: Vec<String> = Vec::with_capacity(all_arrays.len());
+            for (array, name) in all_arrays.into_iter().rev() {
                 if array.is_empty() {
                     continue;
                 }
-                let diff = array.offset() - prev;
-                trace!(
-                    "  * {} (len {}) <- {}\t\t(prev: size {}, max stride {:.1})",
+                // sanity check: this was actually an array
+                array.validate_all_data_is_ahead(r)?;
+                let size = next_offset - array.offset();
+                layout_report.push(format!(
+                    "  * {} (len {}) <- {}\t\t(size {}, max stride {:.1})",
                     array.offset(),
                     array.len(),
                     name,
-                    diff,
-                    (diff as f32) / (prev_len as f32),
-                );
-                prev = array.offset();
-                prev_len = array.len();
+                    size,
+                    (size as f32) / (array.len() as f32),
+                ));
+                next_offset = array.offset();
             }
+            for line in layout_report.into_iter().rev() {
+                trace!("{}", line);
+            }
+        }
+
+        // validate
+        {
+            name.validate_all_data_is_ahead(r)?;
+            sequences.validate_all_data_is_ahead(r)?;
+            animation_id_map.validate_all_data_is_ahead(r)?;
+            bones.validate_all_data_is_ahead(r)?;
+            cameras.validate_all_data_is_ahead(r)?;
         }
 
         Ok(Header {
@@ -182,6 +204,7 @@ impl Header {
             sequences,
             animation_id_map,
             bones,
+            cameras,
         })
     }
 }

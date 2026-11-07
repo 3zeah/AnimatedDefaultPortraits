@@ -1,29 +1,30 @@
 (
-    render_bone_ids: false,
+    render_bone_ids: true,
+    use_portrait_camera: true,
     animation_master: AnimationDefinition(
-        product: "wow_classic_era",
-        fdid: 123137,
-        animation: Some((0, 2)),
+        product: "wow",
+        fdid: 1100483,
+        animation: Some((0, 0)),
         color: White,
     ),
     animation_comparisons: [
-        AnimationDefinition(
-            product: "wow_anniversary",
-            fdid: 123148,
-            animation: Some((0, 2)),
-            color: Red,
-        ),
-        AnimationDefinition (
-            product: "wow_classic_era",
-            fdid: 125378,
-            animation: Some((0, 2)),
-            color: Green,
-        ),
-        AnimationDefinition (
-            product: "wow_classic_era",
-            fdid: 126075,
-            animation: Some((0, 2)),
-            color: Blue,
-        ),
+        // AnimationDefinition(
+        //     product: "wow_anniversary",
+        //     fdid: 123148,
+        //     animation: Some((0, 0)),
+        //     color: Red,
+        // ),
+        // AnimationDefinition (
+        //     product: "wow_classic_era",
+        //     fdid: 125378,
+        //     animation: Some((0, 0)),
+        //     color: Green,
+        // ),
+        // AnimationDefinition (
+        //     product: "wow_classic_era",
+        //     fdid: 126075,
+        //     animation: Some((0, 0)),
+        //     color: Blue,
+        // ),
     ],
 )

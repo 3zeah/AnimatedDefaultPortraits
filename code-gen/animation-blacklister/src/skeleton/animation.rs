@@ -5,10 +5,10 @@ use std::mem::MaybeUninit;
 use anyhow::{Result, anyhow, bail};
 use glam::Affine3;
 
-use super::algebra::*;
 use super::similarity::mean_skeleton_error;
 use super::{Vec3, lerp};
 use crate::Model;
+use crate::algebra::*;
 
 pub type Frame = u16;
 

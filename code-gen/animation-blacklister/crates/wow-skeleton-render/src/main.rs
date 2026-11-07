@@ -5,7 +5,7 @@ use animation_blacklister::resource::{ModelId, Resources};
 use animation_blacklister::skeleton::{
     AnimatedBone, Animation, PosedBone, mean_error, mean_skeleton_error,
 };
-use animation_blacklister::{SkeletonDefinition, log};
+use animation_blacklister::{SkeletonDefinition, StaticCamera, log};
 use anyhow::{Context, Result, anyhow, bail};
 use kiss3d::glamx::Vec4Swizzles;
 use kiss3d::prelude::*;
@@ -17,6 +17,7 @@ const CONFIG_PATH: &str = "crates/wow-skeleton-render/config.ron";
 #[derive(Deserialize, Debug)]
 struct Config {
     render_bone_ids: bool,
+    use_portrait_camera: bool,
     animation_master: AnimationDefinition,
     animation_comparisons: Box<[AnimationDefinition]>,
 }
@@ -112,9 +113,27 @@ async fn main() {
     }
 
     info!("begin: set up scene");
-    let mut window = Window::new(module_path!()).await;
+    let mut window = Window::new_with_size(module_path!(), 1000, 1000).await;
     window.rebind_close_key(Some(Key::Escape));
-    let mut camera = OrbitCamera3d::new(Vec3::new(0.0, 1.0, 3.0), Vec3::new(0.0, 1.0, 0.0));
+    let mut camera = if config.use_portrait_camera
+        && let Some(portrait_camera) = animation_master.portrait_camera
+    {
+        info!("using portrait camera: {portrait_camera:?}");
+        adapt_camera(portrait_camera)
+    } else if let Some(character_info_camera) = animation_master.character_info_camera {
+        if config.use_portrait_camera {
+            info!(
+                "portrait camera did not exist: falling back to character-info camera: \
+                {character_info_camera:?}"
+            );
+        } else {
+            info!("using character-info camera: {character_info_camera:?}");
+        }
+        adapt_camera(character_info_camera)
+    } else {
+        info!("no character camera found: using some default camera...");
+        OrbitCamera3d::new(Vec3::new(0.0, 1.0, 3.0), Vec3::new(0.0, 1.0, 0.0))
+    };
     let mut scene = SceneNode3d::empty();
     scene.add_light(Light::directional(Vec3::new(-0.6, 0.0, -0.6)));
     let mut state_master =
@@ -255,10 +274,10 @@ fn bone_color(id: u32) -> kiss3d::color::Color {
         80 => ROYAL_BLUE, // forearm R
         64 => ROYAL_BLUE, // hand R
 
-        // YELLOW-TO-ORANGE HEAD-TO-SPINE
-        6 => YELLOW,          // head
+        // YELLOW-TO-ORANGE HEAD-TO-SPINE, BUT HIGHLIGHT ACTUAL HEAD PINK
+        6 => PINK,            // head
         7 => GOLD,            // jaw
-        54 => DARK_GOLDENROD, // spine low
+        54 => DARK_GOLDENROD, // main
         4 => ORANGE,          // spine low
         5 => ORANGE_RED,      // waist
         52 => ORANGE_RED,     // buckle
@@ -310,12 +329,25 @@ fn load_animation<'a>(res: &'a Resources, def: AnimationDefinition) -> Result<Re
                 animation.keys().collect::<Vec<_>>()
             )
         })?;
-        RenderSkeleton::from_animation(model_id, def, animated_skeleton.bind_pose, variation)
+        RenderSkeleton::from_animation(
+            model_id,
+            def,
+            animated_skeleton.bind_pose,
+            variation,
+            animated_skeleton.portrait_camera,
+            animated_skeleton.character_info_camera,
+        )
     } else {
         let skeleton_def = SkeletonDefinition::parse_for_idle(&storage, def.fdid)
             .context("failed to parse skeleton from model in storage, to get bind pose")?;
         trace!("raw loaded skeleton definition: {skeleton_def:#?}");
-        RenderSkeleton::from_pose(model_id, def, skeleton_def.bind_pose)
+        RenderSkeleton::from_pose(
+            model_id,
+            def,
+            skeleton_def.bind_pose,
+            skeleton_def.portrait_camera,
+            skeleton_def.character_info_camera,
+        )
     };
     Ok(render_skeleton)
 }
@@ -351,6 +383,8 @@ struct RenderSkeleton<'a> {
     pub duration: usize,
     pub bones: HashMap<u32, RenderBone>,
     pub color: kiss3d::color::Color,
+    pub portrait_camera: Option<StaticCamera>,
+    pub character_info_camera: Option<StaticCamera>,
     // for debugging comparison
     bind_pose: HashMap<u32, PosedBone>,
 }
@@ -370,6 +404,8 @@ impl<'a> RenderSkeleton<'a> {
         definition: AnimationDefinition,
         bind_pose: HashMap<u32, PosedBone>,
         animation: Animation,
+        portrait_camera: Option<StaticCamera>,
+        character_info_camera: Option<StaticCamera>,
     ) -> Self {
         let bones = animation
             .skeleton
@@ -381,6 +417,8 @@ impl<'a> RenderSkeleton<'a> {
             duration: animation.duration.into(),
             bones,
             color: (&definition.color).into(),
+            portrait_camera,
+            character_info_camera,
             bind_pose,
         }
     }
@@ -389,6 +427,8 @@ impl<'a> RenderSkeleton<'a> {
         model_id: ModelId<'a>,
         definition: AnimationDefinition,
         pose: HashMap<u32, PosedBone>,
+        portrait_camera: Option<StaticCamera>,
+        character_info_camera: Option<StaticCamera>,
     ) -> Self {
         let bones = pose
             .clone()
@@ -398,8 +438,10 @@ impl<'a> RenderSkeleton<'a> {
         Self {
             model_id,
             duration: 1,
-            color: (&definition.color).into(),
             bones,
+            color: (&definition.color).into(),
+            portrait_camera,
+            character_info_camera,
             bind_pose: pose,
         }
     }
@@ -424,6 +466,16 @@ impl RenderBone {
 // TODO confirm this? it contradicts the lighting reference in frame config, so maybe that needs to die too
 fn adapt_vec(value: animation_blacklister::glam::Vec3) -> kiss3d::prelude::Vec3 {
     Vec3::new(value.y, value.z, value.x)
+}
+
+fn adapt_camera(value: StaticCamera) -> OrbitCamera3d {
+    OrbitCamera3d::new_with_frustum(
+        value.fov_vertical,
+        value.near_clip,
+        value.far_clip,
+        adapt_vec(value.position),
+        adapt_vec(value.target),
+    )
 }
 
 impl From<&Color> for kiss3d::color::Color {

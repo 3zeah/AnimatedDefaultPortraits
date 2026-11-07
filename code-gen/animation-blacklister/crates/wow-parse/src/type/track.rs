@@ -34,6 +34,13 @@ pub struct TrackHeader {
     pub values: ArrayHeader,
 }
 
+#[derive(PartialEq, Eq)]
+pub struct SplineKey<T> {
+    pub value: T,
+    pub tan_in: T,
+    pub tan_out: T,
+}
+
 impl<T> Track<T> {
     pub fn load<R: Parse, F>(
         &self,
@@ -148,6 +155,29 @@ impl TrackHeader {
     }
 }
 
+impl<T> SplineKey<T> {
+    pub fn parser<R: Parse, F>(value_parser: &F) -> impl Fn(&mut R) -> ParseResult<Self>
+    where
+        F: Fn(&mut R) -> ParseResult<T>,
+    {
+        move |r| Self::parse(r, value_parser)
+    }
+
+    pub fn parse<R: Parse, F>(r: &mut R, value_parser: F) -> ParseResult<Self>
+    where
+        F: Fn(&mut R) -> ParseResult<T>,
+    {
+        let value = value_parser(r)?;
+        let tan_in = value_parser(r)?;
+        let tan_out = value_parser(r)?;
+        Ok(Self {
+            value,
+            tan_in,
+            tan_out,
+        })
+    }
+}
+
 impl<T> fmt::Debug for Track<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(f, "Track {{")?;
@@ -178,6 +208,16 @@ impl fmt::Debug for TrackHeader {
             builder.field("values", &self.values);
         }
         builder.finish()
+    }
+}
+
+impl<T: fmt::Debug> fmt::Debug for SplineKey<T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "SplineKey({:?}, in: {:?}, out: {:?})",
+            self.value, self.tan_in, self.tan_out
+        )
     }
 }
 

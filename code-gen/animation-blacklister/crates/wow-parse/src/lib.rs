@@ -69,6 +69,10 @@ pub trait Parse {
         }
     }
 
+    fn chunk_end(&self) -> ParseResult<u32> {
+        Ok(self.offset_in_chunk() + self.chunk_remaining()?)
+    }
+
     fn expect_byte_array<const N: usize>(&mut self, expected: &[u8; N]) -> ParseResult<()> {
         let actual: [u8; N] = self.read_bytes()?;
         if &actual != expected {
@@ -253,8 +257,8 @@ pub enum EnterChunkError {
 
 #[derive(Clone, Copy, Debug)]
 pub struct Chunk {
-    offset: u32,
-    size: u32,
+    pub offset: u32,
+    pub size: u32,
 }
 
 fn parse_from_bytes<R, const N: usize, Output, FromBytes>(
