@@ -96,6 +96,18 @@ fn main() -> Result<()> {
                         continue;
                     }
                 };
+                if skeleton_def.portrait_camera.is_none() {
+                    trace!(
+                        "skipping {model_id} because it was not a character model: had no portrait \
+                        camera"
+                    );
+                    progress.register_result(
+                        model_id,
+                        Err(ProcessFileErrorOutcome::NotACharacterModel),
+                    );
+                    progress.timer.stop();
+                    continue;
+                }
                 trace!("parse success: {model_id}");
                 let t_fork = progress.timer().start_sub(" FORK");
                 let sender_move = sender.clone();
@@ -262,6 +274,7 @@ struct ProcessFileProgress<'a> {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 enum ProcessFileErrorOutcome {
+    NotACharacterModel,
     InvalidData,
     NotFound,
     IoError,
