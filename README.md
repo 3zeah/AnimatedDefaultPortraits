@@ -11,8 +11,9 @@ World of Warcraft add-on. Animate the default unit-frame portraits with minimal 
 
 ## Known issues
 
-* (?) Forever + dx12: POSSIBLE hitches or crashes when using render scales other than 100%
-    - Merely creating several interface models causes these issues, apparently, and thus I am hoping for a Blizzard fix
+* Forever + dx12: hitches or crashes possible on your machine
+    - Workaround: use dx11 (Options -> Graphics -> Advanced -> Graphics API)
+    - Current theory: dx12 renderer is bugged in Forever and cannot handle too many models on screen
 
 ## Limitations
 
