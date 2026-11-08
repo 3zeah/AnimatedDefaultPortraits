@@ -223,10 +223,15 @@ impl<'a> AnimationState<'a> {
         let mut bone_positions: HashMap<u32, Vec3> = HashMap::new();
         for (bone_id, bone) in &skeleton.bones {
             let bone_pos = bone.positions[0];
+            const BONE_SIZE: f32 = 0.01;
+            let (color, size) = match bone_color(*bone_id) {
+                Some(some) => (some, BONE_SIZE),
+                None => (RED, 0.75 * BONE_SIZE), // ensure explicitly colored bones show over others
+            };
             let bone = scene
-                .add_sphere(0.01)
+                .add_sphere(size)
                 .set_position(bone_pos)
-                .set_color(bone_color(*bone_id));
+                .set_color(color);
             bones.push((*bone_id, bone));
             bone_positions.insert(*bone_id, bone_pos);
         }
@@ -258,8 +263,8 @@ fn project(camera: &impl Camera3d, window_w: f32, window_h: f32, pos: Vec3) -> V
     )
 }
 
-fn bone_color(id: u32) -> kiss3d::color::Color {
-    match id {
+fn bone_color(id: u32) -> Option<kiss3d::color::Color> {
+    Some(match id {
         // GREEN LEFT ARM
         2 => LIME_GREEN,    // shoulder L
         0 => GREEN,         // arm L
@@ -283,8 +288,8 @@ fn bone_color(id: u32) -> kiss3d::color::Color {
         52 => ORANGE_RED,     // buckle
 
         26 => PURPLE, // root
-        _ => RED,
-    }
+        _ => return None,
+    })
 }
 
 fn load_animation<'a>(res: &'a Resources, def: AnimationDefinition) -> Result<RenderSkeleton<'a>> {
