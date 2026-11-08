@@ -1,0 +1,30 @@
+(
+    render_bone_ids: true,
+    use_portrait_camera: true,
+    animation_master: AnimationDefinition(
+        product: "wow_classic_era",
+        fdid: 121768,
+        animation: Some((0, 0)),
+        color: White,
+    ),
+    animation_comparisons: [
+        AnimationDefinition(
+            product: "wow_classic_era",
+            fdid: 121768,
+            animation: Some((0, 1)),
+            color: Red,
+        ),
+        AnimationDefinition (
+            product: "wow_classic_era",
+            fdid: 121768,
+            animation: Some((0, 2)),
+            color: Green,
+        ),
+        AnimationDefinition (
+            product: "wow_classic_era",
+            fdid: 121768,
+            animation: Some((0, 3)),
+            color: Blue,
+        ),
+    ],
+)
