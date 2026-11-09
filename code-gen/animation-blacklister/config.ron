@@ -119,6 +119,7 @@
         468264: {["Standard"]: [1]}, // EpicDruidFlightTroll
         467905: {["Mists", "Standard"]: [1]}, // EpicDruidFlightWorgen
         901138: {["Mists"]: [1]},    // StormCrowMount
+        125395: {["Vanilla", "Standard"]: [1, 2]}, // parrot
         123831: {["Vanilla", "TBC", "Standard"]: [1]},  // fel bat: bats are birds too!!
         123830: {["Vanilla", "TBC", "Mists", "Standard"]: [1]}, // bat taxi
         804506: {["Mists", "Standard"]: [1]}, // bat mount

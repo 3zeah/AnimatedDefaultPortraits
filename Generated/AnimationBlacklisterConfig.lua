@@ -38,6 +38,7 @@ select(2,...).ANIMATION_OVERRIDES={
 [124580]=t0,--Creature/HUMSMerchant/HUMSMerchant.m2
 [125234]=t0,--Creature/NorthrendGeist/NorthrendGeist.m2
 [125378]=t0,--Creature/Owl/Owl.m2
+[125395]=t0,--Creature/Parrot/Parrot.M2
 [125815]=t0,--Creature/Scorpion/Scorpion.m2
 [126075]=t0,--Creature/StormCrow/StormCrow.m2
 [126077]=t0,--Creature/StormCrowDruid/StormCrowDruid.m2
