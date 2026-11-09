@@ -16,6 +16,10 @@ local u={[2]=0.09,[3]=0.09}
 t[121942]=u--Character/Skeleton/Male/SkeletonMale.m2
 end
 do
+local u={[2]=0.11}
+t[667646]=u--Creature/peacock/peacock.m2
+end
+do
 local u={[2]=0.21}
 t[121608]=u--Character/Scourge/Female/ScourgeFemale.m2
 end

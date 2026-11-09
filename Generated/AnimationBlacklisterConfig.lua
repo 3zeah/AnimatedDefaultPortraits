@@ -8,11 +8,14 @@ local t5={[1]=0.06}
 local t6={[1]=0.13}
 local t7={[2]=0.05}
 local t8={[2]=0.07,[3]=0.07,[4]=0.07}
-local t9={[2]=0.09,[3]=0.09}
-local t10={[2]=0.21}
-local t11={[2]=0.25,[3]=0.25,[4]=0.25}
-local t12={[2]=0.5}
-local t13={[3]=0.03}
+local t9={[2]=0.09}
+local t10={[2]=0.09,[3]=0.09}
+local t11={[2]=0.11}
+local t12={[2]=0.11}
+local t13={[2]=0.21}
+local t14={[2]=0.25,[3]=0.25,[4]=0.25}
+local t15={[2]=0.5}
+local t16={[3]=0.03}
 select(2,...).ANIMATION_OVERRIDES={
 [122961]=t0,--Creature/ArcticCondor/ArcticCondor.M2
 [123137]=t0,--Creature/CarrionBird/CarrionBird.M2
@@ -139,20 +142,26 @@ select(2,...).ANIMATION_OVERRIDES={
 [1067804]=t6,--Creature/HuF_Garrison_A_Archer/HuF_Garrison_A_Archer.m2
 [123830]=t7,--Creature/Felbat/BatTaxi.M2
 [997378]=t8,--Character/Scourge/Female/ScourgeFemale_HD.m2
-[123299]=t9,--Creature/CrackElf/CrackElfMale.m2
-[124827]=t9,--Creature/MadScientist/MadScientist.M2
-[126131]=t9,--Creature/TempDeathGuard/DeathGuard.m2
-[126137]=t9,--Creature/TempScourgeMaleNPC/ScourgeMaleNPC.m2
-[336502]=t9,--Creature/MadScientist/MadScientistNoBackpack.m2
-[624385]=t10,--Creature/LilliansSoul/LilliansSoul.M2
-[1838582]=t11,--character/scourge/female/scourgefemale_hd_sdr.m2
-[2123315]=t11,--creature/forsakendreadguard_f/forsakendreadguard_f.m2
-[126570]=t12,--Creature/Zombie/Zombie.M2
-[126571]=t12,--Creature/Zombie/ZombieArm.M2
-[126575]=t12,--Creature/Zombie/ZombieSword.M2
-[1888300]=t12,--creature/zombie2/zombie2.m2
-[1888304]=t12,--creature/zombieburnt/zombieburnt.m2
-[4281540]=t13,--character/companionpterrodax/companionpterrodax.m2
-[7136769]=t13,--Creature/MythicHexEagleMount/MythicHexEagleMount.m2
-[7197176]=t13,--Creature/HexEagle/HexEagle.m2
+[125741]=t9,--Creature/RocketChicken/RocketChicken.M2
+[1593263]=t9,--creature/rocketchicken2/rocketchicken2.m2
+[123299]=t10,--Creature/CrackElf/CrackElfMale.m2
+[124827]=t10,--Creature/MadScientist/MadScientist.M2
+[126131]=t10,--Creature/TempDeathGuard/DeathGuard.m2
+[126137]=t10,--Creature/TempScourgeMaleNPC/ScourgeMaleNPC.m2
+[336502]=t10,--Creature/MadScientist/MadScientistNoBackpack.m2
+[123200]=t11,--Creature/Chicken/Chicken.M2
+[1521038]=t11,--creature/mechanicalchicken/mechanicalchicken.m2
+[1521039]=t12,--creature/silkiechicken/silkiechicken.m2
+[4096362]=t12,--creature/progenitorchicken/progenitorchicken.m2
+[624385]=t13,--Creature/LilliansSoul/LilliansSoul.M2
+[1838582]=t14,--character/scourge/female/scourgefemale_hd_sdr.m2
+[2123315]=t14,--creature/forsakendreadguard_f/forsakendreadguard_f.m2
+[126570]=t15,--Creature/Zombie/Zombie.M2
+[126571]=t15,--Creature/Zombie/ZombieArm.M2
+[126575]=t15,--Creature/Zombie/ZombieSword.M2
+[1888300]=t15,--creature/zombie2/zombie2.m2
+[1888304]=t15,--creature/zombieburnt/zombieburnt.m2
+[4281540]=t16,--character/companionpterrodax/companionpterrodax.m2
+[7136769]=t16,--Creature/MythicHexEagleMount/MythicHexEagleMount.m2
+[7197176]=t16,--Creature/HexEagle/HexEagle.m2
 }

@@ -135,6 +135,12 @@
         430968: {["Standard"]: [1]},
         7197176: {["Standard"]: [1, 2]}, // "hex eagle": very extended periods of head adhd
         125234: {["Standard"]: [1]}, // northrend geists: they do the ud fem look around on ground
+        // chicken pecks the ground for a bit, but also in vanilla this animation is bugged and
+        // freezes at the end
+        123200: {["Standard", "Vanilla"]: [1]},
+        125741: {["Standard", "Mists"]: [1]}, // ^robot chicken
+        1521037: {["Standard"]: [1]}, // ^chicken TWO
+        667646: {["Forever"]: [1]},  // ^peacock
         // teron gorefiend gets captured by HumanMaleWarriorHeavy_Ghost, because the blacklisted
         // animation is essentially just leaning somewhat, which is similar to teron just standing
         // 126143: {["Standard"]: []}, TODO

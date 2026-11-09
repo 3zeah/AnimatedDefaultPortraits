@@ -17,3 +17,7 @@ do
 local u={[2]=0.05,[3]=0.05}
 t[125948]=u--Creature/SkeletonNaked/SkeletonNaked.M2
 end
+do
+local u={[2]=0.17}
+t[667646]=u--Creature/peacock/peacock.m2
+end

@@ -9,6 +9,10 @@ local u={[1]=0.05}
 t[234884]=u--Creature/UndeadIceTroll/UndeadIceTroll.M2
 end
 do
+local u={[2]=0.03}
+t[1521037]=u--creature/chicken2/chicken2.m2
+end
+do
 local u={[2]=0.25,[3]=0.25,[4]=0.25}
 t[121608]=u--Character/Scourge/Female/ScourgeFemale.m2
 end
