@@ -3,9 +3,9 @@ use std::fmt;
 
 use anyhow::{Context, Result, anyhow, bail};
 
-use crate::AnimatedSkeleton;
 use crate::resource::ModelId;
 use crate::skeleton::Animation;
+use crate::{AnimatedSkeleton, AnimationId, ModelConfig};
 
 pub struct AnimationPlaylists<'a> {
     playlists: BTreeMap<ModelId<'a>, AnimationPlaylist<'a>>,
@@ -13,13 +13,19 @@ pub struct AnimationPlaylists<'a> {
 
 #[derive(Hash, PartialEq, Eq)]
 pub struct AnimationPlaylist<'a> {
-    pub variations: BTreeMap<u16, AnimationVariation>,
+    pub animations: BTreeMap<PlayableAnimation, AnimationVariation>,
     // not necessary to define a playlist, but track this for debugging
-    pub blacklist: BTreeSet<u16>,
+    pub config: ModelConfig,
     // also for debugging: the set of models that induced this playlist (blacklists are constructed
     // by similarity: a model that is similar to a blacklisted reference model inherits that
     // blacklist)
     pub references: BTreeSet<ModelId<'a>>,
+}
+
+#[derive(Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord, Debug)]
+pub enum PlayableAnimation {
+    IdleVariation(u16),
+    Animation(u16),
 }
 
 #[derive(Clone, Copy, Hash, PartialEq, Eq)]
@@ -37,15 +43,12 @@ impl<'a> AnimationPlaylists<'a> {
         &mut self,
         model: ModelId<'a>,
         animation: AnimatedSkeleton,
-        blacklist: &HashSet<u16>,
+        config: &ModelConfig,
         references: &HashSet<ModelId<'a>>,
     ) -> Result<()> {
-        let playlist = AnimationPlaylist::from_blacklisted_animation(
-            animation.animation,
-            blacklist,
-            references,
-        )
-        .with_context(|| format!("failed to evaluate blacklisted animation for {model}"))?;
+        let playlist =
+            AnimationPlaylist::from_blacklisted_animation(animation.animation, config, references)
+                .with_context(|| format!("failed to evaluate blacklisted animation for {model}"))?;
         let prev = self.playlists.insert(model, playlist);
         if prev.is_some() {
             bail!("multiple animation blacklists added for {model}");
@@ -63,8 +66,45 @@ impl<'a> AnimationPlaylists<'a> {
 impl<'a> AnimationPlaylist<'a> {
     fn from_blacklisted_animation(
         animation: HashMap<u16, Animation>,
-        blacklist: &HashSet<u16>,
+        config: &ModelConfig,
         references: &HashSet<ModelId<'a>>,
+    ) -> Result<Self> {
+        match config {
+            ModelConfig::BlacklistIdle(blacklist) => {
+                Self::from_idle_blacklist(animation, config, references, blacklist)
+            }
+            ModelConfig::PlayAnimation(animation_id) => match animation_id {
+                AnimationId::Idle => {
+                    Self::from_idle_blacklist(animation, config, references, &BTreeSet::new())
+                }
+                &animation @ _ => Self::singleton(config, references, animation),
+            },
+        }
+    }
+
+    fn singleton(
+        config: &ModelConfig,
+        references: &HashSet<ModelId<'a>>,
+        animation: AnimationId,
+    ) -> Result<Self> {
+        let variation = AnimationVariation {
+            probability_per_mille: 1000,
+            replay_range: None,
+        };
+        Ok(Self {
+            animations: [(PlayableAnimation::Animation(animation.into()), variation)]
+                .into_iter()
+                .collect(),
+            config: config.clone(),
+            references: references.into_iter().copied().collect(),
+        })
+    }
+
+    fn from_idle_blacklist(
+        animation: HashMap<u16, Animation>,
+        config: &ModelConfig,
+        references: &HashSet<ModelId<'a>>,
+        blacklist: &BTreeSet<u16>,
     ) -> Result<Self> {
         let whitelist: Box<[(u16, Animation)]> = animation
             .into_iter()
@@ -76,7 +116,7 @@ impl<'a> AnimationPlaylist<'a> {
             .sum();
         let probability_adjustment = 1.0 / remaining_probability_sum;
         let mut remaining_probability_per_mille: u16 = 1000;
-        let mut variations: BTreeMap<u16, AnimationVariation> = BTreeMap::new();
+        let mut variations: BTreeMap<PlayableAnimation, AnimationVariation> = BTreeMap::new();
         for &(variant_id, ref animation) in &whitelist {
             if variant_id == 0 {
                 continue;
@@ -88,21 +128,21 @@ impl<'a> AnimationPlaylist<'a> {
                 probability_per_mille,
                 replay_range: animation.replay_range,
             };
-            variations.insert(variant_id, variation);
+            variations.insert(PlayableAnimation::IdleVariation(variant_id), variation);
         }
         let base_variation = whitelist
             .get(0)
             .ok_or_else(|| anyhow!("illegal state: variation 0 was blacklisted"))?;
         variations.insert(
-            0,
+            PlayableAnimation::IdleVariation(0),
             AnimationVariation {
                 probability_per_mille: remaining_probability_per_mille,
                 replay_range: base_variation.1.replay_range,
             },
         );
         Ok(Self {
-            variations,
-            blacklist: blacklist.into_iter().copied().collect(),
+            animations: variations,
+            config: config.clone(),
             references: references.into_iter().copied().collect(),
         })
     }
@@ -132,8 +172,8 @@ impl fmt::Debug for AnimationPlaylist<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "{{ blacklist: {:?} => playlist: {:?} }}",
-            self.blacklist, self.variations
+            "{{ config: {:?} => playlist: {:?} }}",
+            self.config, self.animations
         )
     }
 }

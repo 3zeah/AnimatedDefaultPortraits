@@ -6,7 +6,7 @@ use std::path::Path;
 use anyhow::{Context, Result, anyhow, bail};
 use serde::Deserialize;
 
-use crate::animation_playlist::{AnimationPlaylist, AnimationVariation};
+use crate::animation_playlist::{AnimationPlaylist, AnimationVariation, PlayableAnimation};
 use crate::log::*;
 use crate::resource::{Product, Resources};
 
@@ -22,7 +22,13 @@ pub struct Config {
 type AnimationPlaylists = BTreeMap<AnimationPlaylistData, BTreeSet<u32>>;
 
 #[derive(Clone, Hash, PartialEq, Eq, PartialOrd, Ord, Default, Debug)]
-pub struct AnimationPlaylistData(pub BTreeMap<u16, AnimationVariationData>);
+pub struct AnimationPlaylistData(pub BTreeMap<AnimationId, AnimationVariationData>);
+
+#[derive(Clone, Hash, PartialEq, Eq, PartialOrd, Ord, Debug)]
+pub enum AnimationId {
+    IdleVariation(u16),
+    AnimationId(u16),
+}
 
 #[derive(Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord, Debug)]
 pub struct AnimationVariationData {
@@ -179,15 +185,21 @@ fn write_lua_file_comment(mut w: impl std::io::Write) -> Result<()> {
     Ok(())
 }
 
-fn lua_table_entry_for_playlist((variation_id, data): (&u16, &AnimationVariationData)) -> String {
+fn lua_table_entry_for_playlist(
+    (animation_id, data): (&AnimationId, &AnimationVariationData),
+) -> String {
     let &AnimationVariationData {
         probability_per_mille,
     } = data;
+    let animation_id_expr = match animation_id {
+        AnimationId::IdleVariation(id) => format!("{id}"),
+        AnimationId::AnimationId(id) => format!("-{id}"),
+    };
     // not sure whether an int in [0, 1000] divided by 1000 can end up with a bunch of decimals, but
     // may as well strangle the possibility here
-    let probability_str = format!("{:.2?}", f32::from(probability_per_mille) / 1000.0);
-    let probability_str = probability_str.trim_end_matches("0").trim_end_matches(".");
-    format!("[{variation_id}]={probability_str}",)
+    let probability_expr = format!("{:.2?}", f32::from(probability_per_mille) / 1000.0);
+    let probability_expr = probability_expr.trim_end_matches("0").trim_end_matches(".");
+    format!("[{animation_id_expr}]={probability_expr}",)
 }
 
 fn read_toc_without_generated_inclusions(
@@ -343,7 +355,7 @@ fn relativize_path(full: impl AsRef<Path>, base: impl AsRef<Path>) -> Result<Box
 impl From<AnimationPlaylist<'_>> for AnimationPlaylistData {
     fn from(value: AnimationPlaylist) -> Self {
         let values = value
-            .variations
+            .animations
             .into_iter()
             .filter_map(filter_map_from_variation_data)
             .collect();
@@ -354,7 +366,7 @@ impl From<AnimationPlaylist<'_>> for AnimationPlaylistData {
 impl From<&AnimationPlaylist<'_>> for AnimationPlaylistData {
     fn from(value: &AnimationPlaylist) -> Self {
         let values = value
-            .variations
+            .animations
             .iter()
             .map(|(k, v)| (*k, *v))
             .filter_map(filter_map_from_variation_data)
@@ -363,12 +375,21 @@ impl From<&AnimationPlaylist<'_>> for AnimationPlaylistData {
     }
 }
 
+impl From<PlayableAnimation> for AnimationId {
+    fn from(value: PlayableAnimation) -> Self {
+        match value {
+            PlayableAnimation::IdleVariation(id) => AnimationId::IdleVariation(id),
+            PlayableAnimation::Animation(id) => AnimationId::AnimationId(id),
+        }
+    }
+}
+
 fn filter_map_from_variation_data(
-    (variation_id, playlist): (u16, AnimationVariation),
-) -> Option<(u16, AnimationVariationData)> {
-    // the add-on animation-override system does not require a probability for 0: any remaining
-    // probability is by definition for variation 0
-    if variation_id == 0 {
+    (animation_id, playlist): (PlayableAnimation, AnimationVariation),
+) -> Option<(AnimationId, AnimationVariationData)> {
+    // the add-on animation-override system does not require a probability for idle variation 0: any
+    // remaining probability is by definition for idle variation 0
+    if animation_id == PlayableAnimation::IdleVariation(0) {
         None
     } else {
         let AnimationVariation {
@@ -386,6 +407,6 @@ fn filter_map_from_variation_data(
         let data = AnimationVariationData {
             probability_per_mille,
         };
-        Some((variation_id, data))
+        Some((animation_id.into(), data))
     }
 }

@@ -8,7 +8,7 @@ use crate::animation_playlist::AnimationPlaylists;
 use crate::resource::{ModelId, Product, Resources};
 use crate::skeleton::Animation;
 use crate::timer::Timer;
-use crate::{AnimatedSkeleton, SkeletonDefinition, skeleton};
+use crate::{AnimatedSkeleton, ModelConfig, SkeletonDefinition, skeleton};
 
 #[derive(Debug)]
 pub struct AnimationBlacklister<'a> {
@@ -18,14 +18,14 @@ pub struct AnimationBlacklister<'a> {
 pub struct BlacklistedAnimation<'a> {
     pub model: ModelId<'a>,
     pub skeleton: AnimatedSkeleton,
-    pub variation_blacklist: HashSet<u16>,
+    pub config: ModelConfig,
     pub references: HashSet<ModelId<'a>>,
 }
 
 struct AnimationBlacklistReference<'a> {
     pub reference: (ModelId<'a>, AnimatedSkeleton),
     pub members: Vec<(ModelId<'a>, AnimatedSkeleton)>,
-    pub variation_blacklist: HashSet<u16>,
+    pub config: ModelConfig,
 }
 
 impl<'a> AnimationBlacklister<'a> {
@@ -47,11 +47,7 @@ impl<'a> AnimationBlacklister<'a> {
     pub fn dump_config(&self) {
         info!("BLACKLIST CONFIG AFTER GROUPING:");
         for reference in &self.references {
-            info!(
-                " * {}: {:?}",
-                reference.model_id(),
-                reference.variation_blacklist
-            );
+            info!(" * {}: {:?}", reference.model_id(), reference.config);
             for &(member_id, _) in &reference.members {
                 info!("   - {member_id}");
             }
@@ -61,17 +57,17 @@ impl<'a> AnimationBlacklister<'a> {
     pub fn into_animation_playlists(self) -> Result<AnimationPlaylists<'a>> {
         let mut playlists = AnimationPlaylists::new();
         for reference in self.references {
-            let blacklist = reference.variation_blacklist;
+            let config = reference.config;
             let (reference_model, reference_skeleton) = reference.reference;
             playlists.add_from_blacklist(
                 reference_model,
                 reference_skeleton,
-                &blacklist,
+                &config,
                 &HashSet::default(),
             )?;
             for (model, skeleton) in reference.members {
                 let reference_set: HashSet<ModelId> = [reference_model].into_iter().collect();
-                playlists.add_from_blacklist(model, skeleton, &blacklist, &reference_set)?;
+                playlists.add_from_blacklist(model, skeleton, &config, &reference_set)?;
             }
         }
         Ok(playlists)
@@ -128,7 +124,7 @@ impl<'a> AnimationBlacklister<'a> {
             }
             return Ok(None);
         }
-        let mut variation_blacklist: HashSet<u16> = HashSet::new();
+        let mut config: Option<ModelConfig> = None;
         let mut references: HashSet<ModelId> = HashSet::new();
         // this evaluation is expensive, which is why it is delayed as long as possible
         let animated_skeleton = skeleton_def.evaluate_into_animated_skeleton()?;
@@ -140,82 +136,108 @@ impl<'a> AnimationBlacklister<'a> {
             let reference = &self.references[reference_index];
             let mut sub_report = Vec::new();
             let reference_animation = &reference.skeleton().animation;
-            let reference_blacklist = &reference.variation_blacklist;
-            // an empty blacklist entry for a model means that nothing is supposed to be blacklisted
-            // for that model. if this model has all the same animations as that model, then this
-            // model must not be blacklisted either
-            if reference_blacklist.is_empty() {
-                let reference_variations = reference_animation.keys().collect::<HashSet<_>>();
-                let animation_variations =
-                    animated_skeleton.animation.keys().collect::<HashSet<_>>();
-                if reference_variations != animation_variations {
-                    continue;
-                }
-                let mut all_variations_same = true;
-                let mut all_variations_similar = true;
-                for &variation_id in &animation_variations {
-                    let reference_variation = &reference_animation[variation_id];
-                    let variation = &animated_skeleton.animation[variation_id];
-                    if reference_variation.duration != variation.duration {
-                        all_variations_same = false;
-                        all_variations_similar = false;
-                        break;
-                    }
-                    let variation_error = Animation::mean_error(reference_variation, variation);
-                    if variation_error < Self::ANIMATION_ERROR_MARGIN {
+            match &reference.config {
+                // if a model is set to play some animation, it is because all idle variations were
+                // bad: any other model that has the same set of idle variations should inherit this
+                // config
+                ModelConfig::PlayAnimation(animation_id) => {
+                    let reference_variations = reference_animation.keys().collect::<HashSet<_>>();
+                    let animation_variations =
+                        animated_skeleton.animation.keys().collect::<HashSet<_>>();
+                    if reference_variations != animation_variations {
                         continue;
                     }
-                    all_variations_same = false;
-                    if variation_error < Self::INFO_ANIMATION_ERROR_MARGIN {
-                        sub_report.push(format!(
-                            "   > BEWARE: the reference was actually a whitelist, but will not \
-                                whitelist, because variations {variation_id} are only similar (but \
-                                not the same): similarity error of {variation_error}",
-                        ));
-                    } else {
-                        all_variations_similar = false;
+                    let mut all_variations_same = true;
+                    let mut all_variations_similar = true;
+                    for &variation_id in &animation_variations {
+                        let reference_variation = &reference_animation[variation_id];
+                        let variation = &animated_skeleton.animation[variation_id];
+                        if reference_variation.duration != variation.duration {
+                            all_variations_same = false;
+                            all_variations_similar = false;
+                            break;
+                        }
+                        let variation_error = Animation::mean_error(reference_variation, variation);
+                        if variation_error < Self::ANIMATION_ERROR_MARGIN {
+                            continue;
+                        }
+                        all_variations_same = false;
+                        if variation_error < Self::INFO_ANIMATION_ERROR_MARGIN {
+                            sub_report.push(format!(
+                                "   > BEWARE: the reference was configured to play animation \
+                                {animation_id}, but will not inherit that, because variations
+                                {variation_id} are only similar (but not the same): similarity \
+                                error of {variation_error}",
+                            ));
+                        } else {
+                            all_variations_similar = false;
+                            break;
+                        }
+                    }
+                    if all_variations_similar {
+                        report_has_beware_info = true;
+                    }
+                    if all_variations_same {
+                        debug!(
+                            "{model_id} was the same as reference {} set to play animation \
+                            {animation_id}: inheriting that",
+                            reference.model_id()
+                        );
+                        references.clear();
+                        references.insert(reference.model_id());
+                        config = Some(reference.config.clone());
                         break;
                     }
                 }
-                if all_variations_similar {
-                    report_has_beware_info = true;
-                }
-                if all_variations_same {
-                    debug!(
-                        "{} was the same as whitelisted reference {}: propagating whitelist",
-                        model_id,
-                        reference.model_id()
-                    );
-                    references.clear();
-                    references.insert(reference.model_id());
-                    break;
-                }
-            } else {
                 // otherwise, if there is a set of blacklisted variations, check each to see whether
                 // this model shares one of those blacklisted variations, and propagate the
-                // blacklist to that one if so
-                for (&variation_id, variation) in &animated_skeleton.animation {
-                    if variation_id == 0 {
-                        continue;
-                    }
-                    for reference_variation_id in reference_blacklist {
-                        let reference_variation = &reference_animation[reference_variation_id];
-                        let variation_error = Animation::mean_error(variation, reference_variation);
-                        if variation_error < Self::ANIMATION_ERROR_MARGIN {
-                            sub_report.push(format!(
-                                "   > new blacklist: variation {} = blacklisted reference {} \
-                                (similarity error of {})",
-                                variation_id, reference_variation_id, variation_error,
-                            ));
-                            variation_blacklist.insert(variation_id);
-                            references.insert(reference.model_id());
-                        } else if variation_error < Self::INFO_ANIMATION_ERROR_MARGIN {
-                            report_has_beware_info = true;
-                            sub_report.push(format!(
-                            "   > BEWARE: will not blacklist variation {}, but it is similar to \
-                            blacklisted reference {} (similarity error of {})",
-                            variation_id, reference_variation_id, variation_error,
-                        ));
+                // blacklist to that variation if so
+                ModelConfig::BlacklistIdle(reference_blacklist) => {
+                    for (&variation_id, variation) in &animated_skeleton.animation {
+                        if variation_id == 0 {
+                            continue;
+                        }
+                        for reference_variation_id in reference_blacklist {
+                            let reference_variation = &reference_animation[reference_variation_id];
+                            let variation_error =
+                                Animation::mean_error(variation, reference_variation);
+                            if variation_error < Self::ANIMATION_ERROR_MARGIN {
+                                sub_report.push(format!(
+                                    "   > new blacklist: variation {} = blacklisted reference {} \
+                                    (similarity error of {})",
+                                    variation_id, reference_variation_id, variation_error,
+                                ));
+                                // had a match: add this variation to the blacklist
+                                references.insert(reference.model_id());
+                                match &mut config {
+                                    Some(config) => match config {
+                                        ModelConfig::BlacklistIdle(blacklist) => {
+                                            blacklist.insert(variation_id);
+                                        }
+                                        // this should never happen, because when a `PlayAnimation`
+                                        // config is set, the loop is broken
+                                        ModelConfig::PlayAnimation(_) => bail!(
+                                            "illegal state: while processing {model_id} vs \
+                                            reference {}: already had config {config:?}, and \
+                                            attempted to add idle-variation blacklist for \
+                                            {variation_id}",
+                                            reference.model_id()
+                                        ),
+                                    },
+                                    None => {
+                                        config = Some(ModelConfig::BlacklistIdle(
+                                            [variation_id].into_iter().collect(),
+                                        ))
+                                    }
+                                };
+                            } else if variation_error < Self::INFO_ANIMATION_ERROR_MARGIN {
+                                report_has_beware_info = true;
+                                sub_report.push(format!(
+                                    "   > BEWARE: will not blacklist variation {}, but it is \
+                                    similar to blacklisted reference {} (similarity error of {})",
+                                    variation_id, reference_variation_id, variation_error,
+                                ));
+                            }
                         }
                     }
                 }
@@ -230,7 +252,20 @@ impl<'a> AnimationBlacklister<'a> {
                 animation_similarity_report.extend(sub_report.into_iter());
             }
         }
-        if references.is_empty() {
+        if let Some(config) = config {
+            if let ModelConfig::BlacklistIdle(variation_blacklist) = &config
+                && variation_blacklist.contains(&0)
+            {
+                bail!("not supported: attempted to blacklist variation 0 (for {model_id})");
+            }
+            let blacklisted_animation = BlacklistedAnimation {
+                model: model_id,
+                skeleton: animated_skeleton,
+                config,
+                references,
+            };
+            Ok(Some(blacklisted_animation))
+        } else {
             if report_has_beware_info {
                 animation_similarity_report.insert(
                     0,
@@ -248,42 +283,31 @@ impl<'a> AnimationBlacklister<'a> {
                 debug!("{}", animation_similarity_report.join("\n"));
             }
             Ok(None)
-        } else {
-            if variation_blacklist.contains(&0) {
-                bail!("not supported: attempted to blacklist variation 0 (for {model_id})");
-            }
-            let blacklisted_animation = BlacklistedAnimation {
-                model: model_id,
-                skeleton: animated_skeleton,
-                variation_blacklist,
-                references,
-            };
-            Ok(Some(blacklisted_animation))
         }
     }
 
     pub fn init(
         res: &'a Resources,
-        blacklist_config: &HashMap<u32, HashMap<Box<[String]>, Box<[u16]>>>,
+        blacklist_config: &HashMap<u32, HashMap<Box<[String]>, ModelConfig>>,
     ) -> Result<Self> {
-        let mut blacklist: HashMap<&str, HashMap<u32, HashSet<u16>>> = HashMap::new();
+        let mut blacklist: HashMap<&str, HashMap<u32, ModelConfig>> = HashMap::new();
         for (&fdid, blacklists_for_model) in blacklist_config {
-            for (game_types, variations) in blacklists_for_model {
+            for (game_types, config) in blacklists_for_model {
                 for game_type in game_types {
                     blacklist
                         .entry(game_type)
                         .or_default()
-                        .entry(fdid)
-                        .or_default()
-                        .extend(variations);
+                        .insert(fdid, config.clone());
                 }
             }
         }
         for (&game_type, per_model) in blacklist.iter() {
-            for (fdid, blacklisted_variations) in per_model.iter() {
-                if blacklisted_variations.contains(&0) {
+            for (fdid, config) in per_model.iter() {
+                if let ModelConfig::BlacklistIdle(blacklisted_variations) = config
+                    && blacklisted_variations.contains(&0)
+                {
                     bail!(
-                        "not supported: attempted to blacklist variation 0 (for {fdid} in \
+                        "not supported: attempted to blacklist idle variation 0 (for {fdid} in \
                         \"{game_type}\")"
                     );
                 }
@@ -309,7 +333,7 @@ impl<'a> AnimationBlacklister<'a> {
                 }
             };
             let storage = res.open_local_storage(product)?;
-            for (fdid, variations) in blacklist_per_model {
+            for (fdid, config) in blacklist_per_model {
                 let model_id = res.model_id(fdid, product);
                 let skeleton = SkeletonDefinition::parse_for_idle(&storage, fdid)
                     .with_context(|| format!("failed to parse skeleton for {model_id}"))?
@@ -317,16 +341,29 @@ impl<'a> AnimationBlacklister<'a> {
                     .with_context(|| {
                         format!("failed to evaluate animated skeleton for {model_id}")
                     })?;
-                for variation_id in &variations {
-                    if !skeleton.animation.contains_key(variation_id) {
-                        bail!(
-                            "bad config: for {model_id}, attempted to blacklist variation \
-                            {variation_id}, but only had {:?}",
-                            skeleton.animation.keys().collect::<Vec<_>>()
-                        );
+                match &config {
+                    ModelConfig::BlacklistIdle(variations) => {
+                        for variation_id in variations {
+                            if !skeleton.animation.contains_key(&variation_id) {
+                                bail!(
+                                    "bad config: for {model_id}, attempted to blacklist idle \
+                                    variation {variation_id}, but only had {:?}",
+                                    skeleton.animation.keys().collect::<Vec<_>>()
+                                );
+                            }
+                        }
+                    }
+                    ModelConfig::PlayAnimation(id) => {
+                        if !skeleton.animation_ids.contains(&id.into()) {
+                            bail!(
+                                "bad config: for {model_id}, attempted to play animation {id}, but \
+                                only had {:?}",
+                                skeleton.animation_ids
+                            );
+                        }
                     }
                 }
-                self_build.add_reference_skeleton(model_id, skeleton, variations)?;
+                self_build.add_reference_skeleton(model_id, skeleton, config)?;
             }
         }
         let time_config = t_config.stop();
@@ -339,7 +376,7 @@ impl<'a> AnimationBlacklister<'a> {
         &mut self,
         model_id: ModelId<'a>,
         skeleton: AnimatedSkeleton,
-        variation_blacklist: HashSet<u16>,
+        config: ModelConfig,
     ) -> Result<()> {
         trace!("adding configured reference model: {model_id}");
         for group in &mut self.references {
@@ -353,14 +390,14 @@ impl<'a> AnimationBlacklister<'a> {
                 group.model_id(),
                 group.skeleton(),
             ) {
-                if variation_blacklist != group.variation_blacklist {
+                if config != group.config {
                     bail!(
-                        "conflicting blacklist config between equivalent skeletons: {} had \
-                        blacklist {:?}, but {} had {:?}",
+                        "conflicting blacklist config between equivalent skeletons: {} had config \
+                        {:?}, but {} had {:?}",
                         model_id,
-                        variation_blacklist,
+                        config,
                         group.model_id(),
-                        group.variation_blacklist
+                        group.config
                     );
                 }
                 debug!(
@@ -374,7 +411,7 @@ impl<'a> AnimationBlacklister<'a> {
         let group = AnimationBlacklistReference {
             reference: (model_id, skeleton),
             members: Default::default(),
-            variation_blacklist,
+            config,
         };
         self.references.push(group);
         Ok(())
@@ -490,7 +527,7 @@ impl fmt::Debug for AnimationBlacklistReference<'_> {
         f.debug_struct("SkeletonEquivalenceGroup")
             .field("reference", &self.reference.0)
             .field("members", &self.members)
-            .field("variation_blacklist", &self.variation_blacklist)
+            .field("variation_blacklist", &self.config)
             .finish()
     }
 }

@@ -26,7 +26,7 @@ fn main() -> Result<()> {
     info!("resources loaded: {:#?}", res);
 
     let whitelist: HashMap<u32, HashSet<&str>> = config
-        .whitelist
+        .ignore
         .iter()
         .map(|(&fdid, products)| (fdid, products.iter().map(String::as_str).collect()))
         .collect();
@@ -36,7 +36,7 @@ fn main() -> Result<()> {
         log::add_target_filter(log::Level::Info, "wow_model_data"),
         log::add_target_filter(log::Level::Info, "wow_parse"),
     ];
-    let blacklister = AnimationBlacklister::init(&res, &config.blacklist)?;
+    let blacklister = AnimationBlacklister::init(&res, &config.models)?;
     blacklister.dump_config();
 
     trace!("evaluating number of models per available product from ModelFileData");
@@ -146,7 +146,7 @@ fn main() -> Result<()> {
         playlists.add_from_blacklist(
             result.model,
             result.skeleton,
-            &result.variation_blacklist,
+            &result.config,
             &result.references,
         )?;
     }
@@ -211,7 +211,7 @@ fn group_unique_playlists<'a>(
         // no reason to generate a playlist that simply simulates the default animation behavior.
         // the only reason they are retained all the way here is for the report, to clarify which
         // models have been effectively whitelisted and why
-        if !playlist.blacklist.is_empty() {
+        if !playlist.config.does_nothing() {
             data_per_model
                 .entry(model_id.fdid)
                 .or_default()

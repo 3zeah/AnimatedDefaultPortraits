@@ -16,6 +16,7 @@ local t13={[2]=0.21}
 local t14={[2]=0.25,[3]=0.25,[4]=0.25}
 local t15={[2]=0.5}
 local t16={[3]=0.03}
+local t17={[-4]=1}
 select(2,...).ANIMATION_OVERRIDES={
 [122961]=t0,--Creature/ArcticCondor/ArcticCondor.M2
 [123137]=t0,--Creature/CarrionBird/CarrionBird.M2
@@ -164,4 +165,7 @@ select(2,...).ANIMATION_OVERRIDES={
 [4281540]=t16,--character/companionpterrodax/companionpterrodax.m2
 [7136769]=t16,--Creature/MythicHexEagleMount/MythicHexEagleMount.m2
 [7197176]=t16,--Creature/HexEagle/HexEagle.m2
+[125576]=t17,--Creature/Rat/Rat.M2
+[1141018]=t17,--Creature/Rat2/Rat2.m2
+[3855433]=t17,--creature/brokerrat/brokerrat.m2
 }

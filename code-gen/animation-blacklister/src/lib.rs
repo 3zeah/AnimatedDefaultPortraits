@@ -8,7 +8,7 @@ pub mod resource;
 pub mod skeleton;
 pub mod timer;
 
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 
 pub use casc_lib;
 pub use file_signature::*;
@@ -33,8 +33,22 @@ const CONFIG_PATH: &str = "config.ron";
 pub struct Config {
     pub resource: resource::Config,
     pub lua_gen: lua_gen::Config,
-    pub blacklist: HashMap<u32, HashMap<Box<[String]>, Box<[u16]>>>,
-    pub whitelist: HashMap<u32, Box<[String]>>,
+    pub models: HashMap<u32, HashMap<Box<[String]>, ModelConfig>>,
+    pub ignore: HashMap<u32, Box<[String]>>,
+}
+
+#[derive(Clone, PartialEq, Eq, Hash, Deserialize, Debug)]
+pub enum ModelConfig {
+    /// play the idle animation, except the given variations
+    BlacklistIdle(BTreeSet<u16>),
+    /// play the given animation
+    PlayAnimation(AnimationId),
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Deserialize)]
+pub enum AnimationId {
+    Idle,
+    Walk,
 }
 
 #[derive(Error, Debug)]
@@ -73,6 +87,7 @@ pub struct StaticCamera {
 pub struct AnimatedSkeleton {
     pub bind_pose: HashMap<u32, PosedBone>,
     pub animation: HashMap<u16, Animation>,
+    pub animation_ids: HashSet<u16>,
     pub portrait_camera: Option<StaticCamera>,
     pub character_info_camera: Option<StaticCamera>,
 }
@@ -81,6 +96,15 @@ impl Config {
     pub fn load() -> Self {
         let config_str = std::fs::read_to_string(CONFIG_PATH).expect("failed to read config");
         ron::from_str(&config_str).expect("failed to parse config")
+    }
+}
+
+impl ModelConfig {
+    pub fn does_nothing(&self) -> bool {
+        match self {
+            ModelConfig::BlacklistIdle(blacklist) => blacklist.is_empty(),
+            ModelConfig::PlayAnimation(animation_id) => *animation_id == AnimationId::Idle,
+        }
     }
 }
 
@@ -128,10 +152,15 @@ impl SkeletonDefinition {
     pub fn evaluate_into_animated_skeleton(self) -> anyhow::Result<AnimatedSkeleton> {
         let bind_pose = self.bind_pose;
         let (sequences, loaded_animations) = self.wow_model_data;
+        let animation_ids = sequences
+            .iter()
+            .map(|sequence| sequence.animation_id)
+            .collect();
         let bones = Animation::from_model_data(sequences, loaded_animations)?;
         Ok(AnimatedSkeleton {
             bind_pose,
             animation: bones,
+            animation_ids,
             portrait_camera: self.portrait_camera,
             character_info_camera: self.character_info_camera,
         })
@@ -316,6 +345,43 @@ impl StaticCamera {
         match camera_data.into_values().next() {
             Some(v) => Some(v.value),
             None => None,
+        }
+    }
+}
+
+impl std::fmt::Display for AnimationId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let id: u16 = self.into();
+        let name: &str = match self {
+            AnimationId::Idle => "idle",
+            AnimationId::Walk => "walk",
+        };
+        write!(f, "{id} ({name})")
+    }
+}
+
+impl std::fmt::Debug for AnimationId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Display::fmt(self, f)
+    }
+}
+
+// https://wowdev.wiki/M2/AnimationList
+impl From<AnimationId> for u16 {
+    fn from(value: AnimationId) -> Self {
+        match value {
+            AnimationId::Idle => 0,
+            AnimationId::Walk => 4,
+        }
+    }
+}
+
+// https://wowdev.wiki/M2/AnimationList
+impl From<&AnimationId> for u16 {
+    fn from(value: &AnimationId) -> Self {
+        match value {
+            AnimationId::Idle => 0,
+            AnimationId::Walk => 4,
         }
     }
 }

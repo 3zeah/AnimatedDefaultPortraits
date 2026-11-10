@@ -11,6 +11,10 @@ local ANIMATION_OVERRIDES = require(ns, "ANIMATION_OVERRIDES")
 -- variation, and the value is the probability that it plays. the base
 -- variation, 0, plays if nothing else. for example, { 2 = 5% } := animation
 -- (0,0) plays 95% of the time, (0,1) 5%
+--
+-- the animation id may also be a wholly different animation id from the idle
+-- animation, in which case the variation is encoded as negative: for example,
+-- { -4 = 100% } := always play the walking animation
 ---@alias AnimationVariantPlaylist { [integer]: number? }
 
 local function rollIdleAnimationVariation(playlist)
@@ -26,6 +30,14 @@ local function rollIdleAnimationVariation(playlist)
         end
     end
     return 0
+end
+
+local function setAnimation(model, variation)
+    if variation < 0 then
+        model:SetAnimation(-variation)
+    else
+        model:SetAnimation(0, variation)
+    end
 end
 
 ---animated portraits play the generic idle animation, which typically cycles
@@ -58,7 +70,7 @@ function lib.Create(model)
             return
         end
         state.nextVariation = rollIdleAnimationVariation(playlist)
-        self:SetAnimation(0, nextVariation)
+        setAnimation(self, nextVariation)
     end)
     return state
 end
@@ -73,7 +85,7 @@ function lib.UpdateAfterModelChanged(state, model)
         -- any time the model-unit is refreshed, it appears the model
         -- unavoidably starts a new animation: immediately start a whitelisted
         -- variation instead
-        model:SetAnimation(0, rollIdleAnimationVariation(animationPlaylist))
+        setAnimation(model, rollIdleAnimationVariation(animationPlaylist))
     else
         state.playlist = nil
         state.nextVariation = nil

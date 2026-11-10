@@ -43,107 +43,107 @@
         generated_file_base_name: "AnimationBlacklisterConfig",
         generated_table_name: "ANIMATION_OVERRIDES",
     ),
-    // fdid -> [game type] -> [variation id]
-    blacklist: {
-        121768: {["Mists"]: [1]},    // classic ud male stands up straight
-        126137: {["Standard", "Mists", "TBC", "Vanilla"]: [1]}, // ^ud male npc: same shit
-        125948: {["Vanilla"]: [1]},  // ^naked skeleton
-        126131: {["Standard", "TBC", "Vanilla"]: [1]}, // ^death guard
-        121608: {["Mists"]: [1]},    // classic ud female crouches
-        997378: {["Standard"]: [1]}, // modern ud female also crouches
-        119563: {["Vanilla", "Mists"]: [2]}, // classic human female DAINTILY tip toes off frame
-        119563: {["Standard"]: []}, // but modern woman lost tip-toe animation: no daint
-        122560: {["Standard", "Vanilla"]: [2]}, // troll male crouches and thinks about life
-        118798: {["Standard", "Mists"]: [2]}, // ^forest troll
-        6225159: {["Standard"]: [2]}, // ^zuljan
+    models: {
+        121768: {["Mists"]: BlacklistIdle([1])},    // classic ud male stands up straight
+        126137: {["Standard", "Mists", "TBC", "Vanilla"]: BlacklistIdle([1])}, // ^ud male npc: same shit
+        125948: {["Vanilla"]: BlacklistIdle([1])},  // ^naked skeleton
+        126131: {["Standard", "TBC", "Vanilla"]: BlacklistIdle([1])}, // ^death guard
+        121608: {["Mists"]: BlacklistIdle([1])},    // classic ud female crouches
+        997378: {["Standard"]: BlacklistIdle([1])}, // modern ud female also crouches
+        119563: {["Vanilla", "Mists"]: BlacklistIdle([2])}, // classic human female DAINTILY tip toes off frame
+        119563: {["Standard"]: BlacklistIdle([])}, // but modern woman lost tip-toe animation: no daint
+        122560: {["Standard", "Vanilla"]: BlacklistIdle([2])}, // troll male crouches and thinks about life
+        118798: {["Standard", "Mists"]: BlacklistIdle([2])}, // ^forest troll
+        6225159: {["Standard"]: BlacklistIdle([2])}, // ^zuljan
         // ^darkspear troll: similar but not same!!! (as with many other player models)
-        3058486: {["Standard"]: [2]},
-        126570: {["Mists"]: [1]},    // zombie looks away
-        124437: {["Vanilla"]: [1]}, // low-res ass human female looks away
-        124566: {["Standard"]: [1]}, // "huml" citizen mid (bunch of these fat human npcs)
+        3058486: {["Standard"]: BlacklistIdle([2])},
+        126570: {["Mists"]: BlacklistIdle([1])},    // zombie looks away
+        124437: {["Vanilla"]: BlacklistIdle([1])}, // low-res ass human female looks away
+        124566: {["Standard"]: BlacklistIdle([1])}, // "huml" citizen mid (bunch of these fat human npcs)
         // TODO these blacklists are accurate but lead to a million false positives with every
         // human-like model in the game, because the animations are so similar to idle, i think
-        // 124448: {["Standard"]: [1]}, // ^(low-res?) human f caster
-        // 124472: {["Standard"]: [1]}, // ^(low-res?) human f warrior heavy
-        // 124541: {["Standard"]: [1]}, // "human male warrior heavy ghost", but has woman animations? TODO
-        // 124540: {["Standard", "Mists"]: [1]}, // ^human male warrior
-        // 124485: {["Standard"]: [1]}, // ^human male caster: i guess all the "low res" human males do
-        // 124490: {["Standard"]: [1]}, // ^human male farmer
-        124444: {["Standard"]: []}, // ^human f blacksmith looks ok tho
-        124506: {["Standard", "Mists"]: [2]}, // human m noble: this guy is doing the candy cane
-        337875: {["Standard"]: [2]}, // jaina is no better than a regular classic woman
-        646095: {["Standard"]: [2]}, // ^jaina 2
-        437089: {["Standard"]: []}, // whitelist similarity: ysera: covers elves who appear human-y
-        1100258: {["Standard"]: []}, // ^belf female hd: belves are not human either
-        5159886: {["Standard"]: []}, // ^xalatath is no better than an elf but skeleton slightly off
-        123852: {["Standard"]: []}, // ^fel elf caster male is whatever
-        124377: {["Standard"]: []}, // ^high elf is whatever
-        124378: {["Mists"]: []}, // ^high elf mage
-        123081: {["Standard"]: []}, // ^belf male guard is ok
-        124652: {["Standard"]: []}, // ^kael'thas is also just an elf!!! (god this system sucks)
-        234885: {["Standard"]: []}, // ^vampyr blood prince implicated via kael'thas
-        124656: {["Standard"]: []}, // ^BROKEN kael'thas implicated via kael'thas
-        117170: {["Mists"]: []}, // ^classic belf male implicated via kael'thas
-        2198642: {["Mists"]: []}, // ^classic orc female implicated via kael'thas, of all things
-        124507: {["Standard"]: [1]}, // some human male peasants bang a hammer or something
-        124509: {["Standard"]: []}, // human peasant carrying a sack is fine tho
-        124515: {["Standard"]: []}, // ^carrying wood
-        658184: {["Standard"]: []}, // this is an ORC, but is clocked as similar to some human
+        // 124448: {["Standard"]: BlacklistIdle([1])}, // ^(low-res?) human f caster
+        // 124472: {["Standard"]: BlacklistIdle([1])}, // ^(low-res?) human f warrior heavy
+        // 124541: {["Standard"]: BlacklistIdle([1])}, // "human male warrior heavy ghost", but has woman animations? TODO
+        // 124540: {["Standard", "Mists"]: BlacklistIdle([1])}, // ^human male warrior
+        // 124485: {["Standard"]: BlacklistIdle([1])}, // ^human male caster: i guess all the "low res" human males do
+        // 124490: {["Standard"]: BlacklistIdle([1])}, // ^human male farmer
+        124444: {["Standard"]: BlacklistIdle([])}, // ^human f blacksmith looks ok tho
+        124506: {["Standard", "Mists"]: BlacklistIdle([2])}, // human m noble: this guy is doing the candy cane
+        337875: {["Standard"]: BlacklistIdle([2])}, // jaina is no better than a regular classic woman
+        646095: {["Standard"]: BlacklistIdle([2])}, // ^jaina 2
+        437089: {["Standard"]: BlacklistIdle([])}, // whitelist similarity: ysera: covers elves who appear human-y
+        1100258: {["Standard"]: BlacklistIdle([])}, // ^belf female hd: belves are not human either
+        5159886: {["Standard"]: BlacklistIdle([])}, // ^xalatath is no better than an elf but skeleton slightly off
+        123852: {["Standard"]: BlacklistIdle([])}, // ^fel elf caster male is whatever
+        124377: {["Standard"]: BlacklistIdle([])}, // ^high elf is whatever
+        124378: {["Mists"]: BlacklistIdle([])}, // ^high elf mage
+        123081: {["Standard"]: BlacklistIdle([])}, // ^belf male guard is ok
+        124652: {["Standard"]: BlacklistIdle([])}, // ^kael'thas is also just an elf!!! (god this system sucks)
+        234885: {["Standard"]: BlacklistIdle([])}, // ^vampyr blood prince implicated via kael'thas
+        124656: {["Standard"]: BlacklistIdle([])}, // ^BROKEN kael'thas implicated via kael'thas
+        117170: {["Mists"]: BlacklistIdle([])}, // ^classic belf male implicated via kael'thas
+        2198642: {["Mists"]: BlacklistIdle([])}, // ^classic orc female implicated via kael'thas, of all things
+        124507: {["Standard"]: BlacklistIdle([1])}, // some human male peasants bang a hammer or something
+        124509: {["Standard"]: BlacklistIdle([])}, // human peasant carrying a sack is fine tho
+        124515: {["Standard"]: BlacklistIdle([])}, // ^carrying wood
+        658184: {["Standard"]: BlacklistIdle([])}, // this is an ORC, but is clocked as similar to some human
         // ---------------------------------------------------------------------------------------
         // begin BIRDS: bird flaps up off frame in variation 1, and have a million different
         // models...
-        123137: {["Vanilla", "TBC", "Mists", "Standard"]: [1, 2]}, // carrion bird
-        123148: {["TBC", "Mists", "Standard"]: [1, 2]}, // carrion bird outland
-        123715: {["TBC", "Mists", "Standard"]: [1]}, // eagle
-        126300: {["Mists", "Standard"]: [1]}, // undead eagle
-        1100483: {["Standard"]: [1]}, // eagle 2
-        1661349: {["Standard"]: [1]}, // vulture
-        1926505: {["Standard"]: [1]}, // vulture mount
-        6367105: {["Standard"]: [1]}, // spotting eagle
-        126077: {["Mists", "Standard"]: [1]},     // storm crow druid
-        125378: {["Vanilla", "TBC", "Mists", "Standard"]: [1, 2]}, // owl
-        523669: {["Standard"]: [1, 2]}, // owl ghost green
-        126075: {["Standard", "Vanilla"]: [1, 2]}, // storm crow
-        357812: {["Standard", "Mists"]: [1]}, // seagull
-        357810: {["Standard"]: [1]}, // raven
-        357810: {["Mists"]: [1]},    // raven
-        651121: {["Standard", "Mists"]: [1]}, // raven low 01
-        925511: {["Standard"]: [1]},  // toucan!!
-        1255609: {["Standard"]: [1]}, // raven 2
-        1998298: {["Standard"]: [1]}, // redbird
-        2490776: {["Standard"]: [1]}, // mechanical parrot pet
-        3672162: {["Standard"]: [1]}, // progenitor bird
-        4870605: {["Standard"]: [1]}, // cave swallow
-        123766: {["TBC", "Mists"]: [1]},       // EpicDruidFlightAlliance
-        123767: {["TBC", "Mists"]: [1]}, // EpicDruidFlightHorde
-        468264: {["Standard"]: [1]}, // EpicDruidFlightTroll
-        467905: {["Mists", "Standard"]: [1]}, // EpicDruidFlightWorgen
-        901138: {["Mists"]: [1]},    // StormCrowMount
-        125395: {["Vanilla", "Standard"]: [1, 2]}, // parrot
-        123831: {["Vanilla", "TBC", "Standard"]: [1]},  // fel bat: bats are birds too!!
-        123830: {["Vanilla", "TBC", "Mists", "Standard"]: [1]}, // bat taxi
-        804506: {["Mists", "Standard"]: [1]}, // bat mount
-        804508: {["Mists", "Standard"]: [1]}, // EPIC bat mount
-        3087298: {["Standard"]: [1]}, // GIANT vampire bat MOUNT
-        6036383: {["Mists"]: [1]},    // 30th bat mount classic
-        126530: {["Vanilla", "TBC", "Mists", "Standard"]: [1]},   // wyverns are ALSO birds..
+        123137: {["Vanilla", "TBC", "Mists", "Standard"]: BlacklistIdle([1, 2])}, // carrion bird
+        123148: {["TBC", "Mists", "Standard"]: BlacklistIdle([1, 2])}, // carrion bird outland
+        123715: {["TBC", "Mists", "Standard"]: BlacklistIdle([1])}, // eagle
+        126300: {["Mists", "Standard"]: BlacklistIdle([1])}, // undead eagle
+        1100483: {["Standard"]: BlacklistIdle([1])}, // eagle 2
+        1661349: {["Standard"]: BlacklistIdle([1])}, // vulture
+        1926505: {["Standard"]: BlacklistIdle([1])}, // vulture mount
+        6367105: {["Standard"]: BlacklistIdle([1])}, // spotting eagle
+        126077: {["Mists", "Standard"]: BlacklistIdle([1])},     // storm crow druid
+        125378: {["Vanilla", "TBC", "Mists", "Standard"]: BlacklistIdle([1, 2])}, // owl
+        523669: {["Standard"]: BlacklistIdle([1, 2])}, // owl ghost green
+        126075: {["Standard", "Vanilla"]: BlacklistIdle([1, 2])}, // storm crow
+        357812: {["Standard", "Mists"]: BlacklistIdle([1])}, // seagull
+        357810: {["Standard"]: BlacklistIdle([1])}, // raven
+        357810: {["Mists"]: BlacklistIdle([1])},    // raven
+        651121: {["Standard", "Mists"]: BlacklistIdle([1])}, // raven low 01
+        925511: {["Standard"]: BlacklistIdle([1])},  // toucan!!
+        1255609: {["Standard"]: BlacklistIdle([1])}, // raven 2
+        1998298: {["Standard"]: BlacklistIdle([1])}, // redbird
+        2490776: {["Standard"]: BlacklistIdle([1])}, // mechanical parrot pet
+        3672162: {["Standard"]: BlacklistIdle([1])}, // progenitor bird
+        4870605: {["Standard"]: BlacklistIdle([1])}, // cave swallow
+        123766: {["TBC", "Mists"]: BlacklistIdle([1])},       // EpicDruidFlightAlliance
+        123767: {["TBC", "Mists"]: BlacklistIdle([1])}, // EpicDruidFlightHorde
+        468264: {["Standard"]: BlacklistIdle([1])}, // EpicDruidFlightTroll
+        467905: {["Mists", "Standard"]: BlacklistIdle([1])}, // EpicDruidFlightWorgen
+        901138: {["Mists"]: BlacklistIdle([1])},    // StormCrowMount
+        125395: {["Vanilla", "Standard"]: BlacklistIdle([1, 2])}, // parrot
+        123831: {["Vanilla", "TBC", "Standard"]: BlacklistIdle([1])},  // fel bat: bats are birds too!!
+        123830: {["Vanilla", "TBC", "Mists", "Standard"]: BlacklistIdle([1])}, // bat taxi
+        804506: {["Mists", "Standard"]: BlacklistIdle([1])}, // bat mount
+        804508: {["Mists", "Standard"]: BlacklistIdle([1])}, // EPIC bat mount
+        3087298: {["Standard"]: BlacklistIdle([1])}, // GIANT vampire bat MOUNT
+        6036383: {["Mists"]: BlacklistIdle([1])},    // 30th bat mount classic
+        126530: {["Vanilla", "TBC", "Mists", "Standard"]: BlacklistIdle([1])},   // wyverns are ALSO birds..
         // end BIRDS
         // ---------------------------------------------------------------------------------------
-        125815: {["Vanilla", "Mists"]: [1]}, // scorpion clips into camera, shouting
-        126101: {["Mists"]: [1, 2, 3]}, // "super zombie": this guy is all over the fucking place
+        125815: {["Vanilla", "Mists"]: BlacklistIdle([1])}, // scorpion clips into camera, shouting
+        126101: {["Mists"]: BlacklistIdle([1, 2, 3])}, // "super zombie": this guy is all over the fucking place
         // "dragon man hulk": same as super zombie, but does not have a lower body past classic
-        430968: {["Standard"]: [1]},
-        7197176: {["Standard"]: [1, 2]}, // "hex eagle": very extended periods of head adhd
-        125234: {["Standard"]: [1]}, // northrend geists: they do the ud fem look around on ground
+        430968: {["Standard"]: BlacklistIdle([1])},
+        7197176: {["Standard"]: BlacklistIdle([1, 2])}, // "hex eagle": very extended periods of head adhd
+        125234: {["Standard"]: BlacklistIdle([1])}, // northrend geists: they do the ud fem look around on ground
         // chicken pecks the ground for a bit, but also in vanilla this animation is bugged and
         // freezes at the end
-        123200: {["Standard", "Vanilla"]: [1]},
-        125741: {["Standard", "Mists"]: [1]}, // ^robot chicken
-        1521037: {["Standard"]: [1]}, // ^chicken TWO
-        667646: {["Forever"]: [1]},  // ^peacock
+        123200: {["Standard", "Vanilla"]: BlacklistIdle([1])},
+        125741: {["Standard", "Mists"]: BlacklistIdle([1])}, // ^robot chicken
+        1521037: {["Standard"]: BlacklistIdle([1])}, // ^chicken TWO
+        667646: {["Forever"]: BlacklistIdle([1])},  // ^peacock
+        125576: {["Vanilla"]: PlayAnimation(Walk)}, // rat: this RAT never sits still, just make it walk
         // teron gorefiend gets captured by HumanMaleWarriorHeavy_Ghost, because the blacklisted
         // animation is essentially just leaning somewhat, which is similar to teron just standing
-        // 126143: {["Standard"]: []}, TODO
+        // 126143: {["Standard"]: BlacklistIdle([])}, TODO
     },
     // fdid -> [game types], or all game types if empty
     // completely skip processing the given model
@@ -151,8 +151,8 @@
     // shut up the "beware these animations are similar" spam, or to resolve false positives)
     // BEWARE: usually, it is better to add an empty blacklist than a whitelist, since the blacklist
     // system will propagate the empty playlist to other models that are similar, but this is an
-    // easier way of eliminating noise
-    whitelist: {
+    // easier way of eliminating noise without that side effect
+    ignore: {
         1331506: [], // dragon custom tail
     },
 )
