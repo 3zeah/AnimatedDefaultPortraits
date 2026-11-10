@@ -10,13 +10,14 @@ local t7={[2]=0.05}
 local t8={[2]=0.07,[3]=0.07,[4]=0.07}
 local t9={[2]=0.09}
 local t10={[2]=0.09,[3]=0.09}
-local t11={[2]=0.11}
+local t11={[2]=0.1}
 local t12={[2]=0.11}
-local t13={[2]=0.21}
-local t14={[2]=0.25,[3]=0.25,[4]=0.25}
-local t15={[2]=0.5}
-local t16={[3]=0.03}
-local t17={[-4]=1}
+local t13={[2]=0.11}
+local t14={[2]=0.21}
+local t15={[2]=0.25,[3]=0.25,[4]=0.25}
+local t16={[2]=0.5}
+local t17={[3]=0.03}
+local t18={[-4]=1}
 select(2,...).ANIMATION_OVERRIDES={
 [122961]=t0,--Creature/ArcticCondor/ArcticCondor.M2
 [123137]=t0,--Creature/CarrionBird/CarrionBird.M2
@@ -25,6 +26,7 @@ select(2,...).ANIMATION_OVERRIDES={
 [123766]=t0,--Creature/EpicDruidFlightAlliance/EpicDruidFlightAlliance.m2
 [123767]=t0,--Creature/EpicDruidFlightHorde/EpicDruidFlightHorde.m2
 [123821]=t0,--Creature/Felbat/BatRider.m2
+[124243]=t0,--Creature/GolemHarvestStage2/GolemHarvestStage2.M2
 [124421]=t0,--Creature/HORDERIDER/HordeRider.m2
 [124437]=t0,--Creature/HUFMCitizenLow/HUFMCitizenLow.m2
 [124440]=t0,--Creature/HUFMCitizenMid/HUFMCitizenMid.m2
@@ -150,22 +152,23 @@ select(2,...).ANIMATION_OVERRIDES={
 [126131]=t10,--Creature/TempDeathGuard/DeathGuard.m2
 [126137]=t10,--Creature/TempScourgeMaleNPC/ScourgeMaleNPC.m2
 [336502]=t10,--Creature/MadScientist/MadScientistNoBackpack.m2
-[123200]=t11,--Creature/Chicken/Chicken.M2
-[1521038]=t11,--creature/mechanicalchicken/mechanicalchicken.m2
-[1521039]=t12,--creature/silkiechicken/silkiechicken.m2
-[4096362]=t12,--creature/progenitorchicken/progenitorchicken.m2
-[624385]=t13,--Creature/LilliansSoul/LilliansSoul.M2
-[1838582]=t14,--character/scourge/female/scourgefemale_hd_sdr.m2
-[2123315]=t14,--creature/forsakendreadguard_f/forsakendreadguard_f.m2
-[126570]=t15,--Creature/Zombie/Zombie.M2
-[126571]=t15,--Creature/Zombie/ZombieArm.M2
-[126575]=t15,--Creature/Zombie/ZombieSword.M2
-[1888300]=t15,--creature/zombie2/zombie2.m2
-[1888304]=t15,--creature/zombieburnt/zombieburnt.m2
-[4281540]=t16,--character/companionpterrodax/companionpterrodax.m2
-[7136769]=t16,--Creature/MythicHexEagleMount/MythicHexEagleMount.m2
-[7197176]=t16,--Creature/HexEagle/HexEagle.m2
-[125576]=t17,--Creature/Rat/Rat.M2
-[1141018]=t17,--Creature/Rat2/Rat2.m2
-[3855433]=t17,--creature/brokerrat/brokerrat.m2
+[124235]=t11,--Creature/GOLEMHARVEST/GolemHarvest.M2
+[123200]=t12,--Creature/Chicken/Chicken.M2
+[1521038]=t12,--creature/mechanicalchicken/mechanicalchicken.m2
+[1521039]=t13,--creature/silkiechicken/silkiechicken.m2
+[4096362]=t13,--creature/progenitorchicken/progenitorchicken.m2
+[624385]=t14,--Creature/LilliansSoul/LilliansSoul.M2
+[1838582]=t15,--character/scourge/female/scourgefemale_hd_sdr.m2
+[2123315]=t15,--creature/forsakendreadguard_f/forsakendreadguard_f.m2
+[126570]=t16,--Creature/Zombie/Zombie.M2
+[126571]=t16,--Creature/Zombie/ZombieArm.M2
+[126575]=t16,--Creature/Zombie/ZombieSword.M2
+[1888300]=t16,--creature/zombie2/zombie2.m2
+[1888304]=t16,--creature/zombieburnt/zombieburnt.m2
+[4281540]=t17,--character/companionpterrodax/companionpterrodax.m2
+[7136769]=t17,--Creature/MythicHexEagleMount/MythicHexEagleMount.m2
+[7197176]=t17,--Creature/HexEagle/HexEagle.m2
+[125576]=t18,--Creature/Rat/Rat.M2
+[1141018]=t18,--Creature/Rat2/Rat2.m2
+[3855433]=t18,--creature/brokerrat/brokerrat.m2
 }

@@ -141,6 +141,8 @@
         1521037: {["Standard"]: BlacklistIdle([1])}, // ^chicken TWO
         667646: {["Forever"]: BlacklistIdle([1])},  // ^peacock
         125576: {["Vanilla"]: PlayAnimation(Walk)}, // rat: this RAT never sits still, just make it walk
+        124235: {["Vanilla"]: BlacklistIdle([1])}, // golemharvest: clips camera
+        124243: {["Vanilla"]: BlacklistIdle([1])}, // ^golemharveststage2
         // teron gorefiend gets captured by HumanMaleWarriorHeavy_Ghost, because the blacklisted
         // animation is essentially just leaning somewhat, which is similar to teron just standing
         // 126143: {["Standard"]: BlacklistIdle([])}, TODO
