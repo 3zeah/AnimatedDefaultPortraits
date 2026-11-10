@@ -143,6 +143,10 @@
         125576: {["Vanilla"]: PlayAnimation(Walk)}, // rat: this RAT never sits still, just make it walk
         124235: {["Vanilla"]: BlacklistIdle([1])}, // golemharvest: clips camera
         124243: {["Vanilla"]: BlacklistIdle([1])}, // ^golemharveststage2
+        8527347: {["Forever"]: BlacklistIdle([1, 3])}, // forever ghost wolf: howl and scratch
+        926251: {["Standard"]: BlacklistIdle([1, 3])}, // ^wolf draenor (retail ghost wolf?)
+        126488: {["Vanilla", "Standard"]: BlacklistIdle([1, 3])}, // ^vanilla ghost wolf
+        321131: {["Standard"]: BlacklistIdle([1, 3])}, // ^mist fox
         // teron gorefiend gets captured by HumanMaleWarriorHeavy_Ghost, because the blacklisted
         // animation is essentially just leaning somewhat, which is similar to teron just standing
         // 126143: {["Standard"]: BlacklistIdle([])}, TODO

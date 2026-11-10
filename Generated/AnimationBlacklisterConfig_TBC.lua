@@ -12,3 +12,7 @@ do
 local u={[2]=0.09,[3]=0.09}
 t[121768]=u--Character/Scourge/Male/ScourgeMale.m2
 end
+do
+local u={[2]=0.11}
+t[126488]=u--Creature/Wolf/Wolf_ghost.M2
+end

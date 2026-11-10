@@ -12,8 +12,16 @@ local u={[1]=0.13}
 t[119563]=u--Character/Human/Female/HumanFemale.m2
 end
 do
+local u={[2]=0.04}
+t[1633330]=u--creature/foxpet/foxpet.m2
+end
+do
 local u={[2]=0.09,[3]=0.09}
 t[121942]=u--Character/Skeleton/Male/SkeletonMale.m2
+end
+do
+local u={[2]=0.11}
+t[126487]=u--Creature/Wolf/Wolf.m2
 end
 do
 local u={[2]=0.11}

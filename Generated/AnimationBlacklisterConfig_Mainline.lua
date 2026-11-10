@@ -14,8 +14,17 @@ local u={[1]=0.67}
 t[794489]=u--Creature/SandTrollCouncilor/SandTrollCouncilor.M2
 end
 do
+local u={[2]=0.04}
+t[126487]=u--Creature/Wolf/Wolf.m2
+t[1633330]=u--creature/foxpet/foxpet.m2
+end
+do
 local u={[2]=0.05,[3]=0.05}
 t[125948]=u--Creature/SkeletonNaked/SkeletonNaked.M2
+end
+do
+local u={[2]=0.11}
+t[126488]=u--Creature/Wolf/Wolf_ghost.M2
 end
 do
 local u={[2]=0.17}

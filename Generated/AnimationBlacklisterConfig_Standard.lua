@@ -9,8 +9,20 @@ local u={[1]=0.05}
 t[234884]=u--Creature/UndeadIceTroll/UndeadIceTroll.M2
 end
 do
+local u={[2]=0.02}
+t[1031635]=u--Creature/FrostwolfPup/FrostWolfPup_NoCollar.m2
+end
+do
+local u={[2]=0.03}
+t[1992870]=u--creature/corehoundsmall/corehoundsmall.m2
+end
+do
 local u={[2]=0.03}
 t[1521037]=u--creature/chicken2/chicken2.m2
+end
+do
+local u={[2]=0.05}
+t[1129034]=u--Creature/FelStalker/FelStalker_Pet.m2
 end
 do
 local u={[2]=0.25,[3]=0.25,[4]=0.25}

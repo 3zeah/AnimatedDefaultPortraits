@@ -6,18 +6,25 @@ local t3={[1]=0.02,[3]=0.02}
 local t4={[1]=0.05,[3]=0.07}
 local t5={[1]=0.06}
 local t6={[1]=0.13}
-local t7={[2]=0.05}
-local t8={[2]=0.07,[3]=0.07,[4]=0.07}
-local t9={[2]=0.09}
-local t10={[2]=0.09,[3]=0.09}
-local t11={[2]=0.1}
-local t12={[2]=0.11}
-local t13={[2]=0.11}
-local t14={[2]=0.21}
-local t15={[2]=0.25,[3]=0.25,[4]=0.25}
-local t16={[2]=0.5}
-local t17={[3]=0.03}
-local t18={[-4]=1}
+local t7={[2]=0.02}
+local t8={[2]=0.03}
+local t9={[2]=0.03}
+local t10={[2]=0.04}
+local t11={[2]=0.05}
+local t12={[2]=0.05}
+local t13={[2]=0.07,[3]=0.07,[4]=0.07}
+local t14={[2]=0.09}
+local t15={[2]=0.09,[3]=0.09}
+local t16={[2]=0.1}
+local t17={[2]=0.1}
+local t18={[2]=0.11}
+local t19={[2]=0.11}
+local t20={[2]=0.11}
+local t21={[2]=0.21}
+local t22={[2]=0.25,[3]=0.25,[4]=0.25}
+local t23={[2]=0.5}
+local t24={[3]=0.03}
+local t25={[-4]=1}
 select(2,...).ANIMATION_OVERRIDES={
 [122961]=t0,--Creature/ArcticCondor/ArcticCondor.M2
 [123137]=t0,--Creature/CarrionBird/CarrionBird.M2
@@ -143,32 +150,70 @@ select(2,...).ANIMATION_OVERRIDES={
 [337875]=t6,--Creature/Jaina/Jaina.M2
 [646095]=t6,--Creature/Jaina/Jaina2.M2
 [1067804]=t6,--Creature/HuF_Garrison_A_Archer/HuF_Garrison_A_Archer.m2
-[123830]=t7,--Creature/Felbat/BatTaxi.M2
-[997378]=t8,--Character/Scourge/Female/ScourgeFemale_HD.m2
-[125741]=t9,--Creature/RocketChicken/RocketChicken.M2
-[1593263]=t9,--creature/rocketchicken2/rocketchicken2.m2
-[123299]=t10,--Creature/CrackElf/CrackElfMale.m2
-[124827]=t10,--Creature/MadScientist/MadScientist.M2
-[126131]=t10,--Creature/TempDeathGuard/DeathGuard.m2
-[126137]=t10,--Creature/TempScourgeMaleNPC/ScourgeMaleNPC.m2
-[336502]=t10,--Creature/MadScientist/MadScientistNoBackpack.m2
-[124235]=t11,--Creature/GOLEMHARVEST/GolemHarvest.M2
-[123200]=t12,--Creature/Chicken/Chicken.M2
-[1521038]=t12,--creature/mechanicalchicken/mechanicalchicken.m2
-[1521039]=t13,--creature/silkiechicken/silkiechicken.m2
-[4096362]=t13,--creature/progenitorchicken/progenitorchicken.m2
-[624385]=t14,--Creature/LilliansSoul/LilliansSoul.M2
-[1838582]=t15,--character/scourge/female/scourgefemale_hd_sdr.m2
-[2123315]=t15,--creature/forsakendreadguard_f/forsakendreadguard_f.m2
-[126570]=t16,--Creature/Zombie/Zombie.M2
-[126571]=t16,--Creature/Zombie/ZombieArm.M2
-[126575]=t16,--Creature/Zombie/ZombieSword.M2
-[1888300]=t16,--creature/zombie2/zombie2.m2
-[1888304]=t16,--creature/zombieburnt/zombieburnt.m2
-[4281540]=t17,--character/companionpterrodax/companionpterrodax.m2
-[7136769]=t17,--Creature/MythicHexEagleMount/MythicHexEagleMount.m2
-[7197176]=t17,--Creature/HexEagle/HexEagle.m2
-[125576]=t18,--Creature/Rat/Rat.M2
-[1141018]=t18,--Creature/Rat2/Rat2.m2
-[3855433]=t18,--creature/brokerrat/brokerrat.m2
+[1519594]=t7,--creature/hyena2mount/hyena2mount.m2
+[1519595]=t7,--creature/hyena2/hyena2.m2
+[1992849]=t7,--creature/darkirondwarfcorehound/darkirondwarfcorehound.m2
+[2010243]=t7,--creature/darkhound2/darkhound2.m2
+[2016404]=t7,--creature/darkhoundmount/darkhoundmount.m2
+[2102977]=t7,--creature/darkhound2_fiery/darkhound2_fiery.m2
+[3193212]=t7,--creature/vulperamount2/vulperamount2.m2
+[3452978]=t7,--creature/mawrat/mawrat.m2
+[3618571]=t7,--creature/darkhoundmount_draka/darkhoundmount_draka.m2
+[4287493]=t7,--creature/mawratmount/mawratmount.m2
+[5791581]=t7,--Creature/Hyena2Goblin/Hyena2Goblin.m2
+[5871774]=t7,--Creature/BabyHyena/BabyHyena.m2
+[5882502]=t7,--Creature/Hyena2GoblinMount/Hyena2GoblinMount.m2
+[1005177]=t8,--Creature/Ironhordewolf/IronHordeWolf.m2
+[1137921]=t9,--Creature/HellhoundSkeleton/HellHoundSkeleton.m2
+[3072362]=t10,--creature/babyfox/babyfox.m2
+[6049997]=t10,--Creature/FoxPetDetective/FoxPetDetective.m2
+[6124090]=t10,--Creature/FoxPetDetectiveClassic/FoxPetDetectiveClassic.m2
+[926251]=t11,--Creature/WolfDraenor/WolfDraenor.m2
+[984822]=t11,--Creature/WolfDraenor/WolfDraenor_Fire.m2
+[985450]=t11,--Creature/WolfDraenor/WolfDraenor_Shadow.m2
+[1053187]=t11,--Creature/WolfDraenor/WolfDraenor_Fel.m2
+[1350103]=t11,--Creature/WolfDraenor/WolfDraenor_Frost.m2
+[1350104]=t11,--Creature/WolfDraenor/WolfDraenor_Lightning.m2
+[1380190]=t11,--creature/LightningWorg/lightningworg.m2
+[7164002]=t11,--Creature/UVMapDog/UVMapDog.m2
+[7582291]=t11,--models/unknown/unk_exp00_7582291/7582291.m2
+[7582293]=t11,--models/unknown/unk_exp00_7582293/7582293.m2
+[7582294]=t11,--models/unknown/unk_exp00_7582294/7582294.m2
+[7582295]=t11,--models/unknown/unk_exp00_7582295/7582295.m2
+[123830]=t12,--Creature/Felbat/BatTaxi.M2
+[997378]=t13,--Character/Scourge/Female/ScourgeFemale_HD.m2
+[125741]=t14,--Creature/RocketChicken/RocketChicken.M2
+[1593263]=t14,--creature/rocketchicken2/rocketchicken2.m2
+[123299]=t15,--Creature/CrackElf/CrackElfMale.m2
+[124827]=t15,--Creature/MadScientist/MadScientist.M2
+[126131]=t15,--Creature/TempDeathGuard/DeathGuard.m2
+[126137]=t15,--Creature/TempScourgeMaleNPC/ScourgeMaleNPC.m2
+[336502]=t15,--Creature/MadScientist/MadScientistNoBackpack.m2
+[8527347]=t16,--models/creature/unk_exp00_8527347/8527347.m2
+[124235]=t17,--Creature/GOLEMHARVEST/GolemHarvest.M2
+[321131]=t18,--Creature/MistFox/MistFox.M2
+[970920]=t18,--Creature/FrostwolfPup/FrostWolfPup.m2
+[985435]=t18,--Creature/FrostwolfPup/FrostWolfPup_Shadow.m2
+[985504]=t18,--Creature/FrostwolfPup/FrostWolfPup_Fire.m2
+[1056733]=t18,--Creature/FrostwolfPup/FrostWolfPup_Fel.m2
+[1278117]=t18,--Creature/WolfBoss/WolfBoss.m2
+[1373320]=t18,--creature/Worg/Worg.m2
+[123200]=t19,--Creature/Chicken/Chicken.M2
+[1521038]=t19,--creature/mechanicalchicken/mechanicalchicken.m2
+[1521039]=t20,--creature/silkiechicken/silkiechicken.m2
+[4096362]=t20,--creature/progenitorchicken/progenitorchicken.m2
+[624385]=t21,--Creature/LilliansSoul/LilliansSoul.M2
+[1838582]=t22,--character/scourge/female/scourgefemale_hd_sdr.m2
+[2123315]=t22,--creature/forsakendreadguard_f/forsakendreadguard_f.m2
+[126570]=t23,--Creature/Zombie/Zombie.M2
+[126571]=t23,--Creature/Zombie/ZombieArm.M2
+[126575]=t23,--Creature/Zombie/ZombieSword.M2
+[1888300]=t23,--creature/zombie2/zombie2.m2
+[1888304]=t23,--creature/zombieburnt/zombieburnt.m2
+[4281540]=t24,--character/companionpterrodax/companionpterrodax.m2
+[7136769]=t24,--Creature/MythicHexEagleMount/MythicHexEagleMount.m2
+[7197176]=t24,--Creature/HexEagle/HexEagle.m2
+[125576]=t25,--Creature/Rat/Rat.M2
+[1141018]=t25,--Creature/Rat2/Rat2.m2
+[3855433]=t25,--creature/brokerrat/brokerrat.m2
 }

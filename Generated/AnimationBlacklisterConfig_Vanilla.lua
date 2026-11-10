@@ -9,3 +9,7 @@ local u={[2]=0.09,[3]=0.09}
 t[121768]=u--Character/Scourge/Male/ScourgeMale.m2
 t[125948]=u--Creature/SkeletonNaked/SkeletonNaked.M2
 end
+do
+local u={[2]=0.12}
+t[126488]=u--Creature/Wolf/Wolf_ghost.M2
+end
