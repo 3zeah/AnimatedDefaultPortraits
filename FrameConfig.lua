@@ -51,6 +51,21 @@ function lib.ShouldDisableFor(portrait)
 end
 
 do
+    local FAKE_MODELS = Set(
+        ModelFileId.CLICKABLE_BOX
+    )
+
+    ---whether the given model file id is not a real character model, for
+    ---example and in particular, an un-modeled "clickable box" that serves as
+    ---a targetable proxy for a model in the environment
+    ---@param fdid fileID
+    ---@return boolean
+    function lib.IsFakeModel(fdid)
+        return FAKE_MODELS[fdid] or false
+    end
+end
+
+do
     local INANIMATE_CREATURES = Set(
         CreatureId.MANNEQUIN,
         CreatureId.LIFELIKE_DOLL,

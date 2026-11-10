@@ -77,8 +77,9 @@ end
 
 ---@param state AnimationBlacklister
 ---@param model PlayerModel
-function lib.UpdateAfterModelChanged(state, model)
-    local animationPlaylist = ANIMATION_OVERRIDES[model:GetModelFileID()]
+---@param fdid fileID
+function lib.UpdateAfterModelChanged(state, model, fdid)
+    local animationPlaylist = ANIMATION_OVERRIDES[fdid]
     if animationPlaylist then
         state.playlist = animationPlaylist
         state.nextVariation = rollIdleAnimationVariation(animationPlaylist)

@@ -17,6 +17,8 @@ lib.MaskShape = {
 
 ---@enum ModelFileId
 lib.ModelFileId = {
+    -- world/expansion03/doodads/generic/clickable_box.m2
+    CLICKABLE_BOX = 353152,
     -- Interface/Buttons/TalkToMe_Gears.M2
     TALK_TO_ME_GEARS = 587744,
 }

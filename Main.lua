@@ -18,6 +18,7 @@ local TextureIsPortrait = Util.TextureIsPortrait
 local LeftStrataIsAboveRight = Util.LeftStrataIsAboveRight
 local MIN_PORTRAIT_SIZE_TO_ANIMATE = FrameConfig.MIN_PORTRAIT_SIZE_TO_ANIMATE
 local ShouldDisableFor = FrameConfig.ShouldDisableFor
+local IsFakeModel = FrameConfig.IsFakeModel
 local IsInanimate = FrameConfig.IsInanimate
 
 ---the update period in seconds
@@ -296,13 +297,19 @@ end
 
 ---@param self AnimatedPortraitState
 local function ohModelLoadedAnimatedPortrait(self)
-   self.hasModel = true
-   -- setting an idle-animation variation does not work before model is loaded:
-   -- any system that needs to set one needs to try both when the model is
-   -- loaded, or immediately when the model was changed, in case it was already
-   -- loaded
-   AnimationBlacklister
-       .UpdateAfterModelChanged(self.animationBlacklister, self)
+   local fdid = self:GetModelFileID()
+   -- model file id is not necessarily available until model loaded: check again
+   if not fdid or IsFakeModel(fdid) then
+      self.hasModel = false
+   else
+      self.hasModel = true
+      -- setting an idle-animation variation does not work before model is
+      -- loaded: any system that needs to set one needs to try both when the
+      -- model is loaded, or immediately when the model was changed, in case it
+      -- was already loaded
+      AnimationBlacklister
+          .UpdateAfterModelChanged(self.animationBlacklister, self, fdid)
+   end
    refreshWhetherDisabled(self)
 end
 
@@ -392,13 +399,18 @@ local function updateUnitModel(self)
    local success = AnimatedPortraitFrame
        .UpdateUnit(self, self.portraitTexture, self.unit)
    if success then
-      -- setting animation requires model to be loaded, but i have observed that
-      -- we must try early as well, to be sure
-      AnimationBlacklister
-          .UpdateAfterModelChanged(self.animationBlacklister, self)
-      self.isInanimate = IsInanimate(self.unit) or nil
-      -- setting pause does not require model to be loaded
-      refreshWhetherPaused(self)
+      local fdid = self:GetModelFileID()
+      if not fdid or IsFakeModel(fdid) then
+         self.hasModel = false
+      else
+         -- setting animation requires model to be loaded, but i have observed
+         -- that we must try early as well, to be sure
+         AnimationBlacklister
+             .UpdateAfterModelChanged(self.animationBlacklister, self, fdid)
+         self.isInanimate = IsInanimate(self.unit) or nil
+         -- setting pause does not require model to be loaded
+         refreshWhetherPaused(self)
+      end
    else
       self.hasModel = false
    end
