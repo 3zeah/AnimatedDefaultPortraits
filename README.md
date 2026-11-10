@@ -79,9 +79,9 @@ Because other UI models may overlap with user-placed unit-frame portraits, anima
 
 #### Off-screen-animation blacklist
 
-Some animation variants of some models are blacklisted, because they bring the model off-frame (eg classic ud males when they stand upright): configure new ones when encountered.
+Some animation variations of some models are blacklisted, because they bring the model off-frame (eg classic ud males when they stand upright): configure new ones when encountered.
 
-Unfortunately, "blacklisting" animation variants actually requires simulating the Blizzard animation-variant system, by rolling for a new, whitelisted animation variant whenever the previous finished. To find the baseline probability of each animation variation, and to find similar animations for other models that also need to be blacklisted, these "animation playlists" are generated via data mining by the [animation-blacklister](code-gen/animation-blacklister/README.md) subsystem.
+Unfortunately, "blacklisting" animation variations actually requires simulating the Blizzard animation-variation system, by rolling for a new, whitelisted animation variation whenever the previous finished. To find the baseline probability of each animation variation, and to find similar animations for other models that also need to be blacklisted, these "animation playlists" are generated via data mining by the [animation-blacklister](code-gen/animation-blacklister/README.md) subsystem.
 
 #### Disabling animations per portrait
 
