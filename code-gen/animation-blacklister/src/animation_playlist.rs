@@ -108,7 +108,7 @@ impl<'a> AnimationPlaylist<'a> {
     ) -> Result<Self> {
         let whitelist: Box<[(u16, Animation)]> = animation
             .into_iter()
-            .filter(|(variant_id, _)| !blacklist.contains(variant_id))
+            .filter(|(variation_id, _)| !blacklist.contains(variation_id))
             .collect();
         let remaining_probability_sum: f32 = whitelist
             .iter()
@@ -117,8 +117,8 @@ impl<'a> AnimationPlaylist<'a> {
         let probability_adjustment = 1.0 / remaining_probability_sum;
         let mut remaining_probability_per_mille: u16 = 1000;
         let mut variations: BTreeMap<PlayableAnimation, AnimationVariation> = BTreeMap::new();
-        for &(variant_id, ref animation) in &whitelist {
-            if variant_id == 0 {
+        for &(variation_id, ref animation) in &whitelist {
+            if variation_id == 0 {
                 continue;
             }
             let probability_per_mille =
@@ -128,7 +128,7 @@ impl<'a> AnimationPlaylist<'a> {
                 probability_per_mille,
                 replay_range: animation.replay_range,
             };
-            variations.insert(PlayableAnimation::IdleVariation(variant_id), variation);
+            variations.insert(PlayableAnimation::IdleVariation(variation_id), variation);
         }
         let base_variation = whitelist
             .get(0)

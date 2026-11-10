@@ -4,7 +4,7 @@ local _, ns = ...
 local require = ns.require
 
 -- animation playlists per model file id
----@type { [integer]: AnimationVariantPlaylist? }
+---@type { [integer]: AnimationPlaylist? }
 local ANIMATION_OVERRIDES = require(ns, "ANIMATION_OVERRIDES")
 
 -- the playlists are defined such that each key defines the idle-animation
@@ -15,7 +15,7 @@ local ANIMATION_OVERRIDES = require(ns, "ANIMATION_OVERRIDES")
 -- the animation id may also be a wholly different animation id from the idle
 -- animation, in which case the variation is encoded as negative: for example,
 -- { -4 = 100% } := always play the walking animation
----@alias AnimationVariantPlaylist { [integer]: number? }
+---@alias AnimationPlaylist { [integer]: number? }
 
 local function rollIdleAnimationVariation(playlist)
     if next(playlist) == nil then
@@ -41,23 +41,23 @@ local function setAnimation(model, variation)
 end
 
 ---animated portraits play the generic idle animation, which typically cycles
----between several animation variants. this system is responsible for ensuring
+---between several animation variations. this system is responsible for ensuring
 ---that no variation plays that places the model outside of the portrait
 ---viewport
 ---
 ---this library is internally configured: the list of blacklisted animation
----variants is maintained directly in this system
+---variations is maintained directly in this system
 ---@class AnimationBlacklisterLib
 local lib = {}
 
 ---attach to the given player model to play its idle animation, but preventing
----blacklisted idle-animation variants from playing. this otherwise preserves
+---blacklisted idle-animation variations from playing. this otherwise preserves
 ---the baseline idle-animation behavior of cycling between different variations
 ---@param model PlayerModel
 ---@return AnimationBlacklister
 function lib.Create(model)
     ---@class (exact) AnimationBlacklister
-    ---@field package playlist AnimationVariantPlaylist
+    ---@field package playlist AnimationPlaylist
     ---@field package nextVariation integer?
     local state = {}
     model:SetScript("OnAnimFinished", function(self)
