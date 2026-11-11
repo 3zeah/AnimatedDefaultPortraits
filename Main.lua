@@ -221,11 +221,18 @@ local function unblockAllPortraitModels(blocker)
    end
 end
 
----mark that the given portrait is not active and thus does not need to be
----included in the occlusion-blocking algorithm until it is active again. here,
----active is defined as whether either portrait is visible: animated or baseline
+---mark that the given portrait is not active and thus is dirty and also does
+---not need to be included in the occlusion-blocking algorithm until it is
+---active again. here, active is defined as whether either portrait is visible:
+---animated or baseline
+---
+---when a portrait is inactive, there are no `UNIT_PORTRAIT_UPDATE` or
+---`PORTRAITS_UPDATED` events: unfortunately, then, the model must be refreshed
+---next time the portrait texture is updated, which is why it is marked dirty
+---here
 ---@param self AnimatedPortraitState
 local function registerInactivePortrait(self)
+   self.dirty = true
    activePortraits[self] = nil
    self.blocked = nil
    local blockingModels = self.blockingModels
@@ -358,6 +365,7 @@ local function getOrCreateAnimatedPortrait(portraitTexture, disableMasking)
    ---@field textureIsPortrait true?
    ---@field unit UnitToken? the unit that is expected to be in the portrait
    ---@field guid WOWGUID? the guid of the portrait unit
+   ---@field dirty true? whether it is possible that the comprised model changed
    ---@field disabled boolean? when disabled, the baseline portrait is shown
    ---@field blocked boolean? whether the portrait is occluded by other models
    ---@field hasModel boolean whether the up-to-date model was successfully set
@@ -396,6 +404,7 @@ end
 ---(eg, gear change)
 ---@param self AnimatedPortraitState
 local function updateUnitModel(self)
+   self.dirty = nil
    local success = AnimatedPortraitFrame
        .UpdateUnit(self, self.portraitTexture, self.unit)
    if success then
@@ -444,8 +453,8 @@ local function setAnimatedPortraitTexture(portraitTexture, unit, disableMasking)
    -- imperative that we do not skip any model updates then: the portrait is
    -- inactive if the animated portrait is not visible but also not disabled
    local guid = NilIfSecretValue(UnitGUID(unit))
-   if not guid or not state.guid or not state.hasModel or state.guid ~= guid
-       or (state:IsShown() and not state:IsVisible()) then
+   if not guid or not state.guid or not state.hasModel or state.dirty
+       or state.guid ~= guid then
       state.guid = guid
       updateUnitModel(state)
    end
