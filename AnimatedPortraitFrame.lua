@@ -67,6 +67,13 @@ local function findSupportedMaskTexture(texture)
       if not shape then
          -- unknown or unsupported mask texture: bail because we do not know its
          -- shape
+         print(
+            "|cffff1010 >>> PORTRAIT HAD TEXTURE MASK, BUT IT IS UNSUPPORTED:",
+            "texture", i, "=",
+            texture:GetMaskTexture(i):GetTexture(),
+            AdpId(texture),
+            "|r"
+         )
          return nil
       end
       local newShapeTexture = { texture = mask, shape = shape }
@@ -302,6 +309,7 @@ function lib.Create(portrait, portraitTextureIsCircle, createModelCallback)
    if not shape then
       return nil
    end
+   print("info: init deduced shape was", shape)
    local parent = portrait:GetParent()
    ---animated portrait frame, comprising a model along with associated elements
    ---such as the background texture and model mask, which altogether visually
@@ -327,6 +335,16 @@ function lib.Create(portrait, portraitTextureIsCircle, createModelCallback)
    else
       model:SetModelDrawLayer(LowerDrawLayer(drawLayer))
    end
+   if subLevel ~= 0 then
+      print(
+         "|cff00ff10WARNING: drawing model at",
+         select(1, model:GetModelDrawLayer()),
+         select(2, model:GetModelDrawLayer()),
+         "because tex was",
+         drawLayer, subLevel,
+         "|r"
+      )
+   end
 
    local light = CreateBaselinePortraitLight()
    model:SetLight(true, light)
@@ -345,6 +363,7 @@ function lib.Create(portrait, portraitTextureIsCircle, createModelCallback)
    model.mask = modelMask
 
    if ShouldRenderToFrameBuffer(portrait) then
+      print("|cffff10ffINFO: flattening", AdpId(portrait), "|r")
       model:SetFlattensRenderLayers(true)
       model:SetIsFrameBuffer(true)
       bgTexture:SetIgnoreParentAlpha(true)
@@ -370,11 +389,15 @@ function lib.UpdateUnit(self, portrait, unit)
    if not UnitIsVisible(unit) then
       return false
    end
-   local success = self:SetUnit(unit)
+   local success, error = self:SetUnit(unit)
    if success then
       updateScale(self)
       setVertexColor(self, portrait:GetVertexColor())
       setAlpha(self, portrait:GetAlpha())
+   elseif
+       not string.find(error, "RequiresDeclassifiedUnitIdentity", 1, true) then
+      print("|cffff1010WARNING: failed to set model for", unit, "in",
+         AdpId(portrait) .. ":", error, "|r")
    end
    return success
 end
@@ -392,6 +415,7 @@ lib.UpdateAlignments = updateAlignments
 ---@param self AnimatedPortraitFrame
 ---@param portraitTextureIsCircle boolean?
 function lib.UpdateMaskShape(self, portraitTextureIsCircle)
+   local oldShape = self.shape
    if portraitTextureIsCircle ~= nil then
       self.portraitTextureIsCircle = portraitTextureIsCircle
    end
@@ -427,6 +451,7 @@ function lib.UpdateMaskShape(self, portraitTextureIsCircle)
    if not wasChanged then
       return
    end
+   print("info: SHAPE CHANGE DETECTED FOR", AdpId(self.portraitTexture) .. ":", oldShape or "square", "->", shape)
    -- update background texture mask to mirror the portrait mask texture, but
    -- only if the model-mask system detected any changes to its shape or
    -- alignment
