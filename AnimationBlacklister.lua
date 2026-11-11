@@ -75,12 +75,40 @@ function lib.Create(model)
     return state
 end
 
+local function variation_fmt(variation)
+    if variation < 0 then
+        return "animation " .. -variation
+    else
+        return variation
+    end
+end
+
 ---@param state AnimationBlacklister
 ---@param model PlayerModel
 ---@param fdid fileID
 function lib.UpdateAfterModelChanged(state, model, fdid)
     local animationPlaylist = ANIMATION_OVERRIDES[fdid]
     if animationPlaylist then
+        -- if animationPlaylist ~= state.playlist then
+        --     if next(animationPlaylist) == nil then
+        --         print(
+        --             "info: AnimationBlacklister: setting empty playlist for model",
+        --             AdpNamedParent(model):GetName()
+        --         )
+        --     else
+        --         print(
+        --             "info: AnimationBlacklister: setting playlist for model",
+        --             AdpNamedParent(model):GetName() .. ":"
+        --         )
+        --         for variation, probability in pairs(animationPlaylist) do
+        --             print(
+        --                 " *",
+        --                 variation_fmt(variation) .. ":",
+        --                 tostring(probability * 100) .. "%"
+        --             )
+        --         end
+        --     end
+        -- end
         state.playlist = animationPlaylist
         state.nextVariation = rollIdleAnimationVariation(animationPlaylist)
         -- any time the model-unit is refreshed, it appears the model
