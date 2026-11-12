@@ -404,7 +404,9 @@ end
 ---(eg, gear change)
 ---@param self AnimatedPortraitState
 local function updateUnitModel(self)
-   self.dirty = nil
+   if activePortraits[self] then
+      self.dirty = nil
+   end
    local success = AnimatedPortraitFrame
        .UpdateUnit(self, self.portraitTexture, self.unit)
    if success then
