@@ -29,7 +29,8 @@ local SUPPORTED_MASK_TEXTURE_SHAPES = FrameConfig.SUPPORTED_MASK_TEXTURE_SHAPES
 ---@param shapeRhs MaskShape
 ---@return boolean
 local function leftShapeInscribesRight(shapeLhs, shapeRhs)
-   return shapeLhs == MaskShape.SMALLER_CIRCLE
+   return shapeLhs == shapeRhs
+       or shapeLhs == MaskShape.SMALLER_CIRCLE
        or (shapeLhs == MaskShape.CIRCLE
           and shapeRhs == MaskShape.MAINLINE_PLAYER_PORTRAIT)
 end
@@ -76,11 +77,39 @@ local function findSupportedMaskTexture(texture)
    return { texture = texture:GetMaskTexture(1), shape = MaskShape.CIRCLE }
 end
 
+---@param frame Frame
+---@param portraitTexture SimpleTexture
+---@return MaskTexture
+local function createBasePortraitMask(frame, portraitTexture)
+   local mask = frame:CreateMaskTexture()
+   mask:SetAllPoints(portraitTexture)
+   mask:SetTexture(
+      TextureFileId.TEMP_PORTRAIT_ALPHA_MASK,
+      "CLAMPTOBLACKADDITIVE",
+      "CLAMPTOBLACKADDITIVE"
+   )
+   return mask
+end
+
+---@param frame Frame
+---@param source MaskTexture
+---@return MaskTexture
+local function copyMaskTexture(frame, source)
+   local mask = frame:CreateMaskTexture()
+   mask:SetAllPoints(source)
+   mask:SetTexture(
+      source:GetTexture(),
+      "CLAMPTOBLACKADDITIVE",
+      "CLAMPTOBLACKADDITIVE"
+   )
+   return mask
+end
+
 ---@param model PlayerModel
 ---@param portraitTexture SimpleTexture
 ---@param portraitTextureIsCircle boolean
----@param maskTexture ShapedMaskTexture?
----@return Texture
+---@param maskTexture MaskTexture?
+---@return BackgroundTexture
 local function createBackground(
     model,
     portraitTexture,
@@ -93,6 +122,11 @@ local function createBackground(
    -- break: TradeFrameRecipientPortrait is at (OVERLAY, 1), but
    -- TradeFrame.TopBorder is at (OVERLAY,0), so there is no way to sandwich
    -- both our elements to separate draw layers
+   ---@class (exact) BackgroundTexture : Texture
+   ---@field baseMask MaskTexture?
+   ---@field baseMaskIsApplied boolean
+   ---@field shapeMask MaskTexture?
+   ---@field shapeMaskIsApplied boolean
    local bg = model:CreateTexture(nil, layer, nil, subLayer)
    bg:SetColorTexture(
       PORTRAIT_BACKGROUND_COLOR.r,
@@ -102,28 +136,23 @@ local function createBackground(
    bg:SetAllPoints(portraitTexture)
 
    if portraitTextureIsCircle then
-      local mask = model:CreateMaskTexture()
-      mask:SetAllPoints(portraitTexture)
-      mask:SetTexture(
-         TextureFileId.TEMP_PORTRAIT_ALPHA_MASK,
-         "CLAMPTOBLACKADDITIVE",
-         "CLAMPTOBLACKADDITIVE"
-      )
+      local mask = createBasePortraitMask(model, portraitTexture)
       bg:AddMaskTexture(mask)
+      bg.baseMask = mask
+      bg.baseMaskIsApplied = true
+   else
+      bg.baseMaskIsApplied = false
    end
 
    -- there may also be a mask texture, even if portrait masking is disabled.
    -- in retail, both masks are typically applied, eg for the target frame
    if maskTexture then
-      local texture = maskTexture.texture
-      local mask = model:CreateMaskTexture()
-      mask:SetAllPoints(texture)
-      mask:SetTexture(
-         texture:GetTexture(),
-         "CLAMPTOBLACKADDITIVE",
-         "CLAMPTOBLACKADDITIVE"
-      )
+      local mask = copyMaskTexture(model, maskTexture)
       bg:AddMaskTexture(mask)
+      bg.shapeMask = mask
+      bg.shapeMaskIsApplied = true
+   else
+      bg.shapeMaskIsApplied = false
    end
    return bg
 end
@@ -192,6 +221,37 @@ local function updateAlignments(self)
    end
 end
 
+---@param portrait SimpleTexture
+---@param portraitTextureIsCircle boolean
+---@return MaskShape? shape
+---@return MaskTexture? shapeTexture
+local function deduceShape(portrait, portraitTextureIsCircle)
+   local maskTexture = findSupportedMaskTexture(portrait)
+   if portraitTextureIsCircle then
+      if maskTexture
+          -- because mask textures may have resize points, prefer to align with
+          -- mask textures over the portrait, which is `CIRCLE` shaped
+          and leftShapeInscribesRight(maskTexture.shape, MaskShape.CIRCLE) then
+         return maskTexture.shape, maskTexture.texture
+      else
+         -- of course, technically,  that the base portrait circle strictly
+         -- inscribes the mask-texture shape does not mean that the base
+         -- portrait actually inscribes the mask texture, since the mask texture
+         -- may be moved and resized, but dealing with that shit is a lot of
+         -- complexity for a pretty dumb use case: if there is a mask texture
+         -- added to something, it is presumably usually with the intent
+         -- actually to mask the base texture
+         return MaskShape.CIRCLE, nil
+      end
+   else
+      if maskTexture then
+         return maskTexture.shape, maskTexture.texture
+      else
+         return nil, nil
+      end
+   end
+end
+
 ---update model scale after any change to the frame scale
 ---
 ---increasing the frame scale (appears to) effectively increases the model
@@ -238,9 +298,11 @@ function lib.Create(portrait, portraitTextureIsCircle, createModelCallback)
    ---emulates a baseline world of warcraft portrait (which are produced by
    ---[`SetPortraitTexture`](lua://SetPortraitTexture))
    ---@class (exact) AnimatedPortraitFrame: PlayerModel
+   ---@field portraitTexture Texture the replaced baseline portrait
+   ---@field package portraitTextureIsCircle boolean
    ---@field package shape MaskShape?
    ---@field package mask ModelMaskFrame?
-   ---@field package bgTexture Texture
+   ---@field package bgTexture BackgroundTexture
    local model = CreateFrame("PlayerModel", nil, parent)
    if createModelCallback then createModelCallback(model) end
    model:SetAllPoints(portrait)
@@ -260,7 +322,8 @@ function lib.Create(portrait, portraitTextureIsCircle, createModelCallback)
    model:SetLight(true, light)
    model:SetKeepModelOnHide(true)
 
-   local maskTexture = findSupportedMaskTexture(portrait)
+   local shape, maskTexture = deduceShape(portrait, portraitTextureIsCircle)
+   model.portraitTextureIsCircle = portraitTextureIsCircle
 
    local bgTexture = createBackground(
       model,
@@ -268,13 +331,10 @@ function lib.Create(portrait, portraitTextureIsCircle, createModelCallback)
       portraitTextureIsCircle,
       maskTexture
    )
-   local shape = (maskTexture and maskTexture.shape)
-       or (portraitTextureIsCircle and MaskShape.CIRCLE)
 
    if shape then
-      local shapeRegion = maskTexture and maskTexture.texture
       local modelMask = ModelMaskFrame
-          .Create(model, shape, shapeRegion, createModelCallback)
+          .Create(model, shape, maskTexture, createModelCallback)
       model.shape = shape
       model.mask = modelMask
    end
@@ -285,6 +345,7 @@ function lib.Create(portrait, portraitTextureIsCircle, createModelCallback)
       bgTexture:SetIgnoreParentAlpha(true)
    end
 
+   model.portraitTexture = portrait
    model.bgTexture = bgTexture
 
    model:SetScript("OnSizeChanged", onSizeChanged)
@@ -315,6 +376,110 @@ end
 lib.UpdateCamera = updateCamera
 
 lib.UpdateAlignments = updateAlignments
+
+---attempt to deduce the shape of the underlying portrait texture, and update
+---the model mask if that shape changed since the last call to this, or since
+---creation
+---
+---you may not want to call this too often, for performance, since doing this
+---requires re-checking each mask texture of the portrait texture
+---@param self AnimatedPortraitFrame
+---@param portraitTextureIsCircle boolean?
+function lib.UpdateMaskShape(self, portraitTextureIsCircle)
+   if portraitTextureIsCircle ~= nil then
+      self.portraitTextureIsCircle = portraitTextureIsCircle
+   end
+   local shape, maskTexture =
+       deduceShape(self.portraitTexture, self.portraitTextureIsCircle)
+   -- if the portrait was and is unshaped, there is nothing to do, since there
+   -- are no masks or alignments to update. otherwise, first check whether
+   -- portrait went from unshaped to shaped or vice versa
+   if not shape and not self.shape then
+      return
+   elseif not shape then
+      self.shape = nil
+      ModelMaskFrame.Disable(self.mask)
+      if self.bgTexture.baseMask then
+         self.bgTexture:RemoveMaskTexture(self.bgTexture.baseMask)
+      end
+      if self.bgTexture.shapeMask then
+         self.bgTexture:RemoveMaskTexture(self.bgTexture.shapeMask)
+      end
+      return
+   elseif not self.shape then
+      self.shape = shape
+      ModelMaskFrame.Enable(self.mask)
+      if self.bgTexture.baseMaskIsApplied then
+         self.bgTexture:AddMaskTexture(self.bgTexture.baseMask)
+      end
+      if self.bgTexture.shapeMaskIsApplied then
+         self.bgTexture:AddMaskTexture(self.bgTexture.shapeMask)
+      end
+      -- do not return tho: the portrait went from unshaped to shaped, and the
+      -- new shape may be different from whatever the shape was before
+      --
+      -- this particular guard is only to maintain invariants: an enabled model
+      -- mask has a shape and, if the bg texture claims to have applied its
+      -- masks, then they are actually applied. this is not optimal performance,
+      -- since the later code may override these calls, but an actual portrait
+      -- re-shape is not common
+   end
+   -- ensure background texture has a mask corresponding to base portrait mask,
+   -- if a new base portrait shape was sent
+   if portraitTextureIsCircle ~= nil then
+      if portraitTextureIsCircle then
+         if not self.bgTexture.baseMask then
+            self.bgTexture.baseMask =
+                createBasePortraitMask(self, self.portraitTexture)
+         end
+         if not self.bgTexture.baseMaskIsApplied then
+            self.bgTexture:AddMaskTexture(self.bgTexture.baseMask)
+            self.bgTexture.baseMaskIsApplied = true
+         end
+      else
+         if self.bgTexture.baseMaskIsApplied then
+            self.bgTexture:RemoveMaskTexture(self.bgTexture.baseMask)
+            self.bgTexture.baseMaskIsApplied = false
+         end
+      end
+   end
+   -- update and re-align the model mask shape
+   local wasChanged = ModelMaskFrame.SetShape(self.mask, shape, maskTexture)
+   if not wasChanged then
+      return
+   end
+   -- update background texture mask to mirror the portrait mask texture, but
+   -- only if the model-mask system detected any changes to its shape or
+   -- alignment
+   if maskTexture then
+      if self.bgTexture.shapeMask then
+         self.bgTexture.shapeMask:ClearAllPoints()
+         self.bgTexture.shapeMask:SetAllPoints(maskTexture)
+         self.bgTexture.shapeMask:SetTexture(maskTexture:GetTexture())
+      else
+         local mask = copyMaskTexture(self, maskTexture)
+         self.bgTexture.shapeMask = mask
+      end
+      if not self.bgTexture.shapeMaskIsApplied then
+         self.bgTexture:AddMaskTexture(self.bgTexture.shapeMask)
+         self.bgTexture.shapeMaskIsApplied = true
+      end
+   else
+      if self.bgTexture.shapeMaskIsApplied then
+         self.bgTexture:RemoveMaskTexture(self.bgTexture.shapeMask)
+         self.bgTexture.shapeMaskIsApplied = false
+      end
+   end
+   self.shape = shape
+end
+
+---@param self AnimatedPortraitFrame
+---@param portraitTextureIsCircle boolean
+function lib.UpdateBaseShape(self, portraitTextureIsCircle)
+   if portraitTextureIsCircle ~= self.portraitTextureIsCircle then
+      lib.UpdateMaskShape(self, portraitTextureIsCircle)
+   end
+end
 
 -- just to provide some visual margin to the occlusion checker
 local CIRCLE_INTERSECT_MARGIN = 0.99

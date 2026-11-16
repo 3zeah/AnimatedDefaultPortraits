@@ -22,6 +22,11 @@ local FrameConfig = require(ns, "FrameConfig")
 local MaskShape = Const.MaskShape
 local MASK_MODEL_CONFIG = FrameConfig.MASK_MODEL_CONFIG
 
+---the set of models comprising one model mask
+---@class (exact) ModelMaskModels
+---@field package model1 Model
+---@field package model2 Model
+
 -- # NOTA BENE ON ALL THIS RANDOM FUCKING MATH
 -- ## MODEL SIZE MANIPULATION
 -- symmetrical insets are used to zoom in and out. in particular,
@@ -224,6 +229,52 @@ local function createClippingMaskContainer(parent, roll, createModelCallback)
     return container
 end
 
+---@param parent Model
+---@param createModelCallback fun(model: Model)?
+---@return ModelMaskModels
+local function createCircleMask(parent, createModelCallback)
+    local mask1, mask2 = createMaskModels(
+        parent, parent, 0, createModelCallback
+    )
+    return { model1 = mask1, model2 = mask2 }
+end
+
+---@param parent Model
+---@param createModelCallback fun(model: Model)?
+---@return ModelMaskClippingContainer
+local function createTopLeftMask(parent, createModelCallback)
+    local topLeft = createClippingMaskContainer(
+        parent, 0, createModelCallback
+    )
+    topLeft:SetPoint("TOPLEFT", parent, "TOPLEFT")
+    topLeft:SetPoint("BOTTOMRIGHT", parent, "CENTER")
+    return topLeft
+end
+
+---@param parent Model
+---@param createModelCallback fun(model: Model)?
+---@return ModelMaskClippingContainer
+local function createTopRightMask(parent, createModelCallback)
+    local topRight = createClippingMaskContainer(
+        parent, math.pi / 2, createModelCallback
+    )
+    topRight:SetPoint("TOPRIGHT", parent, "TOPRIGHT")
+    topRight:SetPoint("BOTTOMLEFT", parent, "CENTER")
+    return topRight
+end
+
+---@param parent Model
+---@param createModelCallback fun(model: Model)?
+---@return ModelMaskClippingContainer
+local function createBottomLeftMask(parent, createModelCallback)
+    local bottomLeft = createClippingMaskContainer(
+        parent, 3 * math.pi / 4, createModelCallback
+    )
+    bottomLeft:SetPoint("BOTTOMLEFT", parent, "BOTTOMLEFT")
+    bottomLeft:SetPoint("TOPRIGHT", parent, "CENTER")
+    return bottomLeft
+end
+
 ---@param self ModelMaskFrame
 local function updateAlignment(self)
     local shape = self.shape
@@ -256,6 +307,55 @@ local function updateAlignment(self)
     )
 end
 
+---@param self ModelMaskModels
+local function showModels(self)
+    self.model1:Show()
+    self.model2:Show()
+end
+
+---@param self ModelMaskModels
+local function hideModels(self)
+    self.model1:Hide()
+    self.model2:Hide()
+end
+
+---whether all relative region points match
+---@param a Region?
+---@param b Region?
+---@return boolean
+local function haveSameRelativePosition(a, b)
+    if not a then
+        return not b
+    elseif not b then
+        return false
+    end
+    local pointCountA = a:GetNumPoints()
+    local pointCountB = b:GetNumPoints()
+    if pointCountA ~= pointCountB then
+        return false
+    end
+    if pointCountA == 0 then
+        local leftA, bottomA, widthA, heightA = a:GetScaledRect()
+        local leftB, bottomB, widthB, heightB = b:GetScaledRect()
+        return leftA == leftB
+            and bottomA == bottomB
+            and widthA == widthB
+            and heightA == heightB
+    end
+    for i = 1, pointCountA do
+        local pointA, relativeToA, relativePointA, xA, yA = a:GetPoint(i)
+        local pointB, relativeToB, relativePointB, xB, yB = b:GetPoint(i)
+        if pointA ~= pointB
+            or relativeToA ~= relativeToB
+            or relativePointA ~= relativePointB
+            or xA ~= xB
+            or yA ~= yB then
+            return false
+        end
+    end
+    return true
+end
+
 ---system responsible for creating and updating
 ---[model-mask frames](lua://ModelMaskFrame)
 ---@class ModelMaskFrameLib
@@ -265,7 +365,9 @@ local lib = {}
 ---of this frame will be occluded, and thus effectively masked
 ---@class (exact) ModelMaskFrame
 ---@field package shape MaskShape
----@field package shapeRegion ScriptRegion?
+---@field package maskedModel Model
+---@field package createModelCallback fun(model: Model)?
+---@field package shapeRegion Region?
 ---@field package circleMaskFull ModelMaskModels
 ---@field package circleMaskTopLeft ModelMaskClippingContainer
 ---@field package circleMaskTopRight ModelMaskClippingContainer
@@ -278,41 +380,26 @@ local lib = {}
 ---50x50 circle at position (20,10) from the bottom left of the model
 ---@param modelToMask Model
 ---@param shape MaskShape
----@param shapeRegion ScriptRegion?
+---@param shapeRegion Region?
 ---@param createModelCallback fun(model: Model)?
 ---@return ModelMaskFrame
 function lib.Create(modelToMask, shape, shapeRegion, createModelCallback)
     local state = {}
     if shape == MaskShape.MAINLINE_PLAYER_PORTRAIT then
-        -- then create special mask containers for each masked corner
-        local topLeft = createClippingMaskContainer(
-            modelToMask, 0, createModelCallback
-        )
-        topLeft:SetPoint("TOPLEFT", modelToMask, "TOPLEFT")
-        topLeft:SetPoint("BOTTOMRIGHT", modelToMask, "CENTER")
-        local topRight = createClippingMaskContainer(
-            modelToMask, math.pi / 2, createModelCallback
-        )
-        topRight:SetPoint("TOPRIGHT", modelToMask, "TOPRIGHT")
-        topRight:SetPoint("BOTTOMLEFT", modelToMask, "CENTER")
-        local bottomLeft = createClippingMaskContainer(
-            modelToMask, 3 * math.pi / 4, createModelCallback
-        )
-        bottomLeft:SetPoint("BOTTOMLEFT", modelToMask, "BOTTOMLEFT")
-        bottomLeft:SetPoint("TOPRIGHT", modelToMask, "CENTER")
-        state.circleMaskTopLeft = topLeft
-        state.circleMaskTopRight = topRight
-        state.circleMaskBottomLeft = bottomLeft
+        -- create special mask containers for each masked corner
+        state.circleMaskTopLeft =
+            createTopLeftMask(modelToMask, createModelCallback)
+        state.circleMaskTopRight =
+            createTopRightMask(modelToMask, createModelCallback)
+        state.circleMaskBottomLeft =
+            createBottomLeftMask(modelToMask, createModelCallback)
     else -- `MaskShape.CIRCLE` or `MaskShape.SMALLER_CIRCLE`
-        local mask1, mask2 = createMaskModels(
-            modelToMask, modelToMask, 0, createModelCallback
-        )
-        ---the set of models comprising one model mask
-        ---@class (exact) ModelMaskModels
-        ---@field package model1 Model
-        ---@field package model2 Model
-        state.circleMaskFull = { model1 = mask1, model2 = mask2 }
+        -- or just do a full circle
+        state.circleMaskFull =
+            createCircleMask(modelToMask, createModelCallback)
     end
+    state.maskedModel = modelToMask
+    state.createModelCallback = createModelCallback
     state.shape = shape
     state.shapeRegion = shapeRegion
     updateAlignment(state)
@@ -322,6 +409,77 @@ end
 ---update the alignment of the model mask: required after any size change,
 ---either by the masked frame itself, or the shape region defined at creation
 lib.UpdateAlignment = updateAlignment
+
+---@param self ModelMaskFrame
+function lib.Disable(self)
+    if self.circleMaskFull then hideModels(self.circleMaskFull) end
+    if self.circleMaskTopLeft then hideModels(self.circleMaskTopLeft) end
+    if self.circleMaskTopRight then hideModels(self.circleMaskTopRight) end
+    if self.circleMaskBottomLeft then hideModels(self.circleMaskBottomLeft) end
+end
+
+---@param self ModelMaskFrame
+function lib.Enable(self)
+    if self.circleMaskFull then showModels(self.circleMaskFull) end
+    if self.circleMaskTopLeft then showModels(self.circleMaskTopLeft) end
+    if self.circleMaskTopRight then showModels(self.circleMaskTopRight) end
+    if self.circleMaskBottomLeft then showModels(self.circleMaskBottomLeft) end
+end
+
+---update the mask shape
+---@param self ModelMaskFrame
+---@param shape MaskShape
+---@param shapeRegion Region?
+---@return boolean wasChanged
+function lib.SetShape(self, shape, shapeRegion)
+    self.shapeRegion = shapeRegion
+    if shape == self.shape
+        and haveSameRelativePosition(self.shapeRegion, shapeRegion) then
+        return false
+    end
+    if shape == MaskShape.MAINLINE_PLAYER_PORTRAIT then
+        if self.circleMaskFull then
+            hideModels(self.circleMaskFull)
+        end
+        if self.circleMaskTopLeft then
+            showModels(self.circleMaskTopLeft)
+        else
+            self.circleMaskTopLeft =
+                createTopLeftMask(self.maskedModel, self.createModelCallback)
+        end
+        if self.circleMaskTopRight then
+            showModels(self.circleMaskTopRight)
+        else
+            self.circleMaskTopRight =
+                createTopRightMask(self.maskedModel, self.createModelCallback)
+        end
+        if self.circleMaskBottomLeft then
+            showModels(self.circleMaskBottomLeft)
+        else
+            self.circleMaskBottomLeft =
+                createBottomLeftMask(self.maskedModel, self.createModelCallback)
+        end
+    else
+        if self.circleMaskFull then
+            showModels(self.circleMaskFull)
+        else
+            self.circleMaskFull =
+                createCircleMask(self.maskedModel, self.createModelCallback)
+        end
+        if self.circleMaskTopLeft then
+            hideModels(self.circleMaskTopLeft)
+        end
+        if self.circleMaskTopRight then
+            hideModels(self.circleMaskTopRight)
+        end
+        if self.circleMaskBottomLeft then
+            hideModels(self.circleMaskBottomLeft)
+        end
+    end
+    self.shape = shape
+    updateAlignment(self)
+    return true
+end
 
 ns.ModelMaskFrame = lib
 return lib

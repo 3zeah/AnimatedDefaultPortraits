@@ -27,6 +27,14 @@ local IsInanimate = FrameConfig.IsInanimate
 ---unit-frame portrait does not result in occlusion for a visually significant
 ---amount of time
 local UPDATE_PERIOD = 1 / 15
+---portrait shape changes, on the other hand, are both not expected to happen
+---dynamically at all, and expensive: do infrequent
+---
+---one second is actually pretty frequent, but on-update time is now seemingly
+---dominated by the occlusion checker anyway, and the risk in making it too
+---infrequent is pop-in during loading (theoretically, if mask textures or
+---whatever are constructed after login)
+local TICKS_PER_SHAPE_REFRESH = Round(1 / UPDATE_PERIOD) -- = 1s period
 
 ---state table of all animated model frames, indexed by each corresponding
 ---portrait texture that was replaced by that model
@@ -361,7 +369,6 @@ local function getOrCreateAnimatedPortrait(portraitTexture, disableMasking)
 
    ---one animated portrait along with all state required to maintain it
    ---@class (exact) AnimatedPortraitState: AnimatedPortraitFrame
-   ---@field portraitTexture Texture the replaced baseline portrait
    ---@field textureIsPortrait true?
    ---@field unit UnitToken? the unit that is expected to be in the portrait
    ---@field guid WOWGUID? the guid of the portrait unit
@@ -375,7 +382,6 @@ local function getOrCreateAnimatedPortrait(portraitTexture, disableMasking)
    ---@field animationBlacklister AnimationBlacklister
    local state = AnimatedPortraitFrame
        .Create(portraitTexture, not disableMasking, registerInternalModel)
-   state.portraitTexture = portraitTexture
    state.hasModel = false
    state.blockingModels = {}
    state.animationBlacklister = AnimationBlacklister.Create(state)
@@ -460,6 +466,7 @@ local function setAnimatedPortraitTexture(portraitTexture, unit, disableMasking)
       state.guid = guid
       updateUnitModel(state)
    end
+   AnimatedPortraitFrame.UpdateBaseShape(state, not disableMasking)
 end
 
 -- post-hook the global portrait texturing function with our animated variant
@@ -571,10 +578,19 @@ end
 -- update
 local PORTRAIT_ARRAY_BUFFER = {}
 
+local updateCounter = 0
 -- unfortunately, since frames can move freely without event, model
--- intersections must be re-evaluated periodically
+-- intersections must be re-evaluated periodically, and to try to maximize
+-- compatibility and stability, this also tries to stay abreast of
+-- portrait-shape changes, although these are not expected in the default ui
 ---@param _ Frame just the virtual-frame script handler
 local function onUpdateAddOn(_)
+   updateCounter = updateCounter + 1
+   local doRefreshShape
+   if updateCounter >= TICKS_PER_SHAPE_REFRESH then
+      updateCounter = 0
+      doRefreshShape = true
+   end
    -- just write to the start of the buffer: because each animated portrait
    -- lives forever, trailing elements from last update will not stop any gc
    local n = 0
@@ -584,6 +600,9 @@ local function onUpdateAddOn(_)
    end
    for i = 1, n do
       local portrait = PORTRAIT_ARRAY_BUFFER[i]
+      if doRefreshShape then
+         AnimatedPortraitFrame.UpdateMaskShape(portrait)
+      end
       for j = i + 1, n do
          local otherPortrait = PORTRAIT_ARRAY_BUFFER[j]
          -- in my testing, `ScriptRegion:Intersects` is faster even than just
