@@ -382,6 +382,9 @@ local function getOrCreateAnimatedPortrait(portraitTexture, disableMasking)
    ---@field animationBlacklister AnimationBlacklister
    local state = AnimatedPortraitFrame
        .Create(portraitTexture, not disableMasking, registerInternalModel)
+   if not state then
+      return nil
+   end
    state.hasModel = false
    state.blockingModels = {}
    state.animationBlacklister = AnimationBlacklister.Create(state)

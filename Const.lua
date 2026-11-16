@@ -4,15 +4,17 @@ local lib = {}
 
 ---@enum MaskShape
 lib.MaskShape = {
+    -- no shape at all: shape of the frame itself
+    SQUARE = 0,
     -- reference texture: 130924
     -- ([`TEMP_PORTRAIT_ALPHA_MASK`](lua://TextureFileId.TEMP_PORTRAIT_ALPHA_MASK))
-    CIRCLE = 0,
+    CIRCLE = 1,
     -- reference texture: 3605349
     -- ([`CIRCLE_MASK_SCALABLE`](lua://TextureFileId.CIRCLE_MASK_SCALABLE))
-    SMALLER_CIRCLE = 1,
+    SMALLER_CIRCLE = 2,
     -- reference texture: 4682541
     -- ([`UI_UNIT_FRAME_PLAYER_PORTRAIT_MASK`](lua://TextureFileId.UI_UNIT_FRAME_PLAYER_PORTRAIT_MASK))
-    MAINLINE_PLAYER_PORTRAIT = 2,
+    MAINLINE_PLAYER_PORTRAIT = 3,
 }
 
 ---@enum ModelFileId

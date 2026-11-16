@@ -278,6 +278,10 @@ end
 ---@param self ModelMaskFrame
 local function updateAlignment(self)
     local shape = self.shape
+    -- optimization: no mask is active anyway
+    if shape == MaskShape.SQUARE then
+        return
+    end
     local shapeRegion = self.shapeRegion
     local left, right, top, bottom
     -- all masks share the same region rect: eval insets only once
@@ -393,11 +397,11 @@ function lib.Create(modelToMask, shape, shapeRegion, createModelCallback)
             createTopRightMask(modelToMask, createModelCallback)
         state.circleMaskBottomLeft =
             createBottomLeftMask(modelToMask, createModelCallback)
-    else -- `MaskShape.CIRCLE` or `MaskShape.SMALLER_CIRCLE`
-        -- or just do a full circle
+    elseif shape == MaskShape.CIRCLE or shape == MaskShape.SMALLER_CIRCLE then
+        -- just do one full circle for circles
         state.circleMaskFull =
             createCircleMask(modelToMask, createModelCallback)
-    end
+    end -- otherwise, the shape is square, and no mask is required presently
     state.maskedModel = modelToMask
     state.createModelCallback = createModelCallback
     state.shape = shape
@@ -459,7 +463,7 @@ function lib.SetShape(self, shape, shapeRegion)
             self.circleMaskBottomLeft =
                 createBottomLeftMask(self.maskedModel, self.createModelCallback)
         end
-    else
+    elseif shape == MaskShape.CIRCLE or shape == MaskShape.SMALLER_CIRCLE then
         if self.circleMaskFull then
             showModels(self.circleMaskFull)
         else
@@ -475,6 +479,8 @@ function lib.SetShape(self, shape, shapeRegion)
         if self.circleMaskBottomLeft then
             hideModels(self.circleMaskBottomLeft)
         end
+    else -- SQUARE
+        lib.Disable(self)
     end
     self.shape = shape
     updateAlignment(self)
