@@ -25,6 +25,29 @@ local SUPPORTED_MASK_TEXTURE_SHAPES = FrameConfig.SUPPORTED_MASK_TEXTURE_SHAPES
 ---@field texture MaskTexture
 ---@field shape MaskShape
 
+---@param shapeLhs MaskShape
+---@param shapeRhs MaskShape
+---@return boolean
+local function leftShapeInscribesRight(shapeLhs, shapeRhs)
+   return shapeLhs == MaskShape.SMALLER_CIRCLE
+       or (shapeLhs == MaskShape.CIRCLE
+          and shapeRhs == MaskShape.MAINLINE_PLAYER_PORTRAIT)
+end
+
+---@param a ShapedMaskTexture?
+---@param b ShapedMaskTexture
+---@return ShapedMaskTexture
+local function mergeShapeTextures(a, b)
+   if not a then
+      return b
+   end
+   if leftShapeInscribesRight(a.shape, b.shape) then
+      return a
+   else
+      return b
+   end
+end
+
 ---find a mask texture, preferring one that has a supported shape, such that
 ---the model mask may mirror it
 ---@param texture Texture
@@ -34,12 +57,20 @@ local function findSupportedMaskTexture(texture)
    if maskCount == 0 then
       return nil
    end
+   ---@type ShapedMaskTexture?
+   local shapeTexture = nil
    for i = 1, maskCount do
       local mask = texture:GetMaskTexture(i)
       local shape = SUPPORTED_MASK_TEXTURE_SHAPES[mask:GetTexture()]
       if shape then
-         return { texture = mask, shape = shape }
+         shapeTexture = mergeShapeTextures(
+            shapeTexture,
+            { texture = mask, shape = shape }
+         )
       end
+   end
+   if shapeTexture then
+      return shapeTexture
    end
    -- portraits are usually circles: maybe it is a good idea to assume circle
    return { texture = texture:GetMaskTexture(1), shape = MaskShape.CIRCLE }
@@ -48,9 +79,14 @@ end
 ---@param model PlayerModel
 ---@param portraitTexture SimpleTexture
 ---@param portraitTextureIsCircle boolean
+---@param maskTexture ShapedMaskTexture?
 ---@return Texture
----@return ShapedMaskTexture?
-local function createBackground(model, portraitTexture, portraitTextureIsCircle)
+local function createBackground(
+    model,
+    portraitTexture,
+    portraitTextureIsCircle,
+    maskTexture
+)
    local layer, subLayer = model:GetModelDrawLayer()
    -- it APPEARS the model is always drawn above the background at same level,
    -- but if we ever cannot rely on that, note that the classic trade frame will
@@ -78,21 +114,18 @@ local function createBackground(model, portraitTexture, portraitTextureIsCircle)
 
    -- there may also be a mask texture, even if portrait masking is disabled.
    -- in retail, both masks are typically applied, eg for the target frame
-   local shapedMaskTexture = findSupportedMaskTexture(portraitTexture)
-   if shapedMaskTexture then
-      local maskTexture = shapedMaskTexture.texture
+   if maskTexture then
+      local texture = maskTexture.texture
       local mask = model:CreateMaskTexture()
-      mask:SetAllPoints(maskTexture)
+      mask:SetAllPoints(texture)
       mask:SetTexture(
-         maskTexture:GetTexture(),
+         texture:GetTexture(),
          "CLAMPTOBLACKADDITIVE",
          "CLAMPTOBLACKADDITIVE"
       )
       bg:AddMaskTexture(mask)
-      return bg, shapedMaskTexture
-   else
-      return bg
    end
+   return bg
 end
 
 ---@param model AnimatedPortraitFrame
@@ -227,8 +260,14 @@ function lib.Create(portrait, portraitTextureIsCircle, createModelCallback)
    model:SetLight(true, light)
    model:SetKeepModelOnHide(true)
 
-   local bgTexture, maskTexture =
-       createBackground(model, portrait, portraitTextureIsCircle)
+   local maskTexture = findSupportedMaskTexture(portrait)
+
+   local bgTexture = createBackground(
+      model,
+      portrait,
+      portraitTextureIsCircle,
+      maskTexture
+   )
    local shape = (maskTexture and maskTexture.shape)
        or (portraitTextureIsCircle and MaskShape.CIRCLE)
 
